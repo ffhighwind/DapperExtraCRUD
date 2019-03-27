@@ -60,10 +60,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\fasterflect\fasterflect\Fasterflect\Fasterflect.csproj">
-      <Project>{fdf54936-a188-45b1-b482-632da23db0b0}</Project>
-      <Name>Fasterflect</Name>
-    </ProjectReference>
     <ProjectReference Include="..\DapperExtraCRUD\DapperExtraCRUD.csproj">
       <Project>{4dbe71c1-2ecd-4192-bc66-e4d1c8dcec08}</Project>
       <Name>DapperExtraCRUD</Name>

@@ -37,6 +37,9 @@
     <Reference Include="Dapper, Version=1.60.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Dapper.1.60.1\lib\net451\Dapper.dll</HintPath>
     </Reference>
+    <Reference Include="FastMember, Version=1.4.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\FastMember.1.4.1\lib\net461\FastMember.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -76,12 +79,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\fasterflect\fasterflect\Fasterflect\Fasterflect.csproj">
-      <Project>{fdf54936-a188-45b1-b482-632da23db0b0}</Project>
-      <Name>Fasterflect</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

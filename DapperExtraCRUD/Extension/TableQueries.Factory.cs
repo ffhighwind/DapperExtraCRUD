@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Dapper.Extension.Interfaces;
-using Fasterflect;
 
 namespace Dapper.Extension
 {
@@ -229,15 +228,14 @@ namespace Dapper.Extension
 
 			private static void BulkInsert_(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction, string tableName, string[] columns, PropertyInfo[] properties, int? commandTimeout = null)
 			{
+				var dataReader = FastMember.ObjectReader.Create<T>(objs, properties.Select(p => p.Name).ToArray());
 				using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default | SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls, transaction)) {
-					using (GenericDataReader<T> dataReader = new GenericDataReader<T>(objs, properties)) {
-						bulkCopy.DestinationTableName = tableName ?? TableData<T>.TableName;
-						bulkCopy.BulkCopyTimeout = commandTimeout ?? 0;
-						for (int i = 0; i < columns.Length; i++) {
-							bulkCopy.ColumnMappings.Add(properties[i].Name, columns[i]);
-						}
-						bulkCopy.WriteToServer(dataReader);
+					bulkCopy.DestinationTableName = tableName ?? TableData<T>.TableName;
+					bulkCopy.BulkCopyTimeout = commandTimeout ?? 0;
+					for (int i = 0; i < columns.Length; i++) {
+						bulkCopy.ColumnMappings.Add(properties[i].Name, columns[i]);
 					}
+					bulkCopy.WriteToServer(dataReader);
 				}
 			}
 
@@ -664,16 +662,16 @@ namespace Dapper.Extension
 				string keyCol = KeyColumns[0];
 				queries.DeleteKeyFunc = (connection, key, transaction, commandTimeout) =>
 				{
-				//IDictionary<string, object> keyObj = new ExpandoObject();
-				DynamicParameters keyObj = new DynamicParameters();
+					//IDictionary<string, object> keyObj = new ExpandoObject();
+					DynamicParameters keyObj = new DynamicParameters();
 					keyObj.Add(keyCol, key);
 					return 0 < connection.Execute(deleteSingleQuery, keyObj, transaction, commandTimeout);
 				};
 
 				queries.GetKeyFunc = (connection, key, transaction, commandTimeout) =>
 				{
-				//IDictionary<string, object> keyObj = new ExpandoObject();
-				DynamicParameters keyObj = new DynamicParameters();
+					//IDictionary<string, object> keyObj = new ExpandoObject();
+					DynamicParameters keyObj = new DynamicParameters();
 					keyObj.Add(keyCol, key);
 					return connection.Query<T>(selectSingleQuery, keyObj, transaction, true, commandTimeout).FirstOrDefault();
 				};

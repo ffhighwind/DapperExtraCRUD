@@ -5,8 +5,6 @@ VisualStudioVersion = 15.0.28307.136
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DapperExtraCRUD", "DapperExtraCRUD\DapperExtraCRUD.csproj", "{4DBE71C1-2ECD-4192-BC66-E4D1C8DCEC08}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fasterflect", "..\fasterflect\fasterflect\Fasterflect\Fasterflect.csproj", "{FDF54936-A188-45B1-B482-632DA23DB0B0}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{65C619B0-3B3E-4482-848C-1BC17CA71711}"
 	ProjectSection(SolutionItems) = preProject
 		..\fasterflect\fasterflect\CodeCoverage.testsettings = ..\fasterflect\fasterflect\CodeCoverage.testsettings
@@ -40,16 +38,6 @@ Global
 		{4DBE71C1-2ECD-4192-BC66-E4D1C8DCEC08}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{4DBE71C1-2ECD-4192-BC66-E4D1C8DCEC08}.Release|x86.ActiveCfg = Release|Any CPU
 		{4DBE71C1-2ECD-4192-BC66-E4D1C8DCEC08}.Release|x86.Build.0 = Release|Any CPU
-		{FDF54936-A188-45B1-B482-632DA23DB0B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FDF54936-A188-45B1-B482-632DA23DB0B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FDF54936-A188-45B1-B482-632DA23DB0B0}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{FDF54936-A188-45B1-B482-632DA23DB0B0}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{FDF54936-A188-45B1-B482-632DA23DB0B0}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{FDF54936-A188-45B1-B482-632DA23DB0B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FDF54936-A188-45B1-B482-632DA23DB0B0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FDF54936-A188-45B1-B482-632DA23DB0B0}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{FDF54936-A188-45B1-B482-632DA23DB0B0}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{FDF54936-A188-45B1-B482-632DA23DB0B0}.Release|x86.ActiveCfg = Release|Any CPU
 		{1AA4E771-2227-45A7-A906-FC54FE7F77EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1AA4E771-2227-45A7-A906-FC54FE7F77EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1AA4E771-2227-45A7-A906-FC54FE7F77EA}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
