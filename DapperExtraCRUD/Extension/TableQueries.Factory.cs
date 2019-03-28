@@ -774,9 +774,17 @@ namespace Dapper.Extension
 				return columnNames;
 			}
 
-			private string CreateTableQuery(string tempTable, string[] columns)
+			private string CreateTableQuery(string tempTable, string[] columns, bool dropIfExists = true)
 			{
-				return $"DROP TABLE IF EXISTS " + tempTable + "; SELECT TOP(0) " + string.Join(",", columns) + " INTO " + tempTable + " FROM " + TableName;
+				string sql = $@"
+IF EXISTS (
+	SELECT * from INFORMATION_SCHEMA.TABLES 
+WHERE TABLE_NAME = '{tempTable}' 
+	AND TABLE_SCHEMA = 'dbo'
+) 
+DROP TABLE dbo.{tempTable};
+SELECT TOP(0) {string.Join(",", columns)} INTO {tempTable} FROM {TableName}";
+				return sql;
 			}
 
 			private static IEnumerable<IEnumerable<Ty>> Partition<Ty>(IEnumerable<Ty> source, int size)
