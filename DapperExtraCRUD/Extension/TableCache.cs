@@ -44,6 +44,11 @@ namespace Dapper.Extension
 			return Map.Values.GetEnumerator();
 		}
 
+		public void Clear()
+		{
+			Map.Clear();
+		}
+
 		protected Ret UpsertItem(T obj)
 		{
 			KeyType key = TableData<T, KeyType>.GetKey(obj);
