@@ -441,6 +441,11 @@ namespace Dapper.Extension
 			return list;
 		}
 
+		public Ret Find(T obj, int? commandTimeout = null)
+		{
+			return Map.TryGetValue(obj, out Ret value) ? value : Get(obj, commandTimeout);
+		}
+
 		#region IDataAccessObjectSync<T, T, Ret>
 		public override IEnumerable<T> GetKeys(string whereCondition = "", object param = null, bool buffered = true, int? commandTimeout = null)
 		{

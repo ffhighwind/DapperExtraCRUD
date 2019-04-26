@@ -85,9 +85,8 @@ namespace Dapper.Extension
 				IEnumerable<PropertyInfo> properties = typeof(T).GetProperties(TableAttribute?.BindingFlags ?? (BindingFlags.Public | BindingFlags.Instance));
 				Properties = properties.Where(Predicate).ToArray();
 
-
 				KeyProperties = Properties.Where(prop => prop.GetCustomAttribute<KeyAttribute>(true) != null).ToArray();
-				AutoKeyProperties = KeyProperties.Where(prop => !prop.GetCustomAttribute<KeyAttribute>(true).Required).ToArray();
+				AutoKeyProperties = KeyProperties.Length != 1 ? Array.Empty<PropertyInfo>() : KeyProperties.Where(prop => !prop.GetCustomAttribute<KeyAttribute>(true).Required && (prop.PropertyType == typeof(int) || prop.PropertyType == typeof(long) || prop.PropertyType.IsEnum)).ToArray();
 				SelectProperties = GetProperties(Array.Empty<PropertyInfo>(), (prop) => true, typeof(IgnoreSelectAttribute), typeof(IgnoreAttribute));
 				InsertProperties = GetProperties(AutoKeyProperties, (prop) => { var attr = prop.GetCustomAttribute<IgnoreInsertAttribute>(true); return attr == null || attr.HasValue; }, typeof(IgnoreAttribute));
 				UpdateProperties = GetProperties(KeyProperties, (prop) => { var attr = prop.GetCustomAttribute<IgnoreUpdateAttribute>(true); return attr == null || attr.HasValue; }, typeof(IgnoreAttribute));
