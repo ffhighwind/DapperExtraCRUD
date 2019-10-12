@@ -297,8 +297,10 @@ namespace Dapper.Extension
 					return val;
 				};
 
+				string countQuery = "SELECT COUNT(*) FROM " + TableName + "\n";
 				queries.RecordCountFunc = (connection, whereCondition, param, transaction, commandTimeout) =>
 				{
+					string query = countQuery + whereCondition;
 					int count = connection.Query<int>(query, param, transaction, true, commandTimeout).First();
 					return count;
 				};
