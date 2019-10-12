@@ -245,6 +245,7 @@ namespace Dapper.Extension
 				}
 			}
 
+
 			public TableQueries<T>.Data Create()
 			{
 				TableQueries<T>.Data queries = new TableQueries<T>.Data();
@@ -298,12 +299,11 @@ namespace Dapper.Extension
 
 				queries.RecordCountFunc = (connection, whereCondition, param, transaction, commandTimeout) =>
 				{
-					string query = "SELECT COUNT(*) FROM " + TableName + "\n" + whereCondition;
 					int count = connection.Query<int>(query, param, transaction, true, commandTimeout).First();
 					return count;
 				};
 
-				string truncateQuery = "SELECT COUNT(*) FROM " + TableName + "\n;TRUNCATE TABLE " + TableName;
+				string truncateQuery = countQuery + ";TRUNCATE TABLE " + TableName;
 				queries.DeleteWhereFunc = (connection, whereCondition, param, transaction, commandTimeout) =>
 				{
 					int count;
@@ -375,6 +375,7 @@ namespace Dapper.Extension
 							connection.Execute(upsertQuery, obj, transaction, commandTimeout);
 							return obj;
 						};
+
 
 						queries.BulkInsertFunc = (connection, objs, transaction, commandTimeout) =>
 						{
