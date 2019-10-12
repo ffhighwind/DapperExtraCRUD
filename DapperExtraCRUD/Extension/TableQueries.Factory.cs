@@ -14,6 +14,7 @@ namespace Dapper.Extension
 		public class Factory
 		{
 			private const string BulkTempStagingTable = "#_DappBulkTable_";
+			private const string dropStagingTableQuery = "DROP TABLE " + BulkTempStagingTable;
 
 			private static readonly HashSet<Type> validTypes = new HashSet<Type>() {
 				typeof(byte),
@@ -87,10 +88,13 @@ namespace Dapper.Extension
 
 
 				KeyProperties = Properties.Where(prop => prop.GetCustomAttribute<KeyAttribute>(true) != null).ToArray();
-				AutoKeyProperties = KeyProperties.Where(prop => !prop.GetCustomAttribute<KeyAttribute>(true).Required).ToArray();
+				AutoKeyProperties = KeyProperties.Length == 1 ? Array.Empty<PropertyInfo>()
+					: KeyProperties.Where(prop => !prop.GetCustomAttribute<KeyAttribute>(true).Required
+						&& (prop.PropertyType == typeof(int) || prop.PropertyType == typeof(long) || prop.PropertyType.IsEnum)).ToArray();
 				SelectProperties = GetProperties(Array.Empty<PropertyInfo>(), (prop) => true, typeof(IgnoreSelectAttribute), typeof(IgnoreAttribute));
 				InsertProperties = GetProperties(AutoKeyProperties, (prop) => { var attr = prop.GetCustomAttribute<IgnoreInsertAttribute>(true); return attr == null || attr.HasValue; }, typeof(IgnoreAttribute));
 				UpdateProperties = GetProperties(KeyProperties, (prop) => { var attr = prop.GetCustomAttribute<IgnoreUpdateAttribute>(true); return attr == null || attr.HasValue; }, typeof(IgnoreAttribute));
+				BulkUpdateProperties = UpdateProperties.Concat(KeyProperties).ToArray();
 
 				if (InsertProperties.Length == 0) {
 					InsertProperties = Properties;
@@ -99,7 +103,7 @@ namespace Dapper.Extension
 					UpdateProperties = Properties;
 				}
 
-				PropertyInfo[] MatchUpdateProperties = UpdateProperties.Where(prop => prop.GetCustomAttribute<MatchUpdateAttribute>(true) != null).ToArray();
+				MatchUpdateProperties = UpdateProperties.Where(prop => prop.GetCustomAttribute<MatchUpdateAttribute>(true) != null).ToArray();
 				if (MatchUpdateProperties.Length > 0) {
 					UpdateProperties = UpdateProperties.Where(prop => !MatchUpdateProperties.Contains(prop) || prop.GetCustomAttribute<IgnoreUpdateAttribute>(true)?.Value != null).ToArray();
 				}
@@ -115,6 +119,7 @@ namespace Dapper.Extension
 				SelectColumns = GetColumnNames(SelectProperties);
 				UpdateColumns = GetColumnNames(UpdateProperties);
 				InsertColumns = GetColumnNames(InsertProperties);
+				BulkUpdateColumns = GetColumnNames(BulkUpdateProperties);
 
 				if (KeyProperties.Length == 0 || KeyProperties.Length == Properties.Length) {
 					EqualityProperties = Properties;
@@ -127,8 +132,8 @@ namespace Dapper.Extension
 				else {
 					EqualityProperties = KeyProperties;
 					EqualityColumns = KeyColumns;
-					UpdateEqualityProperties = EqualityProperties.Union(MatchUpdateProperties).ToArray();
-					DeleteEqualityProperties = EqualityProperties.Union(MatchDeleteProperties).ToArray();
+					UpdateEqualityProperties = KeyProperties.Concat(MatchUpdateProperties).ToArray();
+					DeleteEqualityProperties = KeyProperties.Union(MatchDeleteProperties).ToArray();
 					UpdateEqualityColumns = GetColumnNames(UpdateEqualityProperties);
 					DeleteEqualityColumns = GetColumnNames(DeleteEqualityProperties);
 				}
@@ -216,7 +221,7 @@ namespace Dapper.Extension
 				throw new InvalidOperationException(NoKeyExceptionString);
 			}
 
-			private static IEnumerable<T> NoKeyProperty(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction, bool buffered, int? commandTimeout)
+			private static IEnumerable<T> NoKeyPropertyList(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction, int? commandTimeout)
 			{
 				throw new InvalidOperationException(NoKeyExceptionString);
 			}
@@ -226,10 +231,11 @@ namespace Dapper.Extension
 				throw new InvalidOperationException(NoKeyExceptionString);
 			}
 
-			private static void BulkInsert_(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction, string tableName, string[] columns, PropertyInfo[] properties, int? commandTimeout = null)
+			private static void BulkInsert_(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction, string tableName, string[] columns, PropertyInfo[] properties, int? commandTimeout = null,
+				SqlBulkCopyOptions options = SqlBulkCopyOptions.FireTriggers | SqlBulkCopyOptions.CheckConstraints | SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls)
 			{
 				var dataReader = FastMember.ObjectReader.Create<T>(objs, properties.Select(p => p.Name).ToArray());
-				using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default | SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls, transaction)) {
+				using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connection, options, transaction)) {
 					bulkCopy.DestinationTableName = tableName ?? TableData<T>.TableName;
 					bulkCopy.BulkCopyTimeout = commandTimeout ?? 0;
 					for (int i = 0; i < columns.Length; i++) {
@@ -238,11 +244,6 @@ namespace Dapper.Extension
 					bulkCopy.WriteToServer(dataReader);
 				}
 			}
-
-
-			/*
-			public TableQueries<T>.Delegates.RemoveDuplicatesFunc RemoveDuplicatesFunc { get; protected set; }
-			*/
 
 			public TableQueries<T>.Data Create()
 			{
@@ -265,75 +266,73 @@ namespace Dapper.Extension
 				queries.GetListFunc = (connection, whereCondition, param, transaction, buffered, commandTimeout) =>
 				{
 					string query = "SELECT " + paramsSelectFrom + whereCondition;
-					IEnumerable<T> list = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
-					return list;
+					IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
+					return result;
 				};
 
 				queries.GetTopFunc = (connection, limit, whereCondition, param, transaction, buffered, commandTimeout) =>
 				{
 					string query = "SELECT TOP(" + limit + ") " + paramsSelectFrom + whereCondition;
-					IEnumerable<T> list = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
-					return list;
+					IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
+					return result;
 				};
 
 				queries.GetDistinctFunc = (connection, whereCondition, param, transaction, buffered, commandTimeout) =>
 				{
 					string query = "SELECT DISTINCT " + paramsSelectFrom + whereCondition;
-					IEnumerable<T> list = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
-					return list;
+					IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
+					return result;
 				};
 
 				queries.GetFunc = (connection, obj, transaction, commandTimeout) =>
 				{
-					IEnumerable<T> value = connection.Query<T>(selectSingleQuery, obj, transaction, true, commandTimeout);
-					return value.FirstOrDefault();
+					T val = connection.Query<T>(selectSingleQuery, obj, transaction, true, commandTimeout).FirstOrDefault();
+					return val;
 				};
 
 				queries.GetDictFunc = (connection, obj, transaction, commandTimeout) =>
 				{
-					IEnumerable<T> value = connection.Query<T>(selectSingleQuery, obj, transaction, true, commandTimeout);
-					return value.FirstOrDefault();
+					T val = connection.Query<T>(selectSingleQuery, obj, transaction, true, commandTimeout).FirstOrDefault();
+					return val;
 				};
 
-				string countQuery = "SELECT COUNT(*) FROM " + TableName + "\n";
 				queries.RecordCountFunc = (connection, whereCondition, param, transaction, commandTimeout) =>
 				{
-					string query = countQuery + whereCondition;
-					return connection.Query<int>(query, param, transaction, true, commandTimeout).First();
+					string query = "SELECT COUNT(*) FROM " + TableName + "\n" + whereCondition;
+					int count = connection.Query<int>(query, param, transaction, true, commandTimeout).First();
+					return count;
 				};
 
-				string truncateQuery = countQuery + ";TRUNCATE TABLE " + TableName;
+				string truncateQuery = "SELECT COUNT(*) FROM " + TableName + "\n;TRUNCATE TABLE " + TableName;
 				queries.DeleteWhereFunc = (connection, whereCondition, param, transaction, commandTimeout) =>
 				{
-					if (whereCondition.Length == 0) {
-						IEnumerable<int> list = connection.Query<int>(truncateQuery, param, transaction, true, commandTimeout);
-						int count = list.First();
-						return count;
-					}
-					else {
-						int count = connection.Execute(deleteQuery + whereCondition, param, transaction, commandTimeout);
-						return count;
-					}
+					int count;
+					if (whereCondition.Length == 0)
+						count = connection.Query<int>(truncateQuery, param, transaction, true, commandTimeout).First();
+					else
+						count = connection.Execute(deleteQuery + whereCondition, param, transaction, commandTimeout);
+					return count;
 				};
 
 				queries.DeleteFunc = (connection, obj, transaction, commandTimeout) =>
 				{
-					return 0 < connection.Execute(deleteSingleQuery, obj, transaction, commandTimeout);
+					int count = connection.Execute(deleteSingleQuery, obj, transaction, commandTimeout);
+					return count > 0;
 				};
 
 				queries.DeleteDictFunc = (connection, obj, transaction, commandTimeout) =>
 				{
-					return 0 < connection.Execute(deleteSingleQuery, obj, transaction, commandTimeout);
+					int count = connection.Execute(deleteSingleQuery, obj, transaction, commandTimeout);
+					return count > 0;
 				};
 
 				queries.DeleteListFunc = (connection, whereCondition, param, transaction, buffered, commandTimeout) =>
 				{
 					string query = deleteListQuery + whereCondition;
-					IEnumerable<T> list = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
-					return list;
+					IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
+					return result;
 				};
 
-				string dropStagingTableQuery = "DROP TABLE " + BulkTempStagingTable;
 				string createEqualityStagingTableQuery = CreateTableQuery(BulkTempStagingTable, EqualityColumns);
 				queries.BulkDeleteFunc = (connection, objs, transaction, commandTimeout) =>
 				{
@@ -344,15 +343,13 @@ namespace Dapper.Extension
 					return count;
 				};
 
-				queries.BulkDeleteListFunc = (connection, objs, transaction, buffered, commandTimeout) =>
+				queries.BulkDeleteListFunc = (connection, objs, transaction, commandTimeout) =>
 				{
 					connection.Execute(createEqualityStagingTableQuery, null, transaction, commandTimeout);
 					BulkInsert_(connection, objs, transaction, BulkTempStagingTable, EqualityColumns, EqualityProperties, commandTimeout);
-					IEnumerable<T> list = connection.Query<T>(bulkDeleteListQuery, null, transaction, buffered, commandTimeout);
-					if (buffered) {
-						connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
-					}
-					return list;
+					IEnumerable<T> result = connection.Query<T>(bulkDeleteListQuery, null, transaction, true, commandTimeout);
+					connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
+					return result;
 				};
 
 				if (KeyProperties.Length == 0) {
@@ -360,7 +357,7 @@ namespace Dapper.Extension
 					queries.GetKeysFunc = NoKeyProperty;
 					queries.UpdateFunc = NoKeyProperty;
 					queries.BulkUpdateFunc = NoKeyProperty;
-					queries.BulkUpdateListFunc = NoKeyProperty;
+					queries.BulkUpdateListFunc = NoKeyPropertyList;
 
 					if (valuesInserted.Length == 1) {
 						// No updates
@@ -372,81 +369,85 @@ namespace Dapper.Extension
 							return obj;
 						};
 
-						string upsertQuery = "IF NOT EXISTS (\nSELECT TOP(1) * FROM " + TableName + "\n" + whereEquals + ")\n" + insertTableParams + valuesInserted;
+						string upsertQuery = "IF NOT EXISTS (\nSELECT * FROM " + TableName + "\n" + whereEquals + ")\n" + insertTableParams + valuesInserted[0].ToString();
 						queries.UpsertFunc = (connection, obj, transaction, commandTimeout) =>
 						{
 							connection.Execute(upsertQuery, obj, transaction, commandTimeout);
 							return obj;
 						};
 
-						string bulkInsertListQuery = insertTableParams + "SELECT * FROM " + BulkTempStagingTable;
-
-						queries.BulkInsertFunc = (connection, objs, transaction, buffered, commandTimeout) =>
+						queries.BulkInsertFunc = (connection, objs, transaction, commandTimeout) =>
 						{
 							BulkInsert_(connection, objs, transaction, TableName, InsertColumns, InsertProperties, commandTimeout);
 							return objs;
 						};
 
-						queries.BulkUpsertListFunc = (connection, objs, transaction, buffered, commandTimeout) =>
+						queries.BulkUpsertListFunc = (connection, objs, transaction, commandTimeout) =>
 						{
 							connection.Execute(createStagingTableQuery, null, transaction, commandTimeout);
 							BulkInsert_(connection, objs, transaction, BulkTempStagingTable, Columns, Properties, commandTimeout);
-							IEnumerable<T> list = connection.Query<T>(bulkInsertNotExistsOutputQuery, null, transaction, buffered, commandTimeout);
-							if (buffered) {
-								connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
-							}
-							return list;
+							IEnumerable<T> result = connection.Query<T>(bulkInsertNotExistsOutputQuery, null, transaction, true, commandTimeout);
+							connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
+							return result;
 						};
 
 						queries.BulkUpsertFunc = (connection, objs, transaction, commandTimeout) =>
 						{
 							connection.Execute(createStagingTableQuery, null, transaction, commandTimeout);
 							BulkInsert_(connection, objs, transaction, BulkTempStagingTable, Columns, Properties, commandTimeout);
-							int countInsert = connection.Execute(bulkInsertNotExistsQuery, null, transaction, commandTimeout);
+							int count = connection.Execute(bulkInsertNotExistsQuery, null, transaction, commandTimeout);
 							connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
-							return countInsert;
+							return count;
 						};
 					}
 					else {
 						// No updates
-						// not constant insert string
+						// not constant insert strings
 						queries.InsertFunc = (connection, obj, transaction, commandTimeout) =>
 						{
 							string query = insertTableParams + string.Concat(valuesInserted);
-							connection.Execute(query, obj, transaction, commandTimeout);
-							return obj;
+							T val = connection.Query<T>(query, obj, transaction, true, commandTimeout).First();
+							return val;
 						};
 
-						string upsertQuery = "IF NOT EXISTS (\nSELECT TOP(1) * FROM " + TableName + "\n" + whereEquals + ")\n" + insertTableParams;
+						string upsertQuery = "IF NOT EXISTS (\nSELECT * FROM " + TableName + "\n" + whereEquals + ")\n" + insertTableParams;
 						queries.UpsertFunc = (connection, obj, transaction, commandTimeout) =>
 						{
 							string query = upsertQuery + string.Concat(valuesInserted);
-							connection.Execute(query, obj, transaction, commandTimeout);
-							return obj;
+							T val = connection.Query<T>(query, obj, transaction, true, commandTimeout).FirstOrDefault();
+							return val;
 						};
 
-						queries.BulkInsertFunc = (connection, objs, transaction, buffered, commandTimeout) =>
+						queries.BulkInsertFunc = (connection, objs, transaction, commandTimeout) =>
 						{
+							List<T> result = new List<T>();
 							foreach (T obj in objs) {
-								queries.InsertFunc(connection, obj, transaction, commandTimeout);
+								T val = queries.InsertFunc(connection, obj, transaction, commandTimeout);
+								result.Add(val);
 							}
-							return objs;
+							return result;
 						};
 
-						queries.BulkUpsertListFunc = (connection, objs, transaction, buffered, commandTimeout) =>
+						queries.BulkUpsertListFunc = (connection, objs, transaction, commandTimeout) =>
 						{
+							List<T> result = new List<T>();
 							foreach (T obj in objs) {
-								queries.UpsertFunc(connection, obj, transaction, commandTimeout);
+								T val = queries.UpsertFunc(connection, obj, transaction, commandTimeout);
+								if(val != null)
+									result.Add(val);
 							}
-							return objs;
+							return result;
 						};
 
 						queries.BulkUpsertFunc = (connection, objs, transaction, commandTimeout) =>
 						{
+							int count = 0;
 							foreach (T obj in objs) {
-								queries.UpsertFunc(connection, obj, transaction, commandTimeout);
+								T val = queries.UpsertFunc(connection, obj, transaction, commandTimeout);
+								if(val != null)
+									count++;
 							}
-							return objs.Count();
+							return count;
 						};
 					}
 				}
@@ -456,7 +457,8 @@ namespace Dapper.Extension
 					queries.GetKeysFunc = (connection, whereCondition, param, transaction, buffered, commandTimeout) =>
 					{
 						string query = selectListKeysQuery + whereCondition;
-						return connection.Query<T>(query, param, transaction, buffered, commandTimeout);
+						IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
+						return result;
 					};
 
 					if (valuesInserted.Length == 1) {
@@ -464,22 +466,19 @@ namespace Dapper.Extension
 						string insertQuery = insertTableParams + outputInsertedKeys + valuesInserted[0].ToString();
 						queries.InsertFunc = (connection, obj, transaction, commandTimeout) =>
 						{
-							IEnumerable<dynamic> key = connection.Query<dynamic>(insertQuery, obj, transaction, true, commandTimeout);
-							dynamic keyVal = key.First();
-							TableData<T>.SetKey(obj, (IDictionary<string, object>) keyVal);
+							dynamic key = connection.Query<dynamic>(insertQuery, obj, transaction, true, commandTimeout).First();
+							TableData<T>.SetKey(obj, (IDictionary<string, object>) key);
 							return obj;
 						};
 
 						string bulkInsertListQuery = insertTableParams + outputInserted + "SELECT * FROM " + BulkTempStagingTable;
 						string createInsertStagingTableQuery = CreateTableQuery(BulkTempStagingTable, InsertColumns);
-						queries.BulkInsertFunc = (connection, objs, transaction, buffered, commandTimeout) =>
+						queries.BulkInsertFunc = (connection, objs, transaction, commandTimeout) =>
 						{
 							connection.Execute(createInsertStagingTableQuery, null, transaction, commandTimeout);
 							BulkInsert_(connection, objs, transaction, BulkTempStagingTable, InsertColumns, InsertProperties, commandTimeout);
-							IEnumerable<T> result = connection.Query<T>(bulkInsertListQuery, null, transaction, buffered, commandTimeout);
-							if (buffered) {
-								connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
-							}
+							IEnumerable<T> result = connection.Query<T>(bulkInsertListQuery, null, transaction, true, commandTimeout);
+							connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
 							return result;
 						};
 					}
@@ -489,18 +488,19 @@ namespace Dapper.Extension
 						queries.InsertFunc = (connection, obj, transaction, commandTimeout) =>
 						{
 							string query = insertQuery + string.Concat(valuesInserted);
-							IEnumerable<dynamic> key = connection.Query<dynamic>(query, obj, transaction, true, commandTimeout);
-							dynamic keyVal = key.First();
-							TableData<T>.SetKey(obj, (IDictionary<string, object>) keyVal);
+							dynamic key = connection.Query<dynamic>(query, obj, transaction, true, commandTimeout).First();
+							TableData<T>.SetKey(obj, (IDictionary<string, object>) key);
 							return obj;
 						};
 
-						queries.BulkInsertFunc = (connection, objs, transaction, buffered, commandTimeout) =>
+						queries.BulkInsertFunc = (connection, objs, transaction, commandTimeout) =>
 						{
+							List<T> result = new List<T>();
 							foreach (T obj in objs) {
-								queries.InsertFunc(connection, obj, transaction, commandTimeout);
+								T val = queries.InsertFunc(connection, obj, transaction, commandTimeout);
+								result.Add(val);
 							}
-							return objs;
+							return result;
 						};
 					}
 
@@ -512,51 +512,51 @@ namespace Dapper.Extension
 						string updateQuery = updateSetParams[0].ToString() + whereUpdateEquals;
 						queries.UpdateFunc = (connection, obj, transaction, commandTimeout) =>
 						{
-							return 0 < connection.Execute(updateQuery, obj, transaction, commandTimeout);
+							int count = connection.Execute(updateQuery, obj, transaction, commandTimeout);
+							return count > 0;
 						};
 
-						string createUpdateStagingTableQuery = CreateTableQuery(BulkTempStagingTable, UpdateColumns);
+						string createUpdateStagingTableQuery = CreateTableQuery(BulkTempStagingTable, BulkUpdateColumns);
 						string bulkUpdateQuery = bulkUpdateQueryStart + bulkUpdateSetParams[0].ToString() + "\n" + bulkUpdateQueryEnd;
 						queries.BulkUpdateFunc = (connection, objs, transaction, commandTimeout) =>
 						{
 							connection.Execute(createUpdateStagingTableQuery, null, transaction, commandTimeout);
-							BulkInsert_(connection, objs, transaction, BulkTempStagingTable, UpdateColumns, UpdateProperties, commandTimeout);
+							BulkInsert_(connection, objs, transaction, BulkTempStagingTable, BulkUpdateColumns, BulkUpdateProperties, commandTimeout);
 							int count = connection.Execute(bulkUpdateQuery, null, transaction, commandTimeout);
 							connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
 							return count;
 						};
 
 						string bulkUpdateListQuery = bulkUpdateQueryStart + bulkUpdateSetParams[0].ToString() + "\n" + outputDeleted + bulkUpdateQueryEnd;
-						queries.BulkUpdateListFunc = (connection, objs, transaction, buffered, commandTimeout) =>
+						queries.BulkUpdateListFunc = (connection, objs, transaction, commandTimeout) =>
 						{
 							connection.Execute(createStagingTableQuery, null, transaction, commandTimeout);
 							BulkInsert_(connection, objs, transaction, BulkTempStagingTable, Columns, Properties, commandTimeout);
-							IEnumerable<T> list = connection.Query<T>(bulkUpdateListQuery, null, transaction, buffered, commandTimeout);
-							if (buffered) {
-								connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
-							}
-							return list;
+							IEnumerable<T> result = connection.Query<T>(bulkUpdateListQuery, null, transaction, true, commandTimeout);
+							connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
+							return result;
 						};
 					}
 					else {
 						queries.UpdateFunc = (connection, obj, transaction, commandTimeout) =>
 						{
 							string query = string.Concat(updateSetParams) + whereUpdateEquals;
-							return 0 < connection.Execute(query, obj, transaction, commandTimeout);
+							int count = connection.Execute(query, obj, transaction, commandTimeout);
+							return count > 0;
 						};
 
 						queries.BulkUpdateFunc = (connection, objs, transaction, commandTimeout) =>
 						{
-							int updatedCount = 0;
+							int count = 0;
 							foreach (T obj in objs) {
 								if (queries.UpdateFunc(connection, obj, transaction, commandTimeout)) {
-									updatedCount++;
+									count++;
 								}
 							}
-							return updatedCount;
+							return count;
 						};
 
-						queries.BulkUpdateListFunc = (connection, objs, transaction, buffered, commandTimeout) =>
+						queries.BulkUpdateListFunc = (connection, objs, transaction, commandTimeout) =>
 						{
 							List<T> result = new List<T>();
 							foreach (T obj in objs) {
@@ -568,7 +568,7 @@ namespace Dapper.Extension
 						};
 					}
 
-					string upsertQueryStart = "IF NOT EXISTS (\nSELECT TOP(1) * FROM " + TableName + "\n" + whereEquals + ")\n" + insertTableParams + outputInsertedKeys;
+					string upsertQueryStart = "IF NOT EXISTS (\nSELECT * FROM " + TableName + "\n" + whereEquals + ")\n" + insertTableParams + outputInsertedKeys;
 					string upsertQueryEnd = outputDeleted + whereUpdateEquals;
 					if (updateSetParams.Length == 1 && valuesInserted.Length == 1) {
 						string upsertQuery = upsertQueryStart + valuesInserted[0].ToString() + "\n\nELSE\n\n" + updateSetParams[0].ToString() + upsertQueryEnd;
@@ -591,16 +591,14 @@ namespace Dapper.Extension
 						};
 
 						string bulkUpdateListQuery = bulkUpdateQueryStart + bulkUpdateSetParams[0].ToString() + "\n" + outputDeleted + bulkUpdateQueryEnd;
-						queries.BulkUpsertListFunc = (connection, objs, transaction, buffered, commandTimeout) =>
+						queries.BulkUpsertListFunc = (connection, objs, transaction, commandTimeout) =>
 						{
 							connection.Execute(createStagingTableQuery, null, transaction, commandTimeout);
 							BulkInsert_(connection, objs, transaction, BulkTempStagingTable, Columns, Properties, commandTimeout);
-							IEnumerable<T> result = connection.Query<T>(bulkUpdateListQuery, null, transaction, buffered, commandTimeout);
-							IEnumerable<T> insertedList = connection.Query<T>(bulkInsertNotExistsOutputQuery, null, transaction, buffered, commandTimeout);
-							if (buffered) {
-								connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
-							}
-							return result.Union(insertedList);
+							IEnumerable<T> result = connection.Query<T>(bulkUpdateListQuery, null, transaction, true, commandTimeout);
+							IEnumerable<T> insertedList = connection.Query<T>(bulkInsertNotExistsOutputQuery, null, transaction, true, commandTimeout);
+							connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
+							return result.Concat(insertedList);
 						};
 					}
 					else {
@@ -612,51 +610,50 @@ namespace Dapper.Extension
 							return obj;
 						};
 
-						queries.BulkUpsertListFunc = (connection, objs, transaction, buffered, commandTimeout) =>
+						queries.BulkUpsertListFunc = (connection, objs, transaction, commandTimeout) =>
 						{
 							List<T> result = new List<T>();
 							foreach (T obj in objs) {
-								T newObj = queries.UpsertFunc(connection, obj, transaction, commandTimeout);
-								result.Add(newObj);
+								T val = queries.UpsertFunc(connection, obj, transaction, commandTimeout);
+								result.Add(val);
 							}
 							return result;
 						};
 
 						queries.BulkUpsertFunc = (connection, objs, transaction, commandTimeout) =>
 						{
-							int insertedCount = 0;
+							int count = 0;
 							foreach (T obj in objs) {
-								T newObj = queries.UpsertFunc(connection, obj, transaction, commandTimeout);
-								insertedCount++;
+								T val = queries.UpsertFunc(connection, obj, transaction, commandTimeout);
+								count++;
 							}
-							return insertedCount;
+							return count;
 						};
 					}
 				}
-
 				return queries;
 			}
 
 			public TableQueries<T, KeyType>.Data Create<KeyType>()
 			{
-				if (KeyProperties.Length != 1) {
-					string errorMsg = typeof(T).Name + " requires a single key";
-					throw new InvalidOperationException(errorMsg);
-				}
+				if (KeyProperties.Length != 1)
+					throw new InvalidOperationException(typeof(T).Name + " requires a single key");
 				TableQueries<T, KeyType>.Data queries = new TableQueries<T, KeyType>.Data();
 
 				string deleteListKeysQuery = deleteQuery + outputDeletedKeys;
 				queries.DeleteKeysWhereFunc = (connection, whereCondition, param, transaction, buffered, commandTimeout) =>
 				{
 					string query = deleteListKeysQuery + whereCondition;
-					return connection.Query<KeyType>(query, param, transaction, buffered, commandTimeout);
+					IEnumerable<KeyType> result = connection.Query<KeyType>(query, param, transaction, buffered, commandTimeout);
+					return result;
 				};
 
 				string selectListKeysQuery = "SELECT " + GetAsParams(KeyProperties.Length == 0 ? SelectProperties : KeyProperties) + " FROM " + TableName + "\n";
 				queries.GetKeysWhereFunc = (connection, whereCondition, param, transaction, buffered, commandTimeout) =>
 				{
 					string query = selectListKeysQuery + whereCondition;
-					return connection.Query<KeyType>(query, param, transaction, buffered, commandTimeout);
+					IEnumerable<KeyType> result = connection.Query<KeyType>(query, param, transaction, buffered, commandTimeout);
+					return result;
 				};
 
 				string keyCol = KeyColumns[0];
@@ -665,7 +662,8 @@ namespace Dapper.Extension
 					//IDictionary<string, object> keyObj = new ExpandoObject();
 					DynamicParameters keyObj = new DynamicParameters();
 					keyObj.Add(keyCol, key);
-					return 0 < connection.Execute(deleteSingleQuery, keyObj, transaction, commandTimeout);
+					int count = connection.Execute(deleteSingleQuery, keyObj, transaction, commandTimeout);
+					return count > 0;
 				};
 
 				queries.GetKeyFunc = (connection, key, transaction, commandTimeout) =>
@@ -673,13 +671,15 @@ namespace Dapper.Extension
 					//IDictionary<string, object> keyObj = new ExpandoObject();
 					DynamicParameters keyObj = new DynamicParameters();
 					keyObj.Add(keyCol, key);
-					return connection.Query<T>(selectSingleQuery, keyObj, transaction, true, commandTimeout).FirstOrDefault();
+					T obj = connection.Query<T>(selectSingleQuery, keyObj, transaction, true, commandTimeout).FirstOrDefault();
+					return obj;
 				};
 
 				queries.DeleteKeysWhereFunc = (connection, whereCondition, param, transaction, buffered, commandTimeout) =>
 				{
 					string query = deleteListKeysQuery + whereCondition;
-					return connection.Query<KeyType>(query, param, transaction, buffered, commandTimeout);
+					IEnumerable<KeyType> result = connection.Query<KeyType>(query, param, transaction, buffered, commandTimeout);
+					return result;
 				};
 
 				string whereKeyInList = "WHERE [" + keyCol + "] in @Keys";
@@ -724,6 +724,7 @@ namespace Dapper.Extension
 			public PropertyInfo[] MatchUpdateProperties { get; protected set; }
 			public PropertyInfo[] UpdateEqualityProperties { get; protected set; }
 			public PropertyInfo[] DeleteEqualityProperties { get; protected set; }
+			public PropertyInfo[] BulkUpdateProperties { get; protected set; }
 
 			public static string[] Columns { get; protected set; }
 			public static string[] KeyColumns { get; protected set; }
@@ -734,6 +735,7 @@ namespace Dapper.Extension
 			public string[] EqualityColumns { get; private set; }
 			public string[] UpdateEqualityColumns { get; private set; }
 			public string[] DeleteEqualityColumns { get; private set; }
+			public string[] BulkUpdateColumns { get; protected set; }
 
 			public IDefaultAttribute[] InsertDefaults { get; private set; }
 			public IDefaultAttribute[] UpdateDefaults { get; private set; }
@@ -776,14 +778,17 @@ namespace Dapper.Extension
 
 			private string CreateTableQuery(string tempTable, string[] columns, bool dropIfExists = true)
 			{
-				string sql = $@"
+				string sql = $@"SELECT TOP(0) {string.Join(",", columns)} INTO {tempTable} FROM {TableName}";
+				if (dropIfExists) {
+					sql = $@"
 IF EXISTS (
 	SELECT * from INFORMATION_SCHEMA.TABLES 
 WHERE TABLE_NAME = '{tempTable}' 
 	AND TABLE_SCHEMA = 'dbo'
 ) 
 DROP TABLE dbo.{tempTable};
-SELECT TOP(0) {string.Join(",", columns)} INTO {tempTable} FROM {TableName}";
+" + sql;
+				}
 				return sql;
 			}
 

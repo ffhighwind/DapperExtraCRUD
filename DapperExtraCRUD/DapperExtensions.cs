@@ -54,10 +54,10 @@ namespace Dapper
 			TableData<T>.Queries.InsertFunc(connection, obj, transaction, commandTimeout);
 		}
 
-		public static IEnumerable<T> BulkInsert<T>(this SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction = null, bool buffered = true, int? commandTimeout = null)
+		public static IEnumerable<T> BulkInsert<T>(this SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction = null, int? commandTimeout = null)
 			where T : class
 		{
-			return TableData<T>.Queries.BulkInsertFunc(connection, objs, transaction, buffered, commandTimeout);
+			return TableData<T>.Queries.BulkInsertFunc(connection, objs, transaction, commandTimeout);
 		}
 
 		public static bool Update<T>(this IDbConnection connection, T obj, IDbTransaction transaction = null, int? commandTimeout = null)

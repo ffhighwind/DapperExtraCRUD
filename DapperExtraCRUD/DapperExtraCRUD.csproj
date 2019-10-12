@@ -58,7 +58,7 @@
     <Compile Include="Extension\Interfaces\IDataAccessObjectAsync.cs" />
     <Compile Include="Extension\Interfaces\IDataAccessObjectSync.cs" />
     <Compile Include="Extension\Interfaces\IDefaultAttribute.cs" />
-    <Compile Include="Extension\SqlValidation.cs" />
+    <Compile Include="Extension\SqlUtil.cs" />
     <Compile Include="Extension\TableCache.cs" />
     <Compile Include="Extension\TableData.cs" />
     <Compile Include="Extension\TableEqualityComparer.cs" />

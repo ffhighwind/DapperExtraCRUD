@@ -11,7 +11,6 @@ namespace Dapper.Extension
 {
 	public partial class TableQueries<T, KeyType> where T : class
 	{
-
 		public class Data
 		{
 			public TableQueries<T, KeyType>.Delegates.SqlKeysKeys BulkDeleteListFunc { get; set; }
@@ -54,7 +53,6 @@ namespace Dapper.Extension
 			public TableQueries<T>.Delegates.DbLimitList GetTopFunc { get; set; }
 			public TableQueries<T>.Delegates.DbObjObj InsertFunc { get; set; }
 			public TableQueries<T>.Delegates.DbWhereInt RecordCountFunc { get; set; }
-			//public TableQueries<T>.Delegates.RemoveDuplicatesFunc RemoveDuplicatesFunc { get; set; }
 			public TableQueries<T>.Delegates.DbObjBool UpdateFunc { get; set; }
 			public TableQueries<T>.Delegates.DbObjObj UpsertFunc { get; set; }
 		}

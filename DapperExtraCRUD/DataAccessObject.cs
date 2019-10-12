@@ -21,9 +21,9 @@ namespace Dapper
 			Columns = Queries.Columns;
 		}
 
-		public readonly PropertyInfo[] Properties;
-		public readonly PropertyInfo[] KeyProperties;
-		public readonly string[] Columns;
+		public PropertyInfo[] Properties { get; private set; }
+		public PropertyInfo[] KeyProperties { get; private set; }
+		public string[] Columns { get; private set; }
 		protected readonly string ConnectionString;
 
 		public SqlConnection Connection()
@@ -67,7 +67,7 @@ namespace Dapper
 			SqlConnection conn = new SqlConnection(ConnectionString);
 			IEnumerable<T> list = Queries.DeleteListFunc(conn, whereCondition, param, null, buffered, commandTimeout);
 			if (buffered) {
-				conn.Dispose(); // conn.Close();
+				conn.Dispose(); 
 				return list;
 			}
 			return new ConnectedEnumerable<T>(list, conn);
@@ -92,7 +92,7 @@ namespace Dapper
 			SqlConnection conn = new SqlConnection(ConnectionString);
 			IEnumerable<T> list = Queries.GetKeysFunc(conn, whereCondition, param, null, buffered, commandTimeout);
 			if (buffered) {
-				conn.Dispose(); // conn.Close();
+				conn.Dispose(); 
 				return list;
 			}
 			return new ConnectedEnumerable<T>(list, conn);
@@ -103,7 +103,7 @@ namespace Dapper
 			SqlConnection conn = new SqlConnection(ConnectionString);
 			IEnumerable<T> list = Queries.GetListFunc(conn, whereCondition, param, null, buffered, commandTimeout);
 			if (buffered) {
-				conn.Dispose(); // conn.Close();
+				conn.Dispose(); 
 				return list;
 			}
 			return new ConnectedEnumerable<T>(list, conn);
@@ -114,7 +114,7 @@ namespace Dapper
 			SqlConnection conn = new SqlConnection(ConnectionString);
 			IEnumerable<T> list = Queries.GetTopFunc(conn, limit, whereCondition, param, null, buffered, commandTimeout);
 			if (buffered) {
-				conn.Dispose(); // conn.Close();
+				conn.Dispose(); 
 				return list;
 			}
 			return new ConnectedEnumerable<T>(list, conn);
@@ -125,7 +125,7 @@ namespace Dapper
 			SqlConnection conn = new SqlConnection(ConnectionString);
 			IEnumerable<T> list = Queries.GetDistinctFunc(conn, whereCondition, param, null, buffered, commandTimeout);
 			if (buffered) {
-				conn.Dispose(); // conn.Close();
+				conn.Dispose(); 
 				return list;
 			}
 			return new ConnectedEnumerable<T>(list, conn);
@@ -138,15 +138,16 @@ namespace Dapper
 			}
 		}
 
-		public override IEnumerable<T> BulkInsert(IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<T> BulkInsert(IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			SqlConnection conn = new SqlConnection(ConnectionString);
-			IEnumerable<T> list = Queries.BulkInsertFunc(conn, objs, null, buffered, commandTimeout);
-			if (buffered) {
-				conn.Dispose(); // conn.Close();
-				return list;
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				conn.Open();
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					IEnumerable<T> list = Queries.BulkInsertFunc(conn, objs, null, commandTimeout);
+					trans.Commit();
+					return list;
+				}
 			}
-			return new ConnectedEnumerable<T>(list, conn);
 		}
 
 		public override int RecordCount(string whereCondition = "", object param = null, int? commandTimeout = null)
@@ -177,47 +178,55 @@ namespace Dapper
 			}
 		}
 
-		public override int BulkUpsert(IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override int BulkUpsert(IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			SqlConnection conn = new SqlConnection(ConnectionString);
-			return Queries.BulkUpsertFunc(conn, objs, null, commandTimeout);
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				conn.Open();
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					int count = Queries.BulkUpsertFunc(conn, objs, null, commandTimeout);
+					trans.Commit();
+					return count;
+				}
+			}
 		}
 
-		public override IEnumerable<T> BulkDeleteList(IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<T> BulkDeleteList(IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			SqlConnection conn = new SqlConnection(ConnectionString);
-			IEnumerable<T> list = Queries.BulkDeleteListFunc(conn, objs, null, buffered, commandTimeout);
-			if (buffered) {
-				conn.Dispose(); // conn.Close();
-				return list;
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				conn.Open();
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					IEnumerable<T> list = Queries.BulkDeleteListFunc(conn, objs, null, commandTimeout);
+					trans.Commit();
+					return list;
+				}
 			}
-			return new ConnectedEnumerable<T>(list, conn);
 		}
 
-		public override IEnumerable<T> BulkUpdateList(IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<T> BulkUpdateList(IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			SqlConnection conn = new SqlConnection(ConnectionString);
-			IEnumerable<T> list = Queries.BulkUpdateListFunc(conn, objs, null, buffered, commandTimeout);
-			if (buffered) {
-				conn.Dispose(); // conn.Close();
-				return list;
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				conn.Open();
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					IEnumerable<T> list = Queries.BulkUpdateListFunc(conn, objs, null, commandTimeout);
+					trans.Commit();
+					return list;
+				}
 			}
-			return new ConnectedEnumerable<T>(list, conn);
 		}
 
-		public override IEnumerable<T> BulkUpsertList(IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<T> BulkUpsertList(IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			SqlConnection conn = new SqlConnection(ConnectionString);
-			IEnumerable<T> list = Queries.BulkUpsertListFunc(conn, objs, null, buffered, commandTimeout);
-			if (buffered) {
-				conn.Dispose(); // conn.Close();
-				return list;
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				conn.Open();
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					IEnumerable<T> list = Queries.BulkUpsertListFunc(conn, objs, null, commandTimeout);
+					trans.Commit();
+					return list;
+				}
 			}
-			return new ConnectedEnumerable<T>(list, conn);
 		}
 		#endregion IDataAccessObjectSync<T>
-
-
+		
 		#region ITransactionQueriesSync<T>
 		public override bool Delete(IDbTransaction transaction, IDictionary<string, object> key, int? commandTimeout = null)
 		{
@@ -279,9 +288,9 @@ namespace Dapper
 			return Queries.InsertFunc(transaction.Connection, obj, transaction, commandTimeout);
 		}
 
-		public override IEnumerable<T> BulkInsert(SqlTransaction transaction, IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<T> BulkInsert(SqlTransaction transaction, IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			return Queries.BulkInsertFunc(transaction.Connection, objs, transaction, buffered, commandTimeout);
+			return Queries.BulkInsertFunc(transaction.Connection, objs, transaction, commandTimeout);
 		}
 
 		public override int RecordCount(IDbTransaction transaction, string whereCondition = "", object param = null, int? commandTimeout = null)
@@ -304,24 +313,24 @@ namespace Dapper
 			return Queries.UpsertFunc(transaction.Connection, obj, transaction, commandTimeout);
 		}
 
-		public override int BulkUpsert(SqlTransaction transaction, IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override int BulkUpsert(SqlTransaction transaction, IEnumerable<T> objs, int? commandTimeout = null)
 		{
 			return Queries.BulkUpsertFunc(transaction.Connection, objs, transaction, commandTimeout);
 		}
 
-		public override IEnumerable<T> BulkDeleteList(SqlTransaction transaction, IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<T> BulkDeleteList(SqlTransaction transaction, IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			return Queries.BulkDeleteListFunc(transaction.Connection, objs, transaction, buffered, commandTimeout);
+			return Queries.BulkDeleteListFunc(transaction.Connection, objs, transaction, commandTimeout);
 		}
 
-		public override IEnumerable<T> BulkUpdateList(SqlTransaction transaction, IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<T> BulkUpdateList(SqlTransaction transaction, IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			return Queries.BulkUpdateListFunc(transaction.Connection, objs, transaction, buffered, commandTimeout);
+			return Queries.BulkUpdateListFunc(transaction.Connection, objs, transaction, commandTimeout);
 		}
 
-		public override IEnumerable<T> BulkUpsertList(SqlTransaction transaction, IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<T> BulkUpsertList(SqlTransaction transaction, IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			return Queries.BulkUpsertListFunc(transaction.Connection, objs, transaction, buffered, commandTimeout);
+			return Queries.BulkUpsertListFunc(transaction.Connection, objs, transaction, commandTimeout);
 		}
 		#endregion ITransactionQueriesSync<T>
 	}
@@ -339,9 +348,9 @@ namespace Dapper
 			Columns = Queries.Columns;
 		}
 
-		public readonly PropertyInfo[] Properties;
-		public readonly PropertyInfo[] KeyProperties;
-		public readonly string[] Columns;
+		public PropertyInfo[] Properties { get; private set; }
+		public PropertyInfo[] KeyProperties { get; private set; }
+		public string[] Columns { get; private set; }
 		protected readonly string ConnectionString;
 
 		public SqlConnection Connection()
@@ -354,7 +363,9 @@ namespace Dapper
 		#region IDataAccessObjectSync<T, KeyType, Ret>
 		public override bool Delete(KeyType key, int? commandTimeout = null)
 		{
-			return Delete(key, commandTimeout);
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				return QueriesKey.DeleteFunc(conn, key, null, commandTimeout);
+			}
 		}
 
 		public override int BulkDelete(IEnumerable<KeyType> keys, int? commandTimeout = null)
@@ -397,7 +408,7 @@ namespace Dapper
 			SqlConnection conn = new SqlConnection(ConnectionString);
 			IEnumerable<KeyType> keys = QueriesKey.DeleteListFunc(conn, whereCondition, param, null, buffered, commandTimeout);
 			if (buffered) {
-				conn.Dispose(); // conn.Close();
+				conn.Dispose(); 
 				return keys;
 			}
 			return new ConnectedEnumerable<KeyType>(keys, conn);
@@ -429,7 +440,7 @@ namespace Dapper
 			SqlConnection conn = new SqlConnection(ConnectionString);
 			IEnumerable<KeyType> keys = QueriesKey.GetKeysFunc(conn, whereCondition, param, null, buffered, commandTimeout);
 			if(buffered) {
-				conn.Dispose(); // conn.Close();
+				conn.Dispose(); 
 				return keys;
 			}
 			return new ConnectedEnumerable<KeyType>(keys, conn);
@@ -440,7 +451,7 @@ namespace Dapper
 			SqlConnection conn = new SqlConnection(ConnectionString);
 			IEnumerable<T> objs = Queries.GetListFunc(conn, whereCondition, param, null, buffered, commandTimeout);
 			if (buffered) {
-				conn.Dispose(); // conn.Close();
+				conn.Dispose(); 
 				return objs;
 			}
 			return new ConnectedEnumerable<T>(objs, conn);
@@ -451,7 +462,7 @@ namespace Dapper
 			SqlConnection conn = new SqlConnection(ConnectionString);
 			IEnumerable<T> objs = Queries.GetTopFunc(conn, limit, whereCondition, param, null, buffered, commandTimeout);
 			if (buffered) {
-				conn.Dispose(); // conn.Close();
+				conn.Dispose(); 
 				return objs;
 			}
 			return new ConnectedEnumerable<T>(objs, conn);
@@ -462,7 +473,7 @@ namespace Dapper
 			SqlConnection conn = new SqlConnection(ConnectionString);
 			IEnumerable<T> objs = Queries.GetDistinctFunc(conn, whereCondition, param, null, buffered, commandTimeout);
 			if (buffered) {
-				conn.Dispose(); // conn.Close();
+				conn.Dispose(); 
 				return objs;
 			}
 			return new ConnectedEnumerable<T>(objs, conn);
@@ -475,15 +486,16 @@ namespace Dapper
 			}
 		}
 
-		public override IEnumerable<T> BulkInsert(IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<T> BulkInsert(IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			SqlConnection conn = new SqlConnection(ConnectionString);
-			IEnumerable<T> list = Queries.BulkInsertFunc(conn, objs, null, buffered, commandTimeout);
-			if (buffered) {
-				conn.Dispose(); // conn.Close();
-				return list;
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				conn.Open();
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					IEnumerable<T> list = Queries.BulkInsertFunc(conn, objs, null, commandTimeout);
+					trans.Commit();
+					return list;
+				}
 			}
-			return new ConnectedEnumerable<T>(list, conn);
 		}
 
 		public override int RecordCount(string whereCondition = "", object param = null, int? commandTimeout = null)
@@ -514,46 +526,54 @@ namespace Dapper
 			}
 		}
 
-		public override int BulkUpsert(IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override int BulkUpsert(IEnumerable<T> objs, int? commandTimeout = null)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				return Queries.BulkUpsertFunc(conn, objs, null, commandTimeout);
+				conn.Open();
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					int count = Queries.BulkUpsertFunc(conn, objs, null, commandTimeout);
+					trans.Commit();
+					return count;
+				}
 			}
 		}
 
-		public override IEnumerable<KeyType> BulkDeleteList(IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<KeyType> BulkDeleteList(IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			SqlConnection conn = new SqlConnection(ConnectionString);
 			PropertyInfo prop = KeyProperties[0];
-			IEnumerable<KeyType> keys = QueriesKey.BulkDeleteListFunc(conn, objs.Select(obj => (KeyType)prop.GetValue(obj)), null, buffered, commandTimeout);
-			if (buffered) {
-				conn.Dispose(); // conn.Close();
-				return keys;
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				conn.Open();
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					IEnumerable<KeyType> keys = QueriesKey.BulkDeleteListFunc(conn, objs.Select(obj => (KeyType) prop.GetValue(obj)), null, true, commandTimeout);
+					trans.Commit();
+					return keys;
+				}
 			}
-			return new ConnectedEnumerable<KeyType>(keys, conn);
 		}
 
 
-		public override IEnumerable<T> BulkUpdateList(IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<T> BulkUpdateList(IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			SqlConnection conn = new SqlConnection(ConnectionString);
-			IEnumerable<T> list = Queries.BulkUpdateListFunc(conn, objs, null, buffered, commandTimeout);
-			if (buffered) {
-				conn.Dispose(); // conn.Close();
-				return list;
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				conn.Open();
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					IEnumerable<T> list = Queries.BulkUpdateListFunc(conn, objs, null, commandTimeout);
+					trans.Commit();
+					return list;
+				}
 			}
-			return new ConnectedEnumerable<T>(list, conn);
 		}
 
-		public override IEnumerable<T> BulkUpsertList(IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<T> BulkUpsertList(IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			SqlConnection conn = new SqlConnection(ConnectionString);
-			IEnumerable<T> list = Queries.BulkUpsertListFunc(conn, objs, null, buffered, commandTimeout);
-			if (buffered) {
-				conn.Dispose(); // conn.Close();
-				return list;
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				conn.Open();
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					IEnumerable<T> list = Queries.BulkUpsertListFunc(conn, objs, null, commandTimeout);
+					trans.Commit();
+					return list;
+				}
 			}
-			return new ConnectedEnumerable<T>(list, conn);
 		}
 		#endregion IDataAccessObjectSync<T, KeyType, Ret>
 
@@ -609,9 +629,9 @@ namespace Dapper
 			return Queries.InsertFunc(transaction.Connection, obj, transaction, commandTimeout);
 		}
 
-		public override IEnumerable<T> BulkInsert(SqlTransaction transaction, IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<T> BulkInsert(SqlTransaction transaction, IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			return Queries.BulkInsertFunc(transaction.Connection, objs, transaction, buffered, commandTimeout);
+			return Queries.BulkInsertFunc(transaction.Connection, objs, transaction, commandTimeout);
 		}
 
 		public override bool Update(IDbTransaction transaction, T obj, int? commandTimeout = null)
@@ -629,7 +649,7 @@ namespace Dapper
 			return Queries.UpsertFunc(transaction.Connection, obj, transaction, commandTimeout);
 		}
 
-		public override int BulkUpsert(SqlTransaction transaction, IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override int BulkUpsert(SqlTransaction transaction, IEnumerable<T> objs, int? commandTimeout = null)
 		{
 			return Queries.BulkUpsertFunc(transaction.Connection, objs, transaction, commandTimeout);
 		}
@@ -664,20 +684,20 @@ namespace Dapper
 			return Queries.RecordCountFunc(transaction.Connection, whereCondition, param, transaction, commandTimeout);
 		}
 
-		public override IEnumerable<KeyType> BulkDeleteList(SqlTransaction transaction, IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<KeyType> BulkDeleteList(SqlTransaction transaction, IEnumerable<T> objs, int? commandTimeout = null)
 		{
 			PropertyInfo prop = KeyProperties[0];
-			return QueriesKey.BulkDeleteListFunc(transaction.Connection, objs.Select(obj => (KeyType)prop.GetValue(obj)), transaction, buffered, commandTimeout);
+			return QueriesKey.BulkDeleteListFunc(transaction.Connection, objs.Select(obj => (KeyType)prop.GetValue(obj)), transaction, true, commandTimeout);
 		}
 
-		public override IEnumerable<T> BulkUpdateList(SqlTransaction transaction, IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<T> BulkUpdateList(SqlTransaction transaction, IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			return Queries.BulkUpdateListFunc(transaction.Connection, objs, transaction, buffered, commandTimeout);
+			return Queries.BulkUpdateListFunc(transaction.Connection, objs, transaction, commandTimeout);
 		}
 
-		public override IEnumerable<T> BulkUpsertList(SqlTransaction transaction, IEnumerable<T> objs, bool buffered = true, int? commandTimeout = null)
+		public override IEnumerable<T> BulkUpsertList(SqlTransaction transaction, IEnumerable<T> objs, int? commandTimeout = null)
 		{
-			return Queries.BulkUpsertListFunc(transaction.Connection, objs, transaction, buffered, commandTimeout);
+			return Queries.BulkUpsertListFunc(transaction.Connection, objs, transaction, commandTimeout);
 		}
 		#endregion ITransactionQueriesSync<T, KeyType, Ret>
 	}

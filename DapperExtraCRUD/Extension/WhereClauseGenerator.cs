@@ -10,6 +10,10 @@ using Dapper;
 
 namespace Dapper.Extension
 {
+	/// <summary>
+	/// Converts a <see cref="Predicate{Ty}"/> to a WHERE expression in SQL.
+	/// </summary>
+	/// <typeparam name="Ty">The input type</typeparam>
 	public class WhereClauseVisitor<Ty> : ExpressionVisitor
 	{
 		protected ParameterExpression Var;
@@ -323,7 +327,7 @@ namespace Dapper.Extension
 				case TypeCode.DateTime:
 				case TypeCode.String:
 					return true;
-				case TypeCode.DBNull:
+				//case TypeCode.DBNull:
 				default:
 					return false;
 			}
@@ -333,29 +337,25 @@ namespace Dapper.Extension
 		{
 			TypeCode typeCode = Type.GetTypeCode(type);
 			switch (typeCode) {
-				case TypeCode.Object:
-					if (type == typeof(TimeSpan) || type == typeof(DateTimeOffset) || type == typeof(Guid)) {
-						return true;
-					}
-					return false;
-				case TypeCode.Boolean:
-				case TypeCode.SByte:
-				case TypeCode.Byte:
-				case TypeCode.Int16:
-				case TypeCode.UInt16:
-				case TypeCode.Int32:
-				case TypeCode.UInt32:
-				case TypeCode.Int64:
-				case TypeCode.UInt64:
-				case TypeCode.Single:
-				case TypeCode.Double:
-				case TypeCode.Decimal:
-					return false;
 				case TypeCode.Char:
 				case TypeCode.DateTime:
 				case TypeCode.String:
 					return true;
-				case TypeCode.DBNull:
+				case TypeCode.Object:
+					return type == typeof(TimeSpan) || type == typeof(DateTimeOffset) || type == typeof(Guid);
+				//case TypeCode.Boolean:
+				//case TypeCode.SByte:
+				//case TypeCode.Byte:
+				//case TypeCode.Int16:
+				//case TypeCode.UInt16:
+				//case TypeCode.Int32:
+				//case TypeCode.UInt32:
+				//case TypeCode.Int64:
+				//case TypeCode.UInt64:
+				//case TypeCode.Single:
+				//case TypeCode.Double:
+				//case TypeCode.Decimal:
+				//case TypeCode.DBNull:
 				default:
 					return false;
 			}
@@ -367,21 +367,16 @@ namespace Dapper.Extension
 			switch (typeCode) {
 				case TypeCode.Object:
 					string tmp;
-					if (type == typeof(TimeSpan)) {
+					if (type == typeof(TimeSpan))
 						tmp = ((TimeSpan) value).ToString();
-					}
-					else if (type == typeof(DateTimeOffset)) {
+					else if (type == typeof(DateTimeOffset))
 						tmp = ((DateTimeOffset) value).ToString();
-					}
-					else if (value is Guid obj) {
+					else if (value is Guid obj)
 						tmp = obj.ToString();
-					}
-					else if (value is Ty ty) {
+					else if (value is Ty ty)
 						throw new InvalidOperationException("Invalid type: " + typeof(Ty).ToString());
-					}
-					else {
+					else
 						throw new InvalidOperationException("Invalid type: " + type.ToString());
-					}
 					return "'" + tmp + "'";
 				case TypeCode.Boolean:
 					return ((bool) value) ? "TRUE" : "FALSE";
@@ -410,7 +405,6 @@ namespace Dapper.Extension
 				case TypeCode.String:
 					return value == null ? "NULL" : ("'" + (string) value + "'");
 				//case TypeCode.DBNull:
-				//	return "NULL";
 				//case TypeCode.Empty:
 				//	return "NULL";
 				default:
@@ -426,18 +420,14 @@ namespace Dapper.Extension
 			switch (typeCode) {
 				case TypeCode.Object:
 					string tmp;
-					if (type == typeof(TimeSpan)) {
+					if (type == typeof(TimeSpan))
 						tmp = default(TimeSpan).ToString();
-					}
-					else if (type == typeof(DateTimeOffset)) {
+					else if (type == typeof(DateTimeOffset))
 						tmp = default(DateTimeOffset).ToString();
-					}
-					else if (type == typeof(Guid)) {
+					else if (type == typeof(Guid))
 						tmp = default(Guid).ToString();
-					}
-					else {
+					else
 						throw new InvalidOperationException("Invalid type: " + type.ToString());
-					}
 					return "'" + tmp + "'";
 				case TypeCode.Boolean:
 					return "FALSE";

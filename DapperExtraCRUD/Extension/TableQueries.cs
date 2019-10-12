@@ -30,7 +30,6 @@ namespace Dapper.Extension
 		public TableQueries<T, KeyType>.Delegates.DbWhereKeys GetKeysFunc { get; private set; }
 	}
 
-
 	public partial class TableQueries<T> where T : class
 	{
 		public TableQueries(TableQueries<T>.Data impl)

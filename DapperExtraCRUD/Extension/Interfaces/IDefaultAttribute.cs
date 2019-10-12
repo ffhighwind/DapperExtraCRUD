@@ -12,7 +12,7 @@ namespace Dapper.Extension.Interfaces
 	[AttributeUsage(AttributeTargets.Property)]
 	public class IDefaultAttribute : Attribute
 	{
-		public IDefaultAttribute(Func<string> function)
+		protected IDefaultAttribute(Func<string> function)
 		{
 			if (function != null) {
 				Value = () =>
@@ -23,7 +23,7 @@ namespace Dapper.Extension.Interfaces
 			}
 		}
 
-		public IDefaultAttribute(string value = null)
+		protected IDefaultAttribute(string value = null)
 		{
 			value = value?.Trim();
 			if (value != null && value.Length != 0) {

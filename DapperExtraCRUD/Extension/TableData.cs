@@ -64,13 +64,9 @@ namespace Dapper.Extension
 		/// <typeparam name="KeyType">The type of the key.</typeparam>
 		/// <param name="obj">The input object to pull the key from.</param>
 		/// <returns>The value of the key.</returns>
-		public static KeyType GetKey(object obj)
+		public static KeyType GetKey(IDictionary<string, object> obj)
 		{
-			dynamic key = new ExpandoObject();
-			for (int i = 0; i < TableData<T>.KeyProperties.Length; i++) {
-				key[TableData<T>.KeyProperties[i].Name] = TableData<T>.KeyProperties[i].GetValue(obj);
-			}
-			return key;
+			return (KeyType) obj[TableData<T>.KeyProperties[0].Name];
 		}
 	}
 
@@ -210,9 +206,8 @@ namespace Dapper.Extension
 		/// </summary>
 		public static void SetKey(T obj, T key)
 		{
-			Type type = key.GetType();
 			for (int i = 0; i < KeyProperties.Length; i++) {
-				KeyProperties[i].SetValue(obj, type.GetProperty(KeyProperties[i].Name, BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Instance).GetValue(key));
+				KeyProperties[i].SetValue(obj, KeyProperties[i].GetValue(key));
 			}
 		}
 
@@ -251,7 +246,7 @@ namespace Dapper.Extension
 			for (int i = 0; i < Properties.Length; i++) {
 				object sourceValue = Properties[i].GetValue(source);
 				object destValue = Properties[i].GetValue(dest);
-				if (sourceValue != destValue) {
+				if (!sourceValue.Equals(destValue)) {
 					for (int j = i; j < Properties.Length; j++) {
 						Properties[j].SetValue(dest, Properties[j].GetValue(source));
 					}
@@ -259,6 +254,16 @@ namespace Dapper.Extension
 				}
 			}
 			return false;
+		}
+
+		/// <summary>
+		/// Returns true if the destination was modified, or false if they were identical.
+		/// </summary>
+		public static void FastCopy(T source, T dest)
+		{
+			for (int i = 0; i < Properties.Length; i++) {
+				Properties[i].SetValue(dest, Properties[i].GetValue(source));
+			}
 		}
 	}
 }
