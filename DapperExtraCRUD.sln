@@ -5,15 +5,6 @@ VisualStudioVersion = 15.0.28307.136
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DapperExtraCRUD", "DapperExtraCRUD\DapperExtraCRUD.csproj", "{4DBE71C1-2ECD-4192-BC66-E4D1C8DCEC08}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{65C619B0-3B3E-4482-848C-1BC17CA71711}"
-	ProjectSection(SolutionItems) = preProject
-		..\fasterflect\fasterflect\CodeCoverage.testsettings = ..\fasterflect\fasterflect\CodeCoverage.testsettings
-		..\fasterflect\fasterflect\Default.testsettings = ..\fasterflect\fasterflect\Default.testsettings
-		..\fasterflect\fasterflect\Fasterflect.vsmdi = ..\fasterflect\fasterflect\Fasterflect.vsmdi
-		..\fasterflect\fasterflect\key.snk = ..\fasterflect\fasterflect\key.snk
-		..\fasterflect\fasterflect\SolutionInfo.cs = ..\fasterflect\fasterflect\SolutionInfo.cs
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{1AA4E771-2227-45A7-A906-FC54FE7F77EA}"
 EndProject
 Global

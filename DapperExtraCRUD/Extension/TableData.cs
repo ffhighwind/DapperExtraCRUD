@@ -241,7 +241,7 @@ namespace Dapper.Extension
 		/// <summary>
 		/// Returns true if the destination was modified, or false if they were identical.
 		/// </summary>
-		public static bool Copy(T source, T dest)
+		public static bool CheckCopy(T source, T dest)
 		{
 			for (int i = 0; i < Properties.Length; i++) {
 				object sourceValue = Properties[i].GetValue(source);
@@ -259,7 +259,7 @@ namespace Dapper.Extension
 		/// <summary>
 		/// Returns true if the destination was modified, or false if they were identical.
 		/// </summary>
-		public static void FastCopy(T source, T dest)
+		public static void Copy(T source, T dest)
 		{
 			for (int i = 0; i < Properties.Length; i++) {
 				Properties[i].SetValue(dest, Properties[i].GetValue(source));

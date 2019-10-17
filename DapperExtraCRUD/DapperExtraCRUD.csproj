@@ -34,11 +34,11 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dapper, Version=1.60.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\APClient\packages\Dapper.1.60.1\lib\net451\Dapper.dll</HintPath>
+    <Reference Include="Dapper, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Dapper.2.0.30\lib\net461\Dapper.dll</HintPath>
     </Reference>
-    <Reference Include="FastMember, Version=1.4.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\APClient\packages\FastMember.1.4.1\lib\net461\FastMember.dll</HintPath>
+    <Reference Include="FastMember, Version=1.5.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\FastMember.1.5.0\lib\net461\FastMember.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -60,6 +60,7 @@
     <Compile Include="Extension\Interfaces\IDefaultAttribute.cs" />
     <Compile Include="Extension\SqlUtil.cs" />
     <Compile Include="Extension\TableCache.cs" />
+    <Compile Include="Extension\TableCacheBase.cs" />
     <Compile Include="Extension\TableData.cs" />
     <Compile Include="Extension\TableEqualityComparer.cs" />
     <Compile Include="Extension\TableQueries.cs" />
