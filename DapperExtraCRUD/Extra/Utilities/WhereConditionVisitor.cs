@@ -8,21 +8,21 @@ using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 
-namespace Dapper.Extension
+namespace Dapper.Extra.Utilities
 {
 	/// <summary>
-	/// Converts a <see cref="Predicate{Ty}"/> to a WHERE expression in SQL.
+	/// Converts a <see cref="Predicate{T}"/> to a WHERE expression in SQL.
 	/// </summary>
-	/// <typeparam name="Ty">The input type</typeparam>
-	public class WhereClauseVisitor<Ty> : ExpressionVisitor
+	/// <typeparam name="T">The input type.</typeparam>
+	public class WhereConditionVisitor<T> : ExpressionVisitor
 	{
-		protected ParameterExpression Var;
-		protected readonly string TableName;
-		protected StringBuilder Results = new StringBuilder(500);
+		protected ParameterExpression param;
+		protected readonly string tableName;
+		protected StringBuilder results = new StringBuilder(150);
 
-		public WhereClauseVisitor() : base()
+		public WhereConditionVisitor() : base()
 		{
-			TableName = typeof(Ty).GetCustomAttribute<TableAttribute>(false)?.Name ?? Var.Type.Name;
+			tableName = typeof(T).GetCustomAttribute<TableAttribute>(false)?.Name ?? param.Type.Name;
 		}
 
 		/// <summary>
@@ -30,12 +30,12 @@ namespace Dapper.Extension
 		/// </summary>
 		/// <param name="node">The expression to visit.</param>
 		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		public string Create(Expression<Predicate<Ty>> node)
+		public string Create(Expression<Predicate<T>> node)
 		{
-			Var = node.Parameters[0];
+			param = node.Parameters[0];
 			base.Visit(node.Body);
-			string str = Results.ToString();
-			Results.Clear();
+			string str = results.ToString();
+			results.Clear();
 			return str;
 		}
 
@@ -56,79 +56,79 @@ namespace Dapper.Extension
 		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
 		protected override Expression VisitBinary(BinaryExpression node)
 		{
-			string Op;
+			string op;
 			switch (node.NodeType) {
 				case ExpressionType.Add: // a + b
 				case ExpressionType.AddChecked: // a + b (overflow checked)
-					Op = " + ";
+					op = " + ";
 					break;
 				case ExpressionType.Subtract: // a - b
 				case ExpressionType.SubtractChecked: // a - b (overflow checked)
-					Op = " - ";
+					op = " - ";
 					break;
 				case ExpressionType.Multiply: // a  * b
 				case ExpressionType.MultiplyChecked: // a * b (overflow checked)
-					Op = " * ";
+					op = " * ";
 					break;
 				case ExpressionType.Divide: // a / b
-					Op = " / ";
+					op = " / ";
 					break;
 				case ExpressionType.Power: // Math.Pow(a, b) (visual basic only)
 					throw new InvalidOperationException("Unreachable");
 				case ExpressionType.Modulo: // a % b
-					Op = " % ";
+					op = " % ";
 					break;
 				case ExpressionType.And: // a & b
-					Op = " & ";
+					op = " & ";
 					break;
 				case ExpressionType.Or: // a | b
-					Op = " | ";
+					op = " | ";
 					break;
 				case ExpressionType.AndAlso: // a && b
-					Op = " AND ";
+					op = " AND ";
 					break;
 				case ExpressionType.OrElse: // a || b
-					Op = " OR ";
+					op = " OR ";
 					break;
 				case ExpressionType.LessThan: // a < b
-					Op = " < ";
+					op = " < ";
 					break;
 				case ExpressionType.LessThanOrEqual: // a <= b
-					Op = " <= ";
+					op = " <= ";
 					break;
 				case ExpressionType.GreaterThan: // a > b
-					Op = " > ";
+					op = " > ";
 					break;
 				case ExpressionType.GreaterThanOrEqual: // a >= b
-					Op = " >= ";
+					op = " >= ";
 					break;
 				case ExpressionType.Equal: // a == b
-					Op = " = ";
+					op = " = ";
 					break;
 				case ExpressionType.NotEqual: // a != b
-					Op = " <> ";
+					op = " <> ";
 					break;
 				case ExpressionType.Coalesce: // a ?? b
 					throw new InvalidOperationException("Invalid operator '??'");
 				case ExpressionType.ArrayIndex: // a[b]
 					throw new InvalidOperationException("Invalid operator 'arr[index]'");
 				case ExpressionType.RightShift: // a >> b
-					Op = " >> ";
+					op = " >> ";
 					break;
 				case ExpressionType.LeftShift: // a << b
-					Op = " << ";
+					op = " << ";
 					break;
 				case ExpressionType.ExclusiveOr: // a xor b
-					Op = " ^ ";
+					op = " ^ ";
 					break;
 				default:
 					throw new InvalidOperationException("Unknown NodeType " + node.NodeType.ToString());
 			}
-			Results.Append('(');
+			results.Append('(');
 			base.Visit(node.Left);
-			Results.Append(Op);
+			results.Append(op);
 			base.Visit(node.Right);
-			Results.Append(')');
+			results.Append(')');
 			return null;
 		}
 
@@ -140,7 +140,7 @@ namespace Dapper.Extension
 		protected override Expression VisitConstant(ConstantExpression node)
 		{
 			string str = SqlValue(node.Value, node.Type);
-			Results.Append(str);
+			results.Append(str);
 			return null;
 		}
 
@@ -153,7 +153,7 @@ namespace Dapper.Extension
 		{
 			// default(a)
 			string str = SqlDefaultValue(node.Type);
-			Results.Append(str);
+			results.Append(str);
 			return null;
 		}
 
@@ -164,18 +164,18 @@ namespace Dapper.Extension
 		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
 		protected override Expression VisitUnary(UnaryExpression node)
 		{
-			string Op;
+			string op;
 			switch (node.NodeType) {
 				case ExpressionType.Negate: // -a
 				case ExpressionType.NegateChecked: // -a (overflow checked)
-					Op = "-";
+					op = "-";
 					break;
 				case ExpressionType.Not: // !a (boolean), ~a (integral)
-					Op = " NOT ";
+					op = " NOT ";
 					break;
 				case ExpressionType.Convert: // (b) a
 				case ExpressionType.ConvertChecked: // (b) a
-					throw new InvalidOperationException("Invalid operator: '(" + node.Method.Name + ")'");
+					throw new NotSupportedException("Invalid operator: '(" + node.Method.Name + ")'"); // CAST()... not supported
 				case ExpressionType.ArrayLength: // a.Length
 					throw new InvalidOperationException("Invalid operator: 'arr.Length'");
 				case ExpressionType.TypeAs: // a as b
@@ -187,7 +187,7 @@ namespace Dapper.Extension
 				default:
 					throw new InvalidOperationException("Unknown NodeType " + node.NodeType.ToString());
 			}
-			Results.Append(Op);
+			results.Append(op);
 			base.Visit(node.Operand);
 			return null;
 		}
@@ -208,12 +208,12 @@ namespace Dapper.Extension
 				}
 				throw new InvalidOperationException("Invalid expression: " + msg.ToString());
 			}
-			Results.Append('[');
+			results.Append('[');
 			base.Visit(node.Expression);
 			//Results.Append(attr.Name ?? node.Member.DeclaringType.Name);
-			Results.Append("].[");
-			Results.Append(node.Member.Name);
-			Results.Append(']');
+			results.Append("].[");
+			results.Append(node.Member.Name);
+			results.Append(']');
 			return null;
 		}
 
@@ -226,16 +226,16 @@ namespace Dapper.Extension
 		{
 			// a.b(c, d)
 			if (node.Method.Name == "Equals" && node.Arguments.Count == 1) {
-				Results.Append('(');
+				results.Append('(');
 				base.Visit(node.Object);
-				Results.Append(" = ");
+				results.Append(" = ");
 				base.Visit(node.Arguments[0]);
-				Results.Append(')');
+				results.Append(')');
 				return null;
 			}
 			else if (node.Method.Name == "Contains" && node.Arguments.Count > 1) {
 				base.Visit(node.Arguments[1]);
-				Results.Append(" IN ");
+				results.Append(" IN ");
 				if (node.Arguments[0] is NewArrayExpression newExp) {
 					_VisitNewArray(newExp);
 				}
@@ -255,25 +255,25 @@ namespace Dapper.Extension
 				throw new InvalidOperationException("Invalid type " + node.Type.Name + "\n" + node.ToString());
 			}
 			bool isQuoted = IsQuotedSqlType(type);
-			Results.Append('(');
+			results.Append('(');
 			foreach (Expression exp in node.Expressions) {
 				if (exp is ConstantExpression c) {
 					if (isQuoted) {
-						Results.Append('\'');
-						Results.Append(c.Value.ToString());
-						Results.Append('\'');
+						results.Append('\'');
+						results.Append(c.Value.ToString());
+						results.Append('\'');
 					}
 					else {
-						Results.Append(c.Value.ToString());
+						results.Append(c.Value.ToString());
 					}
-					Results.Append(',');
+					results.Append(',');
 				}
 				else {
 					throw new InvalidOperationException("Arrays can only contain constant values");
 				}
 			}
-			Results.Remove(Results.Length - 1, 1);
-			Results.Append(')');
+			results.Remove(results.Length - 1, 1);
+			results.Append(')');
 		}
 
 		/// <summary>
@@ -294,10 +294,10 @@ namespace Dapper.Extension
 		protected override Expression VisitParameter(ParameterExpression node)
 		{
 			// x
-			if (node.Name != Var.Name) {
-				throw new InvalidOperationException("Variable '" + node.Name + "' is out of scope. Only allowed to access variable '" + Var.Name + "'.");
+			if (node.Name != param.Name) {
+				throw new InvalidOperationException("Variable '" + node.Name + "' is out of scope. Only allowed to access variable '" + param.Name + "'.");
 			}
-			Results.Append(TableName);
+			results.Append(tableName);
 			return null;
 		}
 
@@ -363,6 +363,8 @@ namespace Dapper.Extension
 
 		private string SqlValue(object value, Type type)
 		{
+			if (value == null)
+				return "NULL";
 			TypeCode typeCode = Type.GetTypeCode(type);
 			switch (typeCode) {
 				case TypeCode.Object:
@@ -373,8 +375,8 @@ namespace Dapper.Extension
 						tmp = ((DateTimeOffset) value).ToString();
 					else if (value is Guid obj)
 						tmp = obj.ToString();
-					else if (value is Ty ty)
-						throw new InvalidOperationException("Invalid type: " + typeof(Ty).ToString());
+					else if (value is T ty)
+						throw new InvalidOperationException("Invalid type: " + typeof(T).ToString());
 					else
 						throw new InvalidOperationException("Invalid type: " + type.ToString());
 					return "'" + tmp + "'";
@@ -403,10 +405,10 @@ namespace Dapper.Extension
 				case TypeCode.DateTime:
 					return ((DateTime) value).ToString();
 				case TypeCode.String:
-					return value == null ? "NULL" : ("'" + (string) value + "'");
+					return "'" + ((string) value) + "'";
 				//case TypeCode.DBNull:
-				//case TypeCode.Empty:
-				//	return "NULL";
+				case TypeCode.Empty:
+					return "NULL";
 				default:
 					throw new InvalidOperationException("Invalid type " + type.Name.ToString());
 			}
@@ -541,6 +543,7 @@ namespace Dapper.Extension
 		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
 		protected override Expression VisitIndex(IndexExpression node)
 		{
+			// a[index]
 			throw InvalidExpression(node);
 		}
 
@@ -676,7 +679,7 @@ namespace Dapper.Extension
 		/// <typeparam name="T"></typeparam>
 		/// <param name="node">The expression to visit.</param>
 		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitLambda<T>(Expression<T> node)
+		protected override Expression VisitLambda<Ty>(Expression<Ty> node)
 		{
 			throw InvalidExpression(node);
 		}

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Dapper.UnitTests
+namespace Dapper.Extra.UnitTests
 {
 	[Table("Test")]
 	public class TestDTO

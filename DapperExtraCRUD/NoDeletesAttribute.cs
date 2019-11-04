@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 namespace Dapper
 {
 	/// <summary>
-	/// Ignores the <see cref="PropertyInfo"/>.
+	/// Makes deletes to do nothing.
 	/// </summary>
-	[AttributeUsage(AttributeTargets.Property)]
-	public class IgnoreAttribute : Attribute
+	[AttributeUsage(AttributeTargets.Class)]
+	public class NoDeletesAttribute : System.Attribute
 	{
 	}
 }

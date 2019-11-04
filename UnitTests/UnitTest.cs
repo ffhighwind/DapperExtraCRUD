@@ -1,12 +1,14 @@
-﻿using System;
+﻿
+using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Dapper;
+using Dapper.Extra;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
-using Dapper;
-using Dapper.Extension;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Dapper.Extra.Utilities;
 
-namespace Dapper.UnitTests
+namespace Dapper.Extra.UnitTests
 {
 	[TestClass]
 	public class DapperExtension
@@ -37,15 +39,12 @@ namespace Dapper.UnitTests
 				new TestDTO4() { ID = -1, FirstName = "Wesley3", LastName = "Hamilton"  }
 			};
 			TestDTO4 t = list2[0];
-			WhereClauseVisitor<TestDTO4> gen = new WhereClauseVisitor<TestDTO4>();
+			WhereConditionVisitor<TestDTO4> gen = new WhereConditionVisitor<TestDTO4>();
 			string str = gen.Create(x => x.FirstName == "A" && (new string[] { "A", "B" }.Contains(x.LastName) && x.ID <= 3));
 
 			TestDTO dto = new TestDTO() { CreatedDt = new DateTime(2019, 1, 15), Name = "Test" };
 
-			DataAccessObject<TestDTO> dao = new DataAccessObject<TestDTO>(ConnString);
-			DataAccessObject<TestDTO4> dao2 = new DataAccessObject<TestDTO4>(ConnString);
-
-
+			/*
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
 				conn.Open();
 				using (SqlTransaction trans = conn.BeginTransaction()) {
@@ -164,6 +163,7 @@ namespace Dapper.UnitTests
 					}
 				}
 			}
+			*/
 		}
 	}
 }

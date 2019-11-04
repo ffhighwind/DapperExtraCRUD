@@ -6,20 +6,25 @@ using System.Threading.Tasks;
 
 namespace Dapper
 {
+	/// <summary>
+	/// A primary key column.
+	/// </summary>
 	[AttributeUsage(AttributeTargets.Property)]
 	public class KeyAttribute : Attribute
 	{
-		/// <param name="required">Determines if the key is auto-generated.
-		/// False is equivilent to [Key][IgnoreInsert][IgnoreUpdate] while true is just [Key].</param>
-		public KeyAttribute(bool required = false)
+		/// <summary>
+		/// A primary key column.
+		/// </summary>
+		/// <param name="autoIncrement">Determines if the key is auto-incrementing. 
+		/// This is only allowed for integer based keys (int, long, short, etc).</param>
+		public KeyAttribute(bool autoIncrement = true)
 		{
-			Required = required;
+			AutoIncrement = autoIncrement;
 		}
 
 		/// <summary>
-		/// Determines if the key is auto-generated.
-		/// False is equivilent to [Key][IgnoreInsert][IgnoreUpdate] while true is just [Key].</param>
+		/// Determines if the primary key is auto-incrementing.
 		/// </summary>
-		public bool Required { get; private set; }
+		public bool AutoIncrement { get; private set; }
 	}
 }

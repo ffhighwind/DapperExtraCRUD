@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 
-namespace Utilities.UnitTests
+namespace Dapper.Extra.UnitTests
 {
 	[Table("Test2")]
 	public class TestDTO2 : IEquatable<TestDTO2>

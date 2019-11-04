@@ -13,6 +13,8 @@
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -27,7 +29,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>nuget\lib\net461\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -47,22 +49,24 @@
   <ItemGroup>
     <Compile Include="ColumnAttribute.cs" />
     <Compile Include="DapperExtensions.cs" />
-    <Compile Include="DataAccessObject.cs" />
-    <Compile Include="Extension\ConnectedEnumerable.cs" />
-    <Compile Include="Extension\Interfaces\IDataAccessObject.cs" />
-    <Compile Include="Extension\Interfaces\IDataAccessObjectAsync.cs" />
-    <Compile Include="Extension\Interfaces\IDataAccessObjectSync.cs" />
-    <Compile Include="Extension\Interfaces\IDefaultAttribute.cs" />
-    <Compile Include="Extension\SqlUtil.cs" />
-    <Compile Include="Extension\TableCache.cs" />
-    <Compile Include="Extension\TableCacheBase.cs" />
-    <Compile Include="Extension\TableData.cs" />
-    <Compile Include="Extension\TableEqualityComparer.cs" />
-    <Compile Include="Extension\TableQueries.cs" />
-    <Compile Include="Extension\TableQueries.Data.cs" />
-    <Compile Include="Extension\TableQueries.Delegates.cs" />
-    <Compile Include="Extension\TableQueries.Factory.cs" />
-    <Compile Include="Extension\WhereClauseGenerator.cs" />
+    <Compile Include="Extra\AutoAccessObject.cs" />
+    <Compile Include="Extra\DataAccessObject.cs" />
+    <Compile Include="Extra\Interfaces\IDataAccessConnection.cs" />
+    <Compile Include="Extra\SqlSyntax.cs" />
+    <Compile Include="Extra\Utilities\ConnectedEnumerable.cs" />
+    <Compile Include="Extra\Interfaces\IAccessObject.cs" />
+    <Compile Include="Extra\Interfaces\IAccessObjectAsync.cs" />
+    <Compile Include="Extra\Interfaces\IAccessObjectSync.cs" />
+    <Compile Include="Extra\Interfaces\IDefaultAttribute.cs" />
+    <Compile Include="NoDeletesAttribute.cs" />
+    <Compile Include="NoInsertsAttribute.cs" />
+    <Compile Include="NoUpdatesAttribute.cs" />
+    <Compile Include="Extra\TableData.cs" />
+    <Compile Include="Extra\TableQueries.cs" />
+    <Compile Include="Extra\TableDelegates.cs" />
+    <Compile Include="Extra\Internal\TableQueries.ExceptionFactory.cs" />
+    <Compile Include="Extra\TableFactory.cs" />
+    <Compile Include="Extra\Utilities\WhereConditionVisitor.cs" />
     <Compile Include="IgnoreAttribute.cs" />
     <Compile Include="IgnoreInsertAttribute.cs" />
     <Compile Include="IgnoreSelectAttribute.cs" />
@@ -76,5 +80,6 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

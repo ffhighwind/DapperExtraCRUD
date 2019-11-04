@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 namespace Dapper
 {
 	/// <summary>
-	/// Ignores the <see cref="PropertyInfo"/>.
+	/// Makes inserts to do nothing and changes upserts into updates.
 	/// </summary>
-	[AttributeUsage(AttributeTargets.Property)]
-	public class IgnoreAttribute : Attribute
+	[AttributeUsage(AttributeTargets.Class)]
+	public class NoInsertsAttribute : System.Attribute
 	{
 	}
 }

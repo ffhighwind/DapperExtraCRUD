@@ -3,17 +3,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Dapper.Extension;
-using Dapper.Extension.Interfaces;
+using Dapper.Extra;
+using Dapper.Extra.Interfaces;
 
 namespace Dapper
 {
+	/// <summary>
+	/// Ignores the <see cref="PropertyInfo"/> for updates.
+	/// </summary>
 	[AttributeUsage(AttributeTargets.Property)]
 	public class IgnoreUpdateAttribute : IDefaultAttribute
 	{
-		public IgnoreUpdateAttribute(Func<string> function)
-			: base(function) { }
-
+		/// <summary>
+		/// Ignores the <see cref="PropertyInfo"/> for updates.
+		/// </summary>
+		/// <param name="value">A string that is injected into the update statement as the column's value. 
+		/// If this is <see langword="null"/> then the column is not modified.</param>
 		public IgnoreUpdateAttribute(string value = null)
 			: base(value) { }
 	}

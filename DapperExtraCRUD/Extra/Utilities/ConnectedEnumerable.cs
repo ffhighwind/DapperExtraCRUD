@@ -6,27 +6,32 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Dapper.Extension
+namespace Dapper.Extra.Utilities
 {
-	internal class ConnectedEnumerable<T> : IEnumerable<T>
+	/// <summary>
+	/// Allows an <see cref="IDbConnection"/> to stay open until a queried list is completely traversed or
+	/// the enumeration is disposed. This allows you to use unbuffered queries without wrapping the connection in a using statement.
+	/// </summary>
+	/// <typeparam name="T">The type returned by the query.</typeparam>
+	public class ConnectedEnumerable<T> : IEnumerable<T>
 	{
 		public IEnumerable<T> List { get; private set; }
-		public IDbConnection Conn { get; private set; }
+		public IDbConnection Connection { get; private set; }
 
 		public ConnectedEnumerable(IEnumerable<T> list, IDbConnection connection)
 		{
-			this.List = list;
-			Conn = connection;
+			List = list;
+			Connection = connection;
 		}
 
 		public IEnumerator<T> GetEnumerator()
 		{
-			return new Enumerator(Conn, List.GetEnumerator());
+			return new Enumerator(Connection, List.GetEnumerator());
 		}
 
 		IEnumerator IEnumerable.GetEnumerator()
 		{
-			return new Enumerator(Conn, List.GetEnumerator());
+			return new Enumerator(Connection, List.GetEnumerator());
 		}
 
 		internal class Enumerator : IEnumerator<T>
@@ -55,7 +60,7 @@ namespace Dapper.Extension
 
 			public void Reset()
 			{
-				throw new InvalidOperationException();
+				enumerator.Reset();
 			}
 
 			#region IDisposable Support
