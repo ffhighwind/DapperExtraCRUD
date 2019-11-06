@@ -128,11 +128,10 @@ namespace Dapper
 			return count;
 		}
 
-		public static T Insert<T>(this IDbConnection connection, T obj, IDbTransaction transaction = null, int? commandTimeout = null)
+		public static void Insert<T>(this IDbConnection connection, T obj, IDbTransaction transaction = null, int? commandTimeout = null)
 			where T : class
 		{
-			T result = TableData<T>.Queries.Insert(connection, obj, transaction, commandTimeout);
-			return result;
+			TableData<T>.Queries.Insert(connection, obj, transaction, commandTimeout);
 		}
 
 		public static void BulkInsert<T>(this SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction = null, int? commandTimeout = null)

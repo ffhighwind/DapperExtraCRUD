@@ -127,11 +127,10 @@ namespace Dapper.Extra
 			}
 		}
 
-		public override T Insert(T obj, int? commandTimeout = null)
+		public override void Insert(T obj, int? commandTimeout = null)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				T value = TableData<T>.Queries.Insert(conn, obj, null, commandTimeout);
-				return value;
+				TableData<T>.Queries.Insert(conn, obj, null, commandTimeout);
 			}
 		}
 

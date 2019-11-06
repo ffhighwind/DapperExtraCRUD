@@ -26,6 +26,7 @@ namespace Dapper.Extra
 		public delegate void SqlListVoid(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction = null, int? commandTimeout = null);
 		public delegate IEnumerable<T> SqlListList(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction = null, int? commandTimeout = null);
 		//public delegate bool DbDictBool(IDbConnection connection, IDictionary<string, object> key, IDbTransaction transaction = null, int? commandTimeout = null);
+		public delegate void DbObjVoid(IDbConnection connection, T obj, IDbTransaction transaction = null, int? commandTimeout = null);
 		public delegate bool DbObjBool(IDbConnection connection, T obj, IDbTransaction transaction = null, int? commandTimeout = null);
 		public delegate bool DbObjObjBool(IDbConnection connection, T obj, object filter = null, IDbTransaction transaction = null, int? commandTimeout = null);
 		public delegate int DbWhereInt(IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, int? commandTimeout = null);

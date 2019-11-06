@@ -3,3 +3,4 @@ bin
 obj
 packages
 /TestResults
+/DapperExtraCRUD/nuget/*.exe

@@ -23,7 +23,7 @@ namespace Dapper.Extra.Interfaces
 		public abstract bool Delete<KeyType>(KeyType key, int? commandTimeout = null);
 		public abstract IEnumerable<T> DeleteList(string whereCondition = "", object param = null, int? commandTimeout = null);
 
-		public abstract T Insert(T obj, int? commandTimeout = null);
+		public abstract void Insert(T obj, int? commandTimeout = null);
 		public abstract bool Update(T obj, object filter = null, int? commandTimeout = null);
 		public abstract bool Update(T obj);
 		public abstract bool Upsert(T obj, int? commandTimeout = null);
@@ -60,9 +60,9 @@ namespace Dapper.Extra.Interfaces
 			return await Task.Run(() => Delete(whereCondition, param, commandTimeout));
 		}
 
-		public async Task<T> InsertAsync(T obj, int? commandTimeout = null)
+		public async Task InsertAsync(T obj, int? commandTimeout = null)
 		{
-			return await Task.Run(() => Insert(obj, commandTimeout));
+			await Task.Run(() => Insert(obj, commandTimeout));
 		}
 
 		public async Task<bool> UpdateAsync(T obj, object filter = null, int? commandTimeout = null)

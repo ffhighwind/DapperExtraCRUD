@@ -280,9 +280,8 @@ DROP TABLE dbo.{BulkStagingTable};";
 			return 0;
 		}
 
-		private static T DoNothingDbObjObj(IDbConnection connection, T obj, IDbTransaction transaction, int? commandTimeout)
+		private static void DoNothingVoid(IDbConnection connection, T obj, IDbTransaction transaction, int? commandTimeout)
 		{
-			return null;
 		}
 		#endregion DoNothing
 
@@ -401,7 +400,7 @@ DROP TABLE dbo.{BulkStagingTable};";
 			string insertIfNotExistsQuery = "IF NOT EXISTS (\nSELECT * FROM " + TableName + "\n" + whereEquals + ")\n" + insertTableParams + valuesInserted;
 			if (InsertProperties.Count == 0) {
 				// NoInsertsAttribute
-				queries.Insert = DoNothingDbObjObj;
+				queries.Insert = DoNothingVoid;
 				queries.InsertIfNotExists = DoNothing;
 				queries.BulkInsert = DoNothingSqlList;
 				queries.BulkInsertIfNotExists = DoNothing;
@@ -426,7 +425,6 @@ DROP TABLE dbo.{BulkStagingTable};";
 						queries.Insert = (connection, obj, transaction, commandTimeout) =>
 						{
 							connection.Execute(insertQuery, obj, transaction, commandTimeout);
-							return obj;
 						};
 						queries.InsertIfNotExists = (connection, obj, transaction, commandTimeout) =>
 						{
@@ -440,7 +438,6 @@ DROP TABLE dbo.{BulkStagingTable};";
 						{
 							dynamic key = connection.QueryFirstOrDefault<dynamic>(insertSelectIdentityQuery, obj, transaction, commandTimeout);
 							TableData<T>.SetAutoKey(obj, (IDictionary<string, object>) key);
-							return obj;
 						};
 						string insertIfNotExistsSelectIdentityQuery = insertIfNotExistsQuery + ";" + selectIdentityQuery;
 						queries.InsertIfNotExists = (connection, obj, transaction, commandTimeout) =>
@@ -463,7 +460,6 @@ DROP TABLE dbo.{BulkStagingTable};";
 							for (int i = 0; i < UpdateKeyProperties.Count; i++) {
 								InsertKeyProperties[i].SetValue(obj, result[InsertKeyProperties[i].Name]);
 							}
-							return obj;
 						};
 						string insertIfNotExistsSelect = insertIfNotExistsQuery + selectInsertQuery;
 						queries.InsertIfNotExists = (connection, obj, transaction, commandTimeout) =>
@@ -490,7 +486,6 @@ DROP TABLE dbo.{BulkStagingTable};";
 							for (int i = 0; i < UpdateKeyProperties.Count; i++) {
 								InsertKeyProperties[i].SetValue(obj, pseudoKey[InsertKeyProperties[i].Name]);
 							}
-							return obj;
 						};
 						string insertNotExistsSelectIdentityQuery = insertIfNotExistsQuery + ";" + selectIdentityQuery + ";" + selectInsertQuery;
 						queries.InsertIfNotExists = (connection, obj, transaction, commandTimeout) =>

@@ -50,7 +50,7 @@ namespace Dapper.Extra
 		public TableDelegates<T>.DbWhereList GetDistinct { get; internal set; }
 		public TableDelegates<T>.DbLimitList GetLimit { get; internal set; }
 		public TableDelegates<T>.DbLimitList GetDistinctLimit { get; internal set; }
-		public TableDelegates<T>.DbObjObj Insert { get; internal set; }
+		public TableDelegates<T>.DbObjVoid Insert { get; internal set; }
 		public TableDelegates<T>.DbWhereInt RecordCount { get; internal set; }
 		public TableDelegates<T>.DbObjBool Update { get; internal set; }
 		public TableDelegates<T>.DbObjObjBool UpdateFilter { get; internal set; }

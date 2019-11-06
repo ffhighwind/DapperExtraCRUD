@@ -20,7 +20,7 @@ namespace Dapper.Extra.Interfaces
 		Task<int> DeleteAsync(string whereCondition = "", object param = null, int? commandTimeout = null);
 		Task<IEnumerable<T>> DeleteListAsync(string whereCondition = "", object param = null, int? commandTimeout = null);
 
-		Task<T> InsertAsync(T obj, int? commandTimeout = null);
+		Task InsertAsync(T obj, int? commandTimeout = null);
 		Task<bool> UpdateAsync(T obj, object filter = null, int? commandTimeout = null);
 		Task<bool> UpdateAsync(T obj);
 		Task<bool> UpsertAsync(T obj, int? commandTimeout = null);

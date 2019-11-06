@@ -257,7 +257,7 @@ namespace Dapper.Extra.Persistence
 
 		public CacheItem<T> Insert(T obj, int? commandTimeout = null)
 		{
-			T item = Access.Insert(obj, commandTimeout);
+			Access.Insert(obj, commandTimeout);
 			CacheItem<T> value = Storage.AddOrUpdate(obj);
 			return value;
 		}

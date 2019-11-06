@@ -108,10 +108,9 @@ namespace Dapper.Extra
 			return list;
 		}
 
-		public override T Insert(T obj, int? commandTimeout = null)
+		public override void Insert(T obj, int? commandTimeout = null)
 		{
-			T value = TableData<T>.Queries.Insert(Connection, obj, Transaction, commandTimeout);
-			return value;
+			TableData<T>.Queries.Insert(Connection, obj, Transaction, commandTimeout);
 		}
 
 		public override int RecordCount(string whereCondition = "", object param = null, int? commandTimeout = null)

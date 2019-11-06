@@ -20,7 +20,7 @@ namespace Dapper.Extra.Interfaces
 		int Delete(string whereCondition = "", object param = null, int? commandTimeout = null);
 		IEnumerable<T> DeleteList(string whereCondition = "", object param = null, int? commandTimeout = null);
 
-		T Insert(T obj, int? commandTimeout = null);
+		void Insert(T obj, int? commandTimeout = null);
 		bool Update(T obj, object filter = null, int? commandTimeout = null);
 		bool Update(T obj);
 		bool Upsert(T obj, int? commandTimeout = null);
