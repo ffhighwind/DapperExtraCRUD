@@ -11,7 +11,7 @@ using Dapper.Extra.Utilities;
 
 namespace Dapper
 {
-	public static class DapperExtensions
+	public static class DapperExtraExtensions
 	{
 		#region TableDelegates<T, KeyType> Sync
 		public static int BulkDelete<T, KeyType>(this SqlConnection connection, IEnumerable<KeyType> keys, SqlTransaction transaction = null, int? commandTimeout = null)
@@ -84,6 +84,17 @@ namespace Dapper
 		#endregion TableDelegates<T, KeyType> Async
 
 		#region TableDelegates<T> Sync
+		/// <summary>
+		/// Returns a sequence of keys that match the given condition.
+		/// </summary>
+		/// <typeparam name="T">The <see cref="Type"/> that defines the table.</typeparam>
+		/// <param name="connection">The connection to query on.</param>
+		/// <param name="whereCondition"></param>
+		/// <param name="param">The parameters to pass, if any.</param>
+		/// <param name="transaction">The transaction to use, if any.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">The command timeout (in seconds).</param>
+		/// <returns>The keys from a select statement using the given where condition.</returns>
 		public static IEnumerable<T> GetKeys<T>(this IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int? commandTimeout = null)
 			where T : class
 		{
@@ -91,6 +102,16 @@ namespace Dapper
 			return keys;
 		}
 
+		/// <summary>
+		/// Returns a sequence of keys that match the given condition.
+		/// </summary>
+		/// <typeparam name="T">The <see cref="Type"/> that defines the table.</typeparam>
+		/// <param name="connection">The connection to query on.</param>
+		/// <param name="predicate">The where condition as a lambda expression predicate. e.g. (T) => T.Column > 3. </param>
+		/// <param name="transaction">The transaction to use, if any.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">The command timeout (in seconds).</param>
+		/// <returns>The keys from a select statement using the given where condition.</returns>
 		public static IEnumerable<T> GetKeys<T>(this IDbConnection connection, Expression<Predicate<T>> predicate, IDbTransaction transaction = null, bool buffered = true, int? commandTimeout = null)
 			where T : class
 		{

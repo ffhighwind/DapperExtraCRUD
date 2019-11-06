@@ -49,7 +49,6 @@ namespace Dapper.Extra
 				Properties = factory.Properties;
 				KeyProperties = factory.KeyProperties;
 				AutoKeyProperty = factory.AutoKeyProperty;
-				EqualityProperties = factory.EqualityProperties;
 				Syntax = factory.Syntax;
 				Queries = factory.Create();
 				if (factory.KeyProperties.Count == 1) {
@@ -247,11 +246,6 @@ namespace Dapper.Extra
 		public static PropertyInfo AutoKeyProperty { get; private set; }
 
 		/// <summary>
-		/// The properties that determine if two objects are equal. This is the same as KeyProperties, or all Properties if there are no keys.
-		/// </summary>
-		public static IReadOnlyList<PropertyInfo> EqualityProperties { get; private set; }
-
-		/// <summary>
 		/// The name of the columns based on the ColumnAttributes. These index is the same as Properties.
 		/// </summary>
 		public static IReadOnlyList<string> Columns { get; private set; }
@@ -307,7 +301,7 @@ namespace Dapper.Extra
 		/// </summary>
 		/// <param name="obj">The input object to copy the KeyProperties from.</param>
 		/// <returns>An ExpandoObject with copied KeyProperties from another object.</returns>
-		public static IDictionary<string, object> GetKey(T obj)
+		public static ExpandoObject GetKey(T obj)
 		{
 			dynamic key = new ExpandoObject();
 			for (int i = 0; i < KeyProperties.Count; i++) {
@@ -434,15 +428,15 @@ namespace Dapper.Extra
 		/// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
 		public static bool Equals(T x, T y)
 		{
-			for (int i = 0; i < EqualityProperties.Count; i++) {
-				PropertyInfo prop = EqualityProperties[i];
-				if (!prop.GetValue(x).Equals(prop.GetValue(y)))
+			for (int i = 0; i < KeyProperties.Count; i++) {
+				PropertyInfo prop = KeyProperties[i];
+				if (!object.Equals(prop.GetValue(x), prop.GetValue(y)))
 					return false;
 			}
 			return true;
 		}
 
-		private static readonly int InitialHash = TableData<T>.TableName.GetHashCode();
+		private static readonly int InitialHash = TableName.GetHashCode();
 		/// <summary>
 		/// Generates a hash code for the current object.
 		/// </summary>
@@ -451,8 +445,8 @@ namespace Dapper.Extra
 		public static int GetHashCode(T obj)
 		{
 			int hashCode = InitialHash;
-			for (int i = 0; i < TableData<T>.EqualityProperties.Count; i++) {
-				object value = TableData<T>.EqualityProperties[i].GetValue(obj);
+			for (int i = 0; i < KeyProperties.Count; i++) {
+				object value = KeyProperties[i].GetValue(obj);
 				hashCode = hashCode * 397;
 				if (value != null) {
 					hashCode ^= value.GetHashCode();

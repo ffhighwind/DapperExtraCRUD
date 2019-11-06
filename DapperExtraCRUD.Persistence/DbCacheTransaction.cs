@@ -20,6 +20,11 @@ namespace Dapper.Extra.Persistence
 
 		internal readonly List<ITransactionStorage> TransactionStorage = new List<ITransactionStorage>();
 
+		public void Add(ICacheTable table)
+		{
+			table.BeginTransaction(this);
+		}
+
 		public void Add(params ICacheTable[] tables)
 		{
 			foreach (ICacheTable table in tables) {

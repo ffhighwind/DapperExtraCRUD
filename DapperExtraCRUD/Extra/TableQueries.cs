@@ -30,7 +30,6 @@ namespace Dapper.Extra
 		public IReadOnlyList<PropertyInfo> Properties { get; internal set; }
 		public IReadOnlyList<PropertyInfo> KeyProperties { get; internal set; }
 		public PropertyInfo AutoKeyProperty { get; internal set; }
-		public IReadOnlyList<PropertyInfo> EqualityProperties { get; internal set; }
 		public IReadOnlyList<PropertyInfo> InsertKeyProperties { get; internal set; }
 		public IReadOnlyList<PropertyInfo> UpdateKeyProperties { get; internal set; }
 

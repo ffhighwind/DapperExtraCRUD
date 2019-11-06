@@ -48,7 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ColumnAttribute.cs" />
-    <Compile Include="DapperExtensions.cs" />
+    <Compile Include="DapperExtraExtensions.cs" />
     <Compile Include="Extra\AutoAccessObject.cs" />
     <Compile Include="Extra\DataAccessObject.cs" />
     <Compile Include="Extra\Interfaces\IDataAccessConnection.cs" />

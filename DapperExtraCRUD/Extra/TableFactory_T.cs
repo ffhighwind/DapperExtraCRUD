@@ -33,7 +33,6 @@ namespace Dapper.Extra
 		public IReadOnlyList<PropertyInfo> SelectProperties { get; private set; }
 		public IReadOnlyList<PropertyInfo> UpdateProperties { get; private set; }
 		public IReadOnlyList<PropertyInfo> InsertProperties { get; private set; }
-		public IReadOnlyList<PropertyInfo> EqualityProperties { get; private set; }
 		public IReadOnlyList<PropertyInfo> UpdateEqualityProperties { get; private set; }
 		public IReadOnlyList<PropertyInfo> DeleteEqualityProperties { get; private set; }
 		public IReadOnlyList<PropertyInfo> BulkUpdateProperties { get; private set; }
@@ -47,7 +46,6 @@ namespace Dapper.Extra
 		public IReadOnlyList<string> SelectColumns { get; private set; }
 		public IReadOnlyList<string> UpdateColumns { get; private set; }
 		public IReadOnlyList<string> InsertColumns { get; private set; }
-		public IReadOnlyList<string> EqualityColumns { get; private set; }
 		public IReadOnlyList<string> UpdateEqualityColumns { get; private set; }
 		public IReadOnlyList<string> DeleteEqualityColumns { get; private set; }
 		public IReadOnlyList<string> BulkUpdateColumns { get; private set; }
@@ -143,22 +141,28 @@ namespace Dapper.Extra
 			BulkUpdateColumns = GetColumnNames(BulkUpdateProperties);
 
 			if (KeyProperties.Count == Properties.Count) {
-				EqualityProperties = Properties;
-				EqualityColumns = Columns;
-				UpdateEqualityProperties = EqualityProperties;
-				DeleteEqualityProperties = EqualityProperties;
+				UpdateEqualityProperties = Properties;
+				DeleteEqualityProperties = Properties;
 				UpdateEqualityColumns = Columns;
 				DeleteEqualityColumns = Columns;
 			}
 			else {
-				EqualityProperties = KeyProperties;
-				EqualityColumns = KeyColumns;
 				DeleteEqualityProperties = Properties.Where(prop => prop.GetCustomAttribute<KeyAttribute>(true) != null
 					|| prop.GetCustomAttribute<MatchDeleteAttribute>(true) != null).ToArray();
+				if(DeleteEqualityProperties.Count == KeyProperties.Count) {
+					DeleteEqualityProperties = KeyProperties;
+					DeleteEqualityColumns = KeyColumns;
+				}
+				else
+					DeleteEqualityColumns = GetColumnNames(DeleteEqualityProperties);
 				UpdateEqualityProperties = Properties.Where(prop => prop.GetCustomAttribute<IgnoreUpdateAttribute>(true) == null
 					&& (prop.GetCustomAttribute<KeyAttribute>(true) != null || prop.GetCustomAttribute<MatchUpdateAttribute>(true) != null)).ToArray();
-				UpdateEqualityColumns = GetColumnNames(UpdateEqualityProperties);
-				DeleteEqualityColumns = GetColumnNames(DeleteEqualityProperties);
+				if (UpdateEqualityProperties.Count == KeyProperties.Count) { 
+					UpdateEqualityProperties = KeyProperties;
+					UpdateEqualityColumns = KeyColumns;
+				}
+				else
+					UpdateEqualityColumns = GetColumnNames(UpdateEqualityProperties);
 			}
 			bool noDeletes = typeof(T).GetCustomAttribute<NoDeletesAttribute>(true) != null;
 			if (noDeletes) {
@@ -170,7 +174,7 @@ namespace Dapper.Extra
 			UpdateDefaults = UpdateProperties.Select(prop => (IDefaultAttribute) prop.GetCustomAttribute<IgnoreUpdateAttribute>(true)
 				?? prop.GetCustomAttribute<MatchUpdateAttribute>(true)).ToArray();
 
-			whereEquals = GetWhereEqualsParams(EqualityProperties);
+			whereEquals = GetWhereEqualsParams(KeyProperties);
 			whereUpdateEquals = GetWhereEqualsParams(UpdateEqualityProperties);
 			whereDeleteEquals = GetWhereEqualsParams(DeleteEqualityProperties);
 			whereDeleteExistsBulk = "WHERE EXISTS (\nSELECT * FROM " + BulkStagingTable + GetTempAndEquals(BulkStagingTable, DeleteEqualityColumns) + ")";
@@ -295,12 +299,11 @@ DROP TABLE dbo.{BulkStagingTable};";
 			queries.Properties = Properties;
 			queries.KeyProperties = KeyProperties;
 			queries.AutoKeyProperty = AutoKeyProperty;
-			queries.EqualityProperties = EqualityProperties;
 			queries.UpdateKeyProperties = UpdateKeyProperties;
 			queries.InsertKeyProperties = InsertKeyProperties;
 
 			string createStagingTableQuery = dropStagingTableQuery + SelectIntoTableQuery(BulkStagingTable, Columns);
-			string bulkInsertIfNotExistsQuery = insertTableParams + "SELECT " + paramsInsert + "\nFROM " + BulkStagingTable + "\nWHERE NOT EXISTS (\nSELECT * FROM " + TableName + GetTempAndEquals(BulkStagingTable, EqualityColumns) + ")";
+			string bulkInsertIfNotExistsQuery = insertTableParams + "SELECT " + paramsInsert + "\nFROM " + BulkStagingTable + "\nWHERE NOT EXISTS (\nSELECT * FROM " + TableName + GetTempAndEquals(BulkStagingTable, KeyColumns) + ")";
 			string countQuery = "SELECT COUNT(*) FROM " + TableName + "\n";
 
 			///
@@ -381,11 +384,11 @@ DROP TABLE dbo.{BulkStagingTable};";
 					int count = connection.Execute(deleteSingleQuery, obj, transaction, commandTimeout);
 					return count > 0;
 				};
-				string createEqualityStagingTableQuery = dropStagingTableQuery + SelectIntoTableQuery(BulkStagingTable, EqualityColumns);
+				string createEqualityStagingTableQuery = dropStagingTableQuery + SelectIntoTableQuery(BulkStagingTable, KeyColumns);
 				queries.BulkDelete = (connection, objs, transaction, commandTimeout) =>
 				{
 					connection.Execute(createEqualityStagingTableQuery, null, transaction, commandTimeout);
-					TableFactory.BulkInsert(connection, objs, transaction, BulkStagingTable, EqualityColumns, EqualityProperties, commandTimeout,
+					TableFactory.BulkInsert(connection, objs, transaction, BulkStagingTable, KeyColumns, KeyProperties, commandTimeout,
 						SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
 					int count = connection.Execute(bulkDeleteQuery, null, transaction, commandTimeout);
 					connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);

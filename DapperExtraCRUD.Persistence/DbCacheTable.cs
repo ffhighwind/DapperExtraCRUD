@@ -28,7 +28,7 @@ namespace Dapper.Extra.Persistence
 			Storage = AutoCache;
 		}
 
-		private readonly IDictionary<T, CacheItem<T>> Cache = new Dictionary<T, CacheItem<T>>();
+		private readonly IDictionary<T, CacheItem<T>> Cache = new Dictionary<T, CacheItem<T>>(TableData<T>.EqualityComparer);
 		private ICacheStorage<T> Storage;
 		private readonly CacheAutoStorage<T> AutoCache;
 		private IAccessObjectSync<T> Access;
