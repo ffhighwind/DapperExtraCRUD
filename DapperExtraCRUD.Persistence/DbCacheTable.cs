@@ -280,8 +280,8 @@ namespace Dapper.Extra.Persistence
 
 		public CacheItem<T> Upsert(T obj, int? commandTimeout = null)
 		{
-			T value = Access.Upsert(obj, commandTimeout);
-			CacheItem<T> ret = Storage.AddOrUpdate(value);
+			bool updated = Access.Upsert(obj, commandTimeout);
+			CacheItem<T> ret = Storage.AddOrUpdate(obj);
 			return ret;
 		}
 

@@ -1,17 +1,17 @@
 ﻿
 using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Dapper;
-using Dapper.Extra;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using Dapper;
+using Dapper.Extra;
 using Dapper.Extra.Utilities;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Dapper.Extra.UnitTests
+namespace UnitTests
 {
 	[TestClass]
-	public class DapperExtension
+	public class GoodUnitTests
 	{
 		//private const string ConnString = @"DESKTOP-V0JVTST\SQLEXPRESS";
 		//private const string ConnString = @"Server=DESKTOP-V0JVTST\SQLEXPRESS; Database=Test; Trusted_Connection=True;";
@@ -22,8 +22,44 @@ namespace Dapper.Extra.UnitTests
 
 		private const string ConnString = @"Data Source=DESKTOP-V0JVTST\SQLEXPRESS;Initial Catalog=Test;Integrated Security=True;";
 
+		#region Initialize
+		[TestInitialize]
+		public void TestInit()
+		{
+			string[] tables = new string[] {
+				TableData<TestDTO>.TableName, TableData<TestDTO2>.TableName, TableData<Test3>.TableName, TableData<TestDTO4>.TableName,
+			};
+			using (SqlConnection conn = new SqlConnection(ConnString)) {
+				conn.Open();
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					foreach (string table in tables) {
+						string cmd = DropTable(table);
+						conn.Execute(cmd, null, trans);
+					}
+					conn.Execute(TestDTO.CreateTable(), null, trans);
+					conn.Execute(TestDTO2.CreateTable(), null, trans);
+					conn.Execute(Test3.CreateTable(), null, trans);
+					conn.Execute(TestDTO4.CreateTable(), null, trans);
+					trans.Commit();
+				}
+			}
+		}
+
+		private static string DropTable(string tableName)
+		{
+			string str = $@"
+IF EXISTS (
+	SELECT * from INFORMATION_SCHEMA.TABLES 
+WHERE TABLE_NAME = '{tableName}' 
+	AND TABLE_SCHEMA = 'dbo'
+) 
+DROP TABLE dbo.{tableName};";
+			return str;
+		}
+		#endregion Initialize
+
 		[TestMethod]
-		public void Test()
+		public void Test1()
 		{
 			List<TestDTO> list = new List<TestDTO>()
 			{
@@ -32,17 +68,22 @@ namespace Dapper.Extra.UnitTests
 				new TestDTO() { ID = -1, CreatedDt = new DateTime(2019, 1, 3), Name = "Wesley3" }
 			};
 
-			List<TestDTO4> list2 = new List<TestDTO4>()
+			//List<TestDTO2> list2 = new List<TestDTO2>()
+			//{
+			//	new TestDTO2() { Col1 =  },
+			//}
+
+			List<TestDTO4> list4 = new List<TestDTO4>()
 			{
 				new TestDTO4() { ID = -1, FirstName = "Wesley1", LastName = "Hamilton" },
 				new TestDTO4() { ID = -1, FirstName = "Wesley2", LastName = "Hamilton"  },
 				new TestDTO4() { ID = -1, FirstName = "Wesley3", LastName = "Hamilton"  }
 			};
-			TestDTO4 t = list2[0];
-			WhereConditionVisitor<TestDTO4> gen = new WhereConditionVisitor<TestDTO4>();
-			string str = gen.Create(x => x.FirstName == "A" && (new string[] { "A", "B" }.Contains(x.LastName) && x.ID <= 3));
+			//WhereConditionVisitor<TestDTO4> gen = new WhereConditionVisitor<TestDTO4>();
+			//string str = gen.Create(x => x.FirstName == "A" && (new string[] { "A", "B" }.Contains(x.LastName) && x.ID <= 3));
 
 			TestDTO dto = new TestDTO() { CreatedDt = new DateTime(2019, 1, 15), Name = "Test" };
+
 
 			/*
 			using (SqlConnection conn = new SqlConnection(ConnString)) {

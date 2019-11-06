@@ -26,7 +26,7 @@ namespace Dapper.Extra.Interfaces
 		public abstract T Insert(T obj, int? commandTimeout = null);
 		public abstract bool Update(T obj, object filter = null, int? commandTimeout = null);
 		public abstract bool Update(T obj);
-		public abstract T Upsert(T obj, int? commandTimeout = null);
+		public abstract bool Upsert(T obj, int? commandTimeout = null);
 
 		public abstract T Get(T obj, int? commandTimeout = null);
 		public abstract T Get<KeyType>(KeyType key, int? commandTimeout = null);
@@ -75,7 +75,7 @@ namespace Dapper.Extra.Interfaces
 			return await Task.Run(() => Update(obj));
 		}
 
-		public async Task<T> UpsertAsync(T obj, int? commandTimeout = null)
+		public async Task<bool> UpsertAsync(T obj, int? commandTimeout = null)
 		{
 			return await Task.Run(() => Upsert(obj, commandTimeout));
 		}

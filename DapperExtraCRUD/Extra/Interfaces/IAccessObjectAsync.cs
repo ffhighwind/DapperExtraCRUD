@@ -23,7 +23,7 @@ namespace Dapper.Extra.Interfaces
 		Task<T> InsertAsync(T obj, int? commandTimeout = null);
 		Task<bool> UpdateAsync(T obj, object filter = null, int? commandTimeout = null);
 		Task<bool> UpdateAsync(T obj);
-		Task<T> UpsertAsync(T obj, int? commandTimeout = null);
+		Task<bool> UpsertAsync(T obj, int? commandTimeout = null);
 
 		Task<T> GetAsync(T obj, int? commandTimeout = null);
 		Task<T> GetAsync<KeyType>(KeyType key, int? commandTimeout = null);

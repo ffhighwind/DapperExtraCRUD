@@ -159,11 +159,11 @@ namespace Dapper.Extra
 			}
 		}
 
-		public override T Upsert(T obj, int? commandTimeout = null)
+		public override bool Upsert(T obj, int? commandTimeout = null)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				T value = TableData<T>.Queries.Upsert(conn, obj, null, commandTimeout);
-				return value;
+				bool updated = TableData<T>.Queries.Upsert(conn, obj, null, commandTimeout);
+				return updated;
 			}
 		}
 

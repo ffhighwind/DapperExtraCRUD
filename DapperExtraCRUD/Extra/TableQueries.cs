@@ -10,7 +10,7 @@ using Dapper.Extra.Interfaces;
 
 namespace Dapper.Extra
 {
-	public partial class TableQueries<T, KeyType> 
+	public class TableQueries<T, KeyType> 
 		where T : class
 	{
 		internal TableQueries() { }
@@ -22,7 +22,7 @@ namespace Dapper.Extra
 	}
 
 
-	public partial class TableQueries<T> 
+	public class TableQueries<T> 
 		where T : class
 	{
 		internal TableQueries() { }
@@ -31,6 +31,8 @@ namespace Dapper.Extra
 		public IReadOnlyList<PropertyInfo> KeyProperties { get; internal set; }
 		public PropertyInfo AutoKeyProperty { get; internal set; }
 		public IReadOnlyList<PropertyInfo> EqualityProperties { get; internal set; }
+		public IReadOnlyList<PropertyInfo> InsertKeyProperties { get; internal set; }
+		public IReadOnlyList<PropertyInfo> UpdateKeyProperties { get; internal set; }
 
 		public IReadOnlyList<string> Columns { get; internal set; }
 		public IReadOnlyList<string> KeyColumns { get; internal set; }
@@ -52,7 +54,9 @@ namespace Dapper.Extra
 		public TableDelegates<T>.DbWhereInt RecordCount { get; internal set; }
 		public TableDelegates<T>.DbObjBool Update { get; internal set; }
 		public TableDelegates<T>.DbObjObjBool UpdateFilter { get; internal set; }
-		public TableDelegates<T>.DbObjObj Upsert { get; internal set; }
-		public TableDelegates<T>.DbObjObj InsertIfNotExists { get; internal set; }
+		public TableDelegates<T>.DbObjBool Upsert { get; internal set; }
+		public TableDelegates<T>.DbObjBool InsertIfNotExists { get; internal set; }
+
+		//public override int RemoveDuplicates(IDbConnection connection, IDbTransaction transaction, int? commandTimeout = null)
 	}
 }

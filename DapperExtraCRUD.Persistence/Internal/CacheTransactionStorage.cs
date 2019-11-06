@@ -14,15 +14,14 @@ namespace Dapper.Extra.Persistence.Internal
 		private IDictionary<T, CacheItem<T>> Cache;
 		private readonly List<Dictionary<T, CacheItem<T>>> SavePoints = new List<Dictionary<T, CacheItem<T>>>();
 		private readonly List<string> SavePointNames = new List<string>();
-		private Dictionary<T, CacheItem<T>> SavePoint = new Dictionary<T, CacheItem<T>>(TableData<T>.EqualityComparer);
+		private Dictionary<T, CacheItem<T>> SavePoint;
 		private readonly Action OnClose;
 
 		internal CacheTransactionStorage(IDictionary<T, CacheItem<T>> cache, Action onClose)
 		{
 			Cache = cache;
 			OnClose = onClose;
-			SavePoints.Add(SavePoint);
-			SavePointNames.Add(null);
+			Save(null);
 		}
 
 		#region ITransactionStorage
@@ -49,7 +48,8 @@ namespace Dapper.Extra.Persistence.Internal
 			if (index < 0)
 				throw new InvalidOperationException("Unknown save point: " + savePointName);
 			for (int i = SavePointNames.Count; i >= index; i--) {
-				foreach(var kv in SavePoint) {
+				SavePoint = SavePoints[i - 1];
+				foreach (var kv in SavePoint) {
 					if (kv.Value.Item == null)
 						Cache.Remove(kv.Key);
 					else if (Cache.TryGetValue(kv.Value.Item, out CacheItem<T> item))
@@ -57,22 +57,18 @@ namespace Dapper.Extra.Persistence.Internal
 					else
 						Cache.Add(kv.Key, kv.Value);
 				}
-				SavePointNames.RemoveAt(i);
-				SavePoints.RemoveAt(i);
 				SavePoint.Clear();
-				SavePoint = SavePoints[i - 1];
 			}
+			SavePoints.RemoveRange(index, SavePoints.Count - index);
+			SavePointNames.RemoveRange(index, SavePoints.Count - index);
 		}
 
 		public void Save(string savePointName)
 		{
 			int index = SavePointNames.IndexOf(savePointName);
-			if (index >= 0) {
-				if (savePointName == null)
-					throw new ArgumentNullException(nameof(savePointName));
+			if (index >= 0)
 				throw new InvalidOperationException("Save point already exists: " + savePointName);
-			}
-			SavePoint = new Dictionary<T, CacheItem<T>>();
+			SavePoint = new Dictionary<T, CacheItem<T>>(TableData<T>.EqualityComparer);
 			SavePointNames.Add(savePointName);
 			SavePoints.Add(SavePoint);
 		}
@@ -127,26 +123,19 @@ namespace Dapper.Extra.Persistence.Internal
 			return list;
 		}
 
-		public CacheItem<T> AddOrUpdate(T key, T value)
-		{
-			CacheItem<T> item = AddOrUpdate(value);
-			return item;
-		}
-
 		public CacheItem<T> AddOrUpdate(T value)
 		{
-			CacheItem<T> item;
-			if (SavePoint.ContainsKey(value)) {
-				if (!Cache.TryGetValue(value, out item)) {
-					item = new CacheItem<T>();
-				}
+			if (!Cache.TryGetValue(value, out CacheItem<T> item)) {
+				// keep item.Item as null for SavePoint
+				item = new CacheItem<T>();
+				Cache.Add(value, item);
 			}
-			else {
-				Cache.TryGetValue(value, out item);
-				SavePoint.Add(value, item); // okay for null
+			if (!SavePoint.ContainsKey(value)) {
+				CacheItem<T> removed = new CacheItem<T>();
+				removed.Item = item.Item;
+				SavePoint.Add(removed.Item, removed);
 			}
 			item.Item = value;
-			Cache[value] = item;
 			return item;
 		}
 
@@ -166,10 +155,14 @@ namespace Dapper.Extra.Persistence.Internal
 				value.Item = null;
 			}
 			Cache.Clear();
-			foreach (CacheItem<T> value in SavePoint.Values) {
-				value.Item = null;
+			foreach (Dictionary<T, CacheItem<T>> savePoint in SavePoints) {
+				savePoint.Clear();
 			}
-			SavePoint.Clear();
+			SavePoint = SavePoints[0];
+			SavePointNames.Clear();
+			SavePoints.Clear();
+			SavePoints.Add(SavePoint);
+			SavePointNames.Add(null);
 		}
 
 		public bool Contains(T value)
@@ -201,10 +194,13 @@ namespace Dapper.Extra.Persistence.Internal
 		{
 			if (Cache.TryGetValue(value, out CacheItem<T> item)) {
 				if (!SavePoint.ContainsKey(value)) {
-					SavePoint.Add(value, item);
+					CacheItem<T> removed = new CacheItem<T>();
+					removed.Item = item.Item;
+					SavePoint.Add(value, removed);
 				}
+				Cache.Remove(item.Item);
+				item.Item = null;
 			}
-			Cache.Remove(value);
 			return item;
 		}
 

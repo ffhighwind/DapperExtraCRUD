@@ -162,11 +162,11 @@ namespace Dapper
 			return count;
 		}
 
-		public static T Upsert<T>(this IDbConnection connection, T obj, IDbTransaction transaction = null, int? commandTimeout = null)
+		public static bool Upsert<T>(this IDbConnection connection, T obj, IDbTransaction transaction = null, int? commandTimeout = null)
 			where T : class
 		{
-			T result = TableData<T>.Queries.Upsert(connection, obj, transaction, commandTimeout);
-			return result;
+			bool updated = TableData<T>.Queries.Upsert(connection, obj, transaction, commandTimeout);
+			return updated;
 		}
 
 		public static int BulkUpsert<T>(this SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction = null, bool buffered = true, int? commandTimeout = null)

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 
-namespace Dapper.Extra.UnitTests
+namespace UnitTests
 {
 	[Table("Test2")]
 	public class TestDTO2 : IEquatable<TestDTO2>
@@ -44,6 +44,16 @@ namespace Dapper.Extra.UnitTests
 			hashCode = hashCode * -1521134295 + Col3.GetHashCode();
 			hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Col4);
 			return hashCode;
+		}
+
+		public static string CreateTable()
+		{
+			return @"
+CREATE TABLE [dbo].[Test2](
+	[Col1] [int] NOT NULL,
+	[Col2] [nvarchar](max) NOT NULL,
+	[Col3] [float] NOT NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
 		}
 	}
 }

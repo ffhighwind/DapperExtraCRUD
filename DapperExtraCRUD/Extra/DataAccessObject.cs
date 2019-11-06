@@ -132,10 +132,10 @@ namespace Dapper.Extra
 			return success;
 		}
 
-		public override T Upsert(T obj, int? commandTimeout = null)
+		public override bool Upsert(T obj, int? commandTimeout = null)
 		{
-			T value = TableData<T>.Queries.Upsert(Connection, obj, Transaction, commandTimeout);
-			return value;
+			bool updated = TableData<T>.Queries.Upsert(Connection, obj, Transaction, commandTimeout);
+			return updated;
 		}
 
 		public override IEnumerable<T> GetDistinctLimit(int limit, string whereCondition = "", object param = null, int? commandTimeout = null)

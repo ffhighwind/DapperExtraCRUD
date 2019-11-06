@@ -23,7 +23,7 @@ namespace Dapper.Extra.Interfaces
 		T Insert(T obj, int? commandTimeout = null);
 		bool Update(T obj, object filter = null, int? commandTimeout = null);
 		bool Update(T obj);
-		T Upsert(T obj, int? commandTimeout = null);
+		bool Upsert(T obj, int? commandTimeout = null);
 
 		T Get(T obj, int? commandTimeout = null);
 		T Get<KeyType>(KeyType key, int? commandTimeout = null);

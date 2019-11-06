@@ -100,7 +100,11 @@ namespace Dapper.Extra
 							CreateKeyQueries<decimal>(factory);
 							break;
 						default:
-							if (type.IsArray) {
+							if (type == typeof(Guid))
+								CreateKeyQueries<Guid>(factory);
+							else if (type == typeof(DateTimeOffset))
+								CreateKeyQueries<DateTimeOffset>(factory);
+							else if (type.IsArray) {
 								Type underlying = type.GetEnumUnderlyingType();
 								if (underlying == typeof(byte)) {
 									CreateKeyQueries<byte[]>(factory);
@@ -111,21 +115,14 @@ namespace Dapper.Extra
 									CreateKeyQueries<IEnumerable<byte>>(factory);
 								}
 							}
-							else if (type == typeof(Guid)) {
-								CreateKeyQueries<Guid>(factory);
-							}
-							else if (type == typeof(DateTimeOffset)) {
-								CreateKeyQueries<DateTimeOffset>(factory);
-							}
-							else if (type == typeof(TimeSpan)) {
+							else if (type == typeof(TimeSpan))
 								CreateKeyQueries<TimeSpan>(factory);
-							}
 							break;
 					}
 				}
 			}
 			catch (Exception ex) { // ignore
-				Queries = new TableQueries<T>.ExceptionFactory(ex).Create();
+				Exception = ex;
 			}
 		}
 
@@ -136,9 +133,7 @@ namespace Dapper.Extra
 				TableData<T, KeyType>.Queries = queries;
 			}
 			catch (Exception ex) {
-				TableQueries<T, KeyType> queries = new TableQueries<T, KeyType>.ExceptionFactory(ex).Create();
-				TableData<T, KeyType>.Queries = queries;
-				throw ex;
+				Exception = ex;
 			}
 		}
 
@@ -148,12 +143,91 @@ namespace Dapper.Extra
 		public static TableQueries<T> Queries { get; private set; }
 
 		/// <summary>
+		/// The exception generated when constructing the queries.
+		/// </summary>
+		public static Exception Exception { get; private set; }
+
+		public static void ClearQueries()
+		{
+			Queries = null;
+			Exception = null;
+			if (KeyProperties.Count != 1)
+				return;
+			Type type = KeyProperties[0].PropertyType;
+			type = Nullable.GetUnderlyingType(type) ?? type;
+			TypeCode typeCode = Type.GetTypeCode(type);
+			switch (typeCode) {
+				case TypeCode.Int16:
+					TableData<T, short>.Queries = null;
+					break;
+				case TypeCode.Int32:
+					TableData<T, int>.Queries = null;
+					break;
+				case TypeCode.Int64:
+					TableData<T, long>.Queries = null;
+					break;
+				case TypeCode.SByte:
+					TableData<T, sbyte>.Queries = null;
+					break;
+				case TypeCode.Single:
+					TableData<T, float>.Queries = null;
+					break;
+				case TypeCode.String:
+					TableData<T, string>.Queries = null;
+					break;
+				case TypeCode.UInt16:
+					TableData<T, ushort>.Queries = null;
+					break;
+				case TypeCode.Double:
+					TableData<T, double>.Queries = null;
+					break;
+				case TypeCode.UInt32:
+					TableData<T, uint>.Queries = null;
+					break;
+				case TypeCode.UInt64:
+					TableData<T, ulong>.Queries = null;
+					break;
+				case TypeCode.Byte:
+					TableData<T, byte>.Queries = null;
+					break;
+				case TypeCode.Char:
+					TableData<T, char>.Queries = null;
+					break;
+				case TypeCode.DateTime:
+					TableData<T, DateTime>.Queries = null;
+					break;
+				case TypeCode.Decimal:
+					TableData<T, decimal>.Queries = null;
+					break;
+				default:
+					if (type == typeof(Guid))
+						TableData<T, Guid>.Queries = null;
+					else if (type == typeof(DateTimeOffset))
+						TableData<T, DateTimeOffset>.Queries = null;
+					else if (type.IsArray) {
+						Type underlying = type.GetEnumUnderlyingType();
+						if (underlying == typeof(byte)) {
+							TableData<T, byte[]>.Queries = null;
+						}
+					}
+					else if (type.IsGenericType && typeof(IEnumerable<>).IsAssignableFrom(type)) {
+						if (type.GetGenericArguments()[0] == typeof(byte)) {
+							TableData<T, IEnumerable<byte>>.Queries = null;
+						}
+					}
+					else if (type == typeof(TimeSpan))
+						TableData<T, TimeSpan>.Queries = null;
+					break;
+			}
+		}
+
+		/// <summary>
 		/// The name of the table.
 		/// </summary>
 		public static string TableName { get; private set; }
 
 		/// <summary>
-		/// The DBMS syntax used for autoincrement retrieving identity values and creating limit queries.
+		/// The DBMS syntax used for generating queries.
 		/// </summary>
 		public static SqlSyntax Syntax { get; private set; }
 
@@ -168,7 +242,7 @@ namespace Dapper.Extra
 		public static IReadOnlyList<PropertyInfo> KeyProperties { get; private set; }
 
 		/// <summary>
-		/// The properties that are automatically generated on insert.
+		/// The property that is generated on insert.
 		/// </summary>
 		public static PropertyInfo AutoKeyProperty { get; private set; }
 
