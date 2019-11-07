@@ -12,6 +12,7 @@ namespace Dapper.Extra
 	public class TableDelegates<T, KeyType> 
 		where T : class
 	{
+		public delegate List<T> SqlKeysList(SqlConnection connection, IEnumerable<KeyType> keys, SqlTransaction transaction = null, int? commandTimeout = null);
 		public delegate IEnumerable<KeyType> SqlKeysKeys(SqlConnection connection, IEnumerable<KeyType> keys, SqlTransaction transaction = null, bool buffered = true, int? commandTimeout = null);
 		public delegate int SqlKeysInt(SqlConnection connection, IEnumerable<KeyType> keys, SqlTransaction transaction = null, int? commandTimeout = null);
 		public delegate bool DbKeyBool(IDbConnection connection, KeyType key, IDbTransaction transaction = null, int? commandTimeout = null);
@@ -24,7 +25,7 @@ namespace Dapper.Extra
 	{
 		public delegate int SqlListInt(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction = null, int? commandTimeout = null);
 		public delegate void SqlListVoid(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction = null, int? commandTimeout = null);
-		public delegate IEnumerable<T> SqlListList(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction = null, int? commandTimeout = null);
+		public delegate List<T> SqlListList(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction = null, int? commandTimeout = null);
 		//public delegate bool DbDictBool(IDbConnection connection, IDictionary<string, object> key, IDbTransaction transaction = null, int? commandTimeout = null);
 		public delegate void DbObjVoid(IDbConnection connection, T obj, IDbTransaction transaction = null, int? commandTimeout = null);
 		public delegate bool DbObjBool(IDbConnection connection, T obj, IDbTransaction transaction = null, int? commandTimeout = null);

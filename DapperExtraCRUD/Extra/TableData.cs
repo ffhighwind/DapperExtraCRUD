@@ -43,13 +43,17 @@ namespace Dapper.Extra
 		static TableData()
 		{
 			try {
-				TableFactory<T> factory = TableFactory.Create<T>();
+				TableAttribute attr = typeof(T).GetCustomAttribute<TableAttribute>(false);
+				SqlSyntax syntax = attr == null ? TableFactory.DefaultSyntax : attr.Syntax;
+				TableFactory<T> factory = TableFactory.Create<T>(Syntax);
 				TableName = factory.TableName;
 				Columns = factory.Columns;
 				Properties = factory.Properties;
 				KeyProperties = factory.KeyProperties;
 				AutoKeyProperty = factory.AutoKeyProperty;
-				Syntax = factory.Syntax;
+				InsertKeyProperties = factory.InsertKeyProperties;
+				UpdateKeyProperties = factory.UpdateKeyProperties;
+				AutoKeyColumn = factory.AutoKeyColumn;
 				Queries = factory.Create();
 				if (factory.KeyProperties.Count == 1) {
 					Type type = factory.KeyProperties[0].PropertyType;
@@ -146,80 +150,6 @@ namespace Dapper.Extra
 		/// </summary>
 		public static Exception Exception { get; private set; }
 
-		public static void ClearQueries()
-		{
-			Queries = null;
-			Exception = null;
-			if (KeyProperties.Count != 1)
-				return;
-			Type type = KeyProperties[0].PropertyType;
-			type = Nullable.GetUnderlyingType(type) ?? type;
-			TypeCode typeCode = Type.GetTypeCode(type);
-			switch (typeCode) {
-				case TypeCode.Int16:
-					TableData<T, short>.Queries = null;
-					break;
-				case TypeCode.Int32:
-					TableData<T, int>.Queries = null;
-					break;
-				case TypeCode.Int64:
-					TableData<T, long>.Queries = null;
-					break;
-				case TypeCode.SByte:
-					TableData<T, sbyte>.Queries = null;
-					break;
-				case TypeCode.Single:
-					TableData<T, float>.Queries = null;
-					break;
-				case TypeCode.String:
-					TableData<T, string>.Queries = null;
-					break;
-				case TypeCode.UInt16:
-					TableData<T, ushort>.Queries = null;
-					break;
-				case TypeCode.Double:
-					TableData<T, double>.Queries = null;
-					break;
-				case TypeCode.UInt32:
-					TableData<T, uint>.Queries = null;
-					break;
-				case TypeCode.UInt64:
-					TableData<T, ulong>.Queries = null;
-					break;
-				case TypeCode.Byte:
-					TableData<T, byte>.Queries = null;
-					break;
-				case TypeCode.Char:
-					TableData<T, char>.Queries = null;
-					break;
-				case TypeCode.DateTime:
-					TableData<T, DateTime>.Queries = null;
-					break;
-				case TypeCode.Decimal:
-					TableData<T, decimal>.Queries = null;
-					break;
-				default:
-					if (type == typeof(Guid))
-						TableData<T, Guid>.Queries = null;
-					else if (type == typeof(DateTimeOffset))
-						TableData<T, DateTimeOffset>.Queries = null;
-					else if (type.IsArray) {
-						Type underlying = type.GetEnumUnderlyingType();
-						if (underlying == typeof(byte)) {
-							TableData<T, byte[]>.Queries = null;
-						}
-					}
-					else if (type.IsGenericType && typeof(IEnumerable<>).IsAssignableFrom(type)) {
-						if (type.GetGenericArguments()[0] == typeof(byte)) {
-							TableData<T, IEnumerable<byte>>.Queries = null;
-						}
-					}
-					else if (type == typeof(TimeSpan))
-						TableData<T, TimeSpan>.Queries = null;
-					break;
-			}
-		}
-
 		/// <summary>
 		/// The name of the table.
 		/// </summary>
@@ -241,14 +171,22 @@ namespace Dapper.Extra
 		public static IReadOnlyList<PropertyInfo> KeyProperties { get; private set; }
 
 		/// <summary>
-		/// The property that is generated on insert.
+		/// The property that is auto-incremented on insert.
 		/// </summary>
 		public static PropertyInfo AutoKeyProperty { get; private set; }
+
+		/// <summary>
+		/// The name of the the table's column that maps to the AutoKeyProperty.
+		/// </summary>
+		public static string AutoKeyColumn { get; private set; }
 
 		/// <summary>
 		/// The name of the columns based on the ColumnAttributes. These index is the same as Properties.
 		/// </summary>
 		public static IReadOnlyList<string> Columns { get; private set; }
+
+		public static IReadOnlyList<PropertyInfo> InsertKeyProperties { get; private set; }
+		public static IReadOnlyList<PropertyInfo> UpdateKeyProperties { get; private set; }
 
 		/// <summary>
 		/// Creates an object and then sets the KeyProperties using an ExpandoObject.
@@ -329,7 +267,7 @@ namespace Dapper.Extra
 		/// </summary>
 		public static void SetAutoKey<KeyType>(T obj, KeyType key)
 		{
-			TableData<T>.Queries.AutoKeyProperty.SetValue(obj, key);
+			TableData<T>.AutoKeyProperty.SetValue(obj, key);
 		}
 
 		/// <summary>
@@ -337,7 +275,7 @@ namespace Dapper.Extra
 		/// </summary>
 		public static void SetKey<KeyType>(T obj, KeyType key)
 		{
-			TableData<T>.Queries.KeyProperties[0].SetValue(obj, key);
+			TableData<T>.KeyProperties[0].SetValue(obj, key);
 		}
 
 		/// <summary>
@@ -346,7 +284,7 @@ namespace Dapper.Extra
 		public static IDictionary<string, object> CreateKey<KeyType>(KeyType value)
 		{
 			IDictionary<string, object> newKey = new ExpandoObject();
-			newKey[TableData<T>.Queries.KeyProperties[0].Name] = value;
+			newKey[TableData<T>.KeyProperties[0].Name] = value;
 			return newKey;
 		}
 
@@ -358,7 +296,7 @@ namespace Dapper.Extra
 		/// <returns>The value of the key.</returns>
 		public static KeyType GetKey<KeyType>(T obj)
 		{
-			KeyType key = (KeyType) TableData<T>.Queries.KeyProperties[0].GetValue(obj);
+			KeyType key = (KeyType) TableData<T>.KeyProperties[0].GetValue(obj);
 			return key;
 		}
 

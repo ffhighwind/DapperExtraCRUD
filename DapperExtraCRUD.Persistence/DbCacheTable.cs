@@ -258,7 +258,7 @@ namespace Dapper.Extra.Persistence
 		public CacheItem<T> Insert(T obj, int? commandTimeout = null)
 		{
 			Access.Insert(obj, commandTimeout);
-			CacheItem<T> value = Storage.AddOrUpdate(obj);
+			CacheItem<T> value = Storage.Add(obj);
 			return value;
 		}
 
@@ -275,6 +275,9 @@ namespace Dapper.Extra.Persistence
 		public int BulkUpdate(IEnumerable<T> objs, int? commandTimeout = null)
 		{
 			int count = Access.BulkUpdate(objs, commandTimeout);
+			if(TableData<T>.UpdateKeyProperties.Count == 0) {
+				Storage.AddOrUpdate(objs);
+			}
 			return count;
 		}
 
@@ -345,6 +348,38 @@ namespace Dapper.Extra.Persistence
 			int count = Access.BulkDelete<KeyType>(keys, commandTimeout);
 			Storage.RemoveKeys(keys);
 			return count;
+		}
+
+		public List<CacheItem<T>> BulkInsert(IEnumerable<T> objs, int? commandTimeout = null)
+		{
+			IEnumerable<T> list;
+			if (TableData<T>.AutoKeyProperty != null) {
+				long max = Access.GetKeys<long?>("WHERE " + TableData<T>.AutoKeyColumn + " = (SELECT MAX(" + TableData<T>.AutoKeyColumn + ") FROM " + TableData<T>.TableName + ")").FirstOrDefault() ?? int.MinValue;
+				Access.BulkInsert(objs, commandTimeout);
+				list = Access.GetList("WHERE " + TableData<T>.AutoKeyColumn + " > " + max);
+			}
+			else {
+				Access.BulkInsert(objs, commandTimeout);
+				list = TableData<T>.InsertKeyProperties.Count != 0
+					? Access.BulkGet(objs, commandTimeout) 
+					: objs;
+			}
+			List<CacheItem<T>> result = Storage.Add(list);
+			return result;
+		}
+
+		public List<CacheItem<T>> BulkGet(IEnumerable<T> objs, int? commandTimeout = null)
+		{
+			List<T> list = Access.BulkGet(objs, commandTimeout);
+			List<CacheItem<T>> result = Storage.AddOrUpdate(list);
+			return result;
+		}
+
+		public List<CacheItem<T>> BulkGet<KeyType>(IEnumerable<KeyType> keys, int? commandTimeout = null)
+		{
+			List<T> list = Access.BulkGet<KeyType>(keys, commandTimeout);
+			List<CacheItem<T>> result = Storage.AddOrUpdate(list);
+			return result;
 		}
 		#endregion ICacheTable<T, CacheItem<T>>
 	}

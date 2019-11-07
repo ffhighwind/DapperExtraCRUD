@@ -15,6 +15,7 @@ namespace Dapper.Extra
 	{
 		internal TableQueries() { }
 
+		public TableDelegates<T, KeyType>.SqlKeysList BulkGet { get; internal set; }
 		public TableDelegates<T, KeyType>.SqlKeysInt BulkDelete { get; internal set; }
 		public TableDelegates<T, KeyType>.DbKeyBool Delete { get; internal set; }
 		public TableDelegates<T, KeyType>.DbKeyObj Get { get; internal set; }
@@ -27,15 +28,7 @@ namespace Dapper.Extra
 	{
 		internal TableQueries() { }
 
-		public IReadOnlyList<PropertyInfo> Properties { get; internal set; }
-		public IReadOnlyList<PropertyInfo> KeyProperties { get; internal set; }
-		public PropertyInfo AutoKeyProperty { get; internal set; }
-		public IReadOnlyList<PropertyInfo> InsertKeyProperties { get; internal set; }
-		public IReadOnlyList<PropertyInfo> UpdateKeyProperties { get; internal set; }
-
-		public IReadOnlyList<string> Columns { get; internal set; }
-		public IReadOnlyList<string> KeyColumns { get; internal set; }
-
+		public TableDelegates<T>.SqlListList BulkGet { get; internal set; }
 		public TableDelegates<T>.SqlListInt BulkDelete { get; internal set; }
 		public TableDelegates<T>.SqlListVoid BulkInsert { get; internal set; }
 		public TableDelegates<T>.SqlListInt BulkUpdate { get; internal set; }

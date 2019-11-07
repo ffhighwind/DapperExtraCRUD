@@ -188,6 +188,18 @@ namespace Dapper.Extra
 			IEnumerable<KeyType> keys = TableData<T, KeyType>.Queries.GetKeys(Connection, whereCondition, param, Transaction, Buffered, commandTimeout);
 			return keys;
 		}
+
+		public override List<T> BulkGet(IEnumerable<T> keys, int? commandTimeout = null)
+		{
+			List<T> list = TableData<T>.Queries.BulkGet(Connection, keys, Transaction, commandTimeout);
+			return list;
+		}
+
+		public override List<T> BulkGet<KeyType>(IEnumerable<KeyType> keys, int? commandTimeout = null)
+		{
+			List<T> list = TableData<T, KeyType>.Queries.BulkGet(Connection, keys, Transaction, commandTimeout);
+			return list;
+		}
 		#endregion  IAccessObjectSync<T>
 	}
 }

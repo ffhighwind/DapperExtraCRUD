@@ -37,6 +37,8 @@ namespace Dapper.Extra.Interfaces
 
 		public abstract int RecordCount(string whereCondition = "", object param = null, int? commandTimeout = null);
 
+		public abstract List<T> BulkGet(IEnumerable<T> keys, int? commandTimeout = null);
+		public abstract List<T> BulkGet<KeyType>(IEnumerable<KeyType> keys, int? commandTimeout = null);
 		public abstract void BulkInsert(IEnumerable<T> objs, int? commandTimeout = null);
 		public abstract int BulkUpdate(IEnumerable<T> objs, int? commandTimeout = null);
 		public abstract int BulkDelete(IEnumerable<T> objs, int? commandTimeout = null);
@@ -153,6 +155,16 @@ namespace Dapper.Extra.Interfaces
 		public async Task<IEnumerable<KeyType>> GetKeysAsync<KeyType>(string whereCondition = "", object param = null, int? commandTimeout = null)
 		{
 			return await Task.Run(() => GetKeys<KeyType>(whereCondition, param, commandTimeout));
+		}
+
+		public async Task<List<T>> BulkGetAsync(IEnumerable<T> keys, int? commandTimeout = null)
+		{
+			return await Task.Run(() => BulkGet(keys, commandTimeout));
+		}
+
+		public async Task<List<T>> BulkGetAsync<KeyType>(IEnumerable<KeyType> keys, int? commandTimeout = null)
+		{
+			return await Task.Run(() => BulkGet<KeyType>(keys, commandTimeout));
 		}
 		#endregion IAccessObjectAsync<T>
 	}

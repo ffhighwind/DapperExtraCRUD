@@ -15,6 +15,6 @@ namespace Dapper.Extra
 		PostgreSQL,
 		MySQL,
 		SQLite,
-		Oracle,
+		//Oracle,
 	}
 }

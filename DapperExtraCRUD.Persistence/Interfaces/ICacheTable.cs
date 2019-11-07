@@ -46,6 +46,9 @@ namespace Dapper.Extra.Persistence.Interfaces
 
 		int RecordCount(string whereCondition = "", object param = null, int? commandTimeout = null);
 
+		List<CacheItem<T>> BulkInsert(IEnumerable<T> objs, int? commandTimeout = null);
+		List<CacheItem<T>> BulkGet(IEnumerable<T> objs, int? commandTimeout = null);
+		List<CacheItem<T>> BulkGet<KeyType>(IEnumerable<KeyType> objs, int? commandTimeout = null);
 		int BulkUpdate(IEnumerable<T> objs, int? commandTimeout = null);
 		int BulkDelete(IEnumerable<T> objs, int? commandTimeout = null);
 		int BulkDelete<KeyType>(IEnumerable<KeyType> keys, int? commandTimeout = null);

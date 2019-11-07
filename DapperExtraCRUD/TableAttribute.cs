@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Dapper.Extra;
 
 namespace Dapper
 {
@@ -17,14 +18,16 @@ namespace Dapper
 		/// The database table name.
 		/// </summary>
 		/// <param name="name">The name of the database table.</param>
-		public TableAttribute(string name = null)
+		public TableAttribute(string name = null, SqlSyntax syntax = SqlSyntax.SQLServer)
 		{
 			Name = name;
+			Syntax = syntax;
 		}
 
 		/// <summary>
 		/// The name of the database table.
 		/// </summary>
 		public string Name { get; private set; }
+		public SqlSyntax Syntax { get; private set; }
 	}
 }

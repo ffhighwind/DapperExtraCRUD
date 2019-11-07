@@ -205,6 +205,22 @@ namespace Dapper.Extra
 				return keys;
 			}
 		}
+
+		public override List<T> BulkGet(IEnumerable<T> keys, int? commandTimeout = null)
+		{
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				List<T> list = TableData<T>.Queries.BulkGet(conn, keys, null, commandTimeout);
+				return list;
+			}
+		}
+
+		public override List<T> BulkGet<KeyType>(IEnumerable<KeyType> keys, int? commandTimeout = null)
+		{
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				List<T> list = TableData<T, KeyType>.Queries.BulkGet(conn, keys, null, commandTimeout);
+				return list;
+			}
+		}
 		#endregion  IAccessObjectSync<T>
 	}
 }

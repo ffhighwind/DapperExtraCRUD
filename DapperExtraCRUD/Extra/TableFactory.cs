@@ -22,8 +22,8 @@ namespace Dapper.Extra
 					case SqlSyntax.SQLServer:
 						_DefaultSyntax = value;
 						break;
-					case SqlSyntax.Oracle:
-						throw new InvalidOperationException("Oracle syntax is not supported.");
+					//case SqlSyntax.Oracle:
+					//	throw new InvalidOperationException("Oracle syntax is not supported.");
 					default:
 						_DefaultSyntax = SqlSyntax.SQLServer;
 						break;
@@ -84,20 +84,20 @@ namespace Dapper.Extra
 			catch { }
 
 			// Oracle
-			try {
-				int a = conn.QuerySingle<int>("SELECT BITAND(1,1)");
-				decimal b = conn.QuerySingle<decimal>("POWER(1,1)");
-				return SqlSyntax.Oracle;
-			}
-			catch { }
+			//try {
+			//	int a = conn.QuerySingle<int>("SELECT BITAND(1,1)");
+			//	decimal b = conn.QuerySingle<decimal>("POWER(1,1)");
+			//	return SqlSyntax.Oracle;
+			//}
+			//catch { }
 			throw new InvalidOperationException("Unknown RDBMS");
 		}
 
 		public static TableFactory<T> Create<T>(SqlSyntax syntax)
 			where T : class
 		{
-			if (syntax == SqlSyntax.Oracle)
-				throw new InvalidOperationException("Oracle syntax is not supported.");
+			//if (syntax == SqlSyntax.Oracle)
+			//	throw new InvalidOperationException("Oracle syntax is not supported.");
 			return new TableFactory<T>(syntax);
 		}
 

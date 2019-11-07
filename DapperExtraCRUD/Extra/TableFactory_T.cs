@@ -26,6 +26,7 @@ namespace Dapper.Extra
 		private string quoteRstr { get; set; }
 		private string escapeQuoteR { get; set; }
 		private string selectIdentityQuery { get; set; }
+		private string truncateQuery {get;set;}
 
 		public IReadOnlyList<PropertyInfo> Properties { get; private set; }
 		public IReadOnlyList<PropertyInfo> KeyProperties { get; private set; }
@@ -63,14 +64,15 @@ namespace Dapper.Extra
 		private readonly string whereDeleteExistsBulk;
 		private readonly string bulkUpdateSetParams;
 		private readonly string paramsSelectFrom;
+		private readonly string tableEqualsStagingParams;
+		private readonly string bulkGetQuery;
+		private readonly string createEqualityStagingTableQuery;
 
 		private readonly string deleteQuery;
 		private readonly string deleteSingleQuery;
 		private readonly string selectSingleQuery;
-		private readonly string dropStagingTableQuery;
-		private string dropStagingQuery { get; set; }
+		private string dropStagingQuery;
 		private readonly string selectKeysQuery;
-
 		private readonly string selectUpdateQuery;
 		private readonly string selectInsertQuery;
 
@@ -149,7 +151,7 @@ namespace Dapper.Extra
 			else {
 				DeleteEqualityProperties = Properties.Where(prop => prop.GetCustomAttribute<KeyAttribute>(true) != null
 					|| prop.GetCustomAttribute<MatchDeleteAttribute>(true) != null).ToArray();
-				if(DeleteEqualityProperties.Count == KeyProperties.Count) {
+				if (DeleteEqualityProperties.Count == KeyProperties.Count) {
 					DeleteEqualityProperties = KeyProperties;
 					DeleteEqualityColumns = KeyColumns;
 				}
@@ -157,7 +159,7 @@ namespace Dapper.Extra
 					DeleteEqualityColumns = GetColumnNames(DeleteEqualityProperties);
 				UpdateEqualityProperties = Properties.Where(prop => prop.GetCustomAttribute<IgnoreUpdateAttribute>(true) == null
 					&& (prop.GetCustomAttribute<KeyAttribute>(true) != null || prop.GetCustomAttribute<MatchUpdateAttribute>(true) != null)).ToArray();
-				if (UpdateEqualityProperties.Count == KeyProperties.Count) { 
+				if (UpdateEqualityProperties.Count == KeyProperties.Count) {
 					UpdateEqualityProperties = KeyProperties;
 					UpdateEqualityColumns = KeyColumns;
 				}
@@ -190,8 +192,11 @@ namespace Dapper.Extra
 
 			updateSetParams = "UPDATE " + TableName + GetSetParams(UpdateColumns, UpdateProperties, UpdateDefaults);
 			bulkUpdateSetParams = GetTempSetParams(BulkStagingTable, UpdateColumns, UpdateDefaults);
-			dropStagingTableQuery = "DROP TABLE " + BulkStagingTable;
 			selectKeysQuery = "SELECT " + GetAsParamsFromTable(KeyProperties, TableName);
+
+			createEqualityStagingTableQuery = dropStagingQuery + SelectIntoTableQuery(BulkStagingTable, KeyColumns);
+			tableEqualsStagingParams = GetTempAndEquals(BulkStagingTable, KeyColumns);
+			bulkGetQuery = "SELECT " + paramsSelectFrom + " INNER JOIN " + BulkStagingTable + " ON " + tableEqualsStagingParams;
 
 			selectUpdateQuery = "SELECT " + GetAsParamsFromTable(UpdateKeyProperties, TableName);
 			selectInsertQuery = "SELECT " + GetAsParamsFromTable(InsertKeyProperties, TableName);
@@ -208,6 +213,9 @@ namespace Dapper.Extra
 					selectIdentityQuery = "SELECT LASTVAL() as \"Id\";";
 					BulkStagingTable = EscapeIdentifier("#_" + tableName);
 					dropStagingQuery = $"DROP TABLE IF EXISTS {BulkStagingTable};";
+					truncateQuery = $"TRUNCATE TABLE ONLY {BulkStagingTable}";
+					if (AutoKeyProperty != null)
+						truncateQuery += " RESTART IDENTITY";
 					break;
 				case SqlSyntax.SQLite:
 					quoteL = '"';
@@ -216,6 +224,7 @@ namespace Dapper.Extra
 					selectIdentityQuery = "SELECT LAST_INSERT_ROWID() as \"Id\";";
 					BulkStagingTable = EscapeIdentifier("#_" + tableName);
 					dropStagingQuery = $"DROP TABLE IF EXISTS {BulkStagingTable};";
+					truncateQuery = $"DELETE FROM {BulkStagingTable}";
 					break;
 				case SqlSyntax.MySQL:
 					quoteL = '`';
@@ -224,20 +233,22 @@ namespace Dapper.Extra
 					selectIdentityQuery = "SELECT LAST_INSERT_ID() as `Id`;";
 					BulkStagingTable = EscapeIdentifier("__" + tableName); // # is comment in mySQL
 					dropStagingQuery = $"DROP TEMPORARY TABLE IF EXISTS {BulkStagingTable};";
+					truncateQuery = $"TRUNCATE TABLE {BulkStagingTable}";
 					break;
-				case SqlSyntax.Oracle:
-					quoteL = '\'';
-					quoteR = '\'';
-					escapeQuoteR = "''";
-					selectIdentityQuery = null; // SEQUENCE?
-					BulkStagingTable = EscapeIdentifier("__" + tableName);
-					dropStagingQuery = $@"
-BEGIN
-	EXECUTE IMMEDIATE 'DROP TABLE __{tableName.Replace("'", "''")}';
-EXCEPTION
-	WHEN OTHERS THEN NULL;
-END;";
-					goto default;
+				//case SqlSyntax.Oracle:
+				//quoteL = '\'';
+				//quoteR = '\'';
+				//escapeQuoteR = "''";
+				//selectIdentityQuery = null; // SEQUENCE?
+				//BulkStagingTable = EscapeIdentifier("__" + tableName);
+				//dropStagingQuery = $@"
+				//BEGIN
+				//	EXECUTE IMMEDIATE 'DROP TABLE __{tableName.Replace("'", "''")}';
+				//EXCEPTION
+				//	WHEN OTHERS THEN NULL;
+				//END;";
+				//truncateQuery = $"TRUNCATE TABLE {BulkStagingTable}";
+				//break;
 				case SqlSyntax.SQLServer:
 				default:
 					quoteL = '[';
@@ -254,6 +265,7 @@ WHERE TABLE_NAME = '#_{tableName.Replace("'", "''")}'
 	AND TABLE_SCHEMA = 'dbo'
 ) 
 DROP TABLE dbo.{BulkStagingTable};";
+					truncateQuery = $"TRUNCATE TABLE {BulkStagingTable}";
 					break;
 			}
 			quoteRstr = quoteR.ToString();
@@ -294,16 +306,9 @@ DROP TABLE dbo.{BulkStagingTable};";
 		public TableQueries<T> Create()
 		{
 			TableQueries<T> queries = new TableQueries<T>();
-			queries.Columns = Columns;
-			queries.KeyColumns = KeyColumns;
-			queries.Properties = Properties;
-			queries.KeyProperties = KeyProperties;
-			queries.AutoKeyProperty = AutoKeyProperty;
-			queries.UpdateKeyProperties = UpdateKeyProperties;
-			queries.InsertKeyProperties = InsertKeyProperties;
 
-			string createStagingTableQuery = dropStagingTableQuery + SelectIntoTableQuery(BulkStagingTable, Columns);
-			string bulkInsertIfNotExistsQuery = insertTableParams + "SELECT " + paramsInsert + "\nFROM " + BulkStagingTable + "\nWHERE NOT EXISTS (\nSELECT * FROM " + TableName + GetTempAndEquals(BulkStagingTable, KeyColumns) + ")";
+			string createStagingTableQuery = dropStagingQuery + SelectIntoTableQuery(BulkStagingTable, Columns);
+			string bulkInsertIfNotExistsQuery = insertTableParams + "SELECT " + paramsInsert + "\nFROM " + BulkStagingTable + "\nWHERE NOT EXISTS (\nSELECT * FROM " + TableName + tableEqualsStagingParams + ")";
 			string countQuery = "SELECT COUNT(*) FROM " + TableName + "\n";
 
 			///
@@ -350,12 +355,25 @@ DROP TABLE dbo.{BulkStagingTable};";
 			};
 			if (KeyProperties.Count == Properties.Count) {
 				queries.GetKeys = queries.GetList;
+				queries.BulkGet = (connection, objs, transaction, commandTimeout) =>
+				{
+					return objs.AsList();
+				};
 			}
 			else {
 				queries.GetKeys = (connection, whereCondition, param, transaction, buffered, commandTimeout) =>
 				{
 					string query = selectKeysQuery + whereCondition;
 					IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
+					return result;
+				};
+				queries.BulkGet = (connection, objs, transaction, commandTimeout) =>
+				{
+					connection.Execute(createEqualityStagingTableQuery, null, transaction, commandTimeout);
+					TableFactory.BulkInsert(connection, objs, transaction, BulkStagingTable, KeyColumns, KeyProperties, commandTimeout,
+						SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
+					List<T> result = connection.Query<T>(bulkGetQuery, null, transaction, true, commandTimeout).AsList();
+					connection.Execute(dropStagingQuery, null, transaction, commandTimeout);
 					return result;
 				};
 			}
@@ -372,10 +390,10 @@ DROP TABLE dbo.{BulkStagingTable};";
 			else {
 				string bulkDeleteQuery = deleteQuery + whereDeleteExistsBulk;
 				string bulkDeleteListQuery = deleteQuery + whereDeleteExistsBulk;
-				string truncateQuery = countQuery + ";\nTRUNCATE TABLE " + TableName;
+				string truncateCountQuery = countQuery + truncateQuery;
 				queries.DeleteWhere = (connection, whereCondition, param, transaction, commandTimeout) =>
 				{
-					string sql = whereCondition.Length == 0 ? truncateQuery : deleteQuery + whereCondition;
+					string sql = whereCondition.Length == 0 ? truncateCountQuery : deleteQuery + whereCondition;
 					int count = connection.Execute(sql, param, transaction, commandTimeout);
 					return count;
 				};
@@ -384,14 +402,13 @@ DROP TABLE dbo.{BulkStagingTable};";
 					int count = connection.Execute(deleteSingleQuery, obj, transaction, commandTimeout);
 					return count > 0;
 				};
-				string createEqualityStagingTableQuery = dropStagingTableQuery + SelectIntoTableQuery(BulkStagingTable, KeyColumns);
 				queries.BulkDelete = (connection, objs, transaction, commandTimeout) =>
 				{
 					connection.Execute(createEqualityStagingTableQuery, null, transaction, commandTimeout);
 					TableFactory.BulkInsert(connection, objs, transaction, BulkStagingTable, KeyColumns, KeyProperties, commandTimeout,
 						SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
 					int count = connection.Execute(bulkDeleteQuery, null, transaction, commandTimeout);
-					connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
+					connection.Execute(dropStagingQuery, null, transaction, commandTimeout);
 					return count;
 				};
 			}
@@ -420,7 +437,7 @@ DROP TABLE dbo.{BulkStagingTable};";
 					TableFactory.BulkInsert(connection, objs, transaction, BulkStagingTable, Columns, Properties, commandTimeout,
 						SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
 					int count = connection.Execute(bulkInsertIfNotExistsQuery, null, transaction, commandTimeout);
-					connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
+					connection.Execute(dropStagingQuery, null, transaction, commandTimeout);
 					return count;
 				};
 				if (InsertKeyProperties.Count == 0) {
@@ -521,14 +538,14 @@ DROP TABLE dbo.{BulkStagingTable};";
 				queries.UpdateFilter = DoNothing;
 			}
 			else {
-				string createUpdateStagingTableQuery = dropStagingTableQuery + SelectIntoTableQuery(BulkStagingTable, BulkUpdateColumns);
+				string createUpdateStagingTableQuery = dropStagingQuery + SelectIntoTableQuery(BulkStagingTable, BulkUpdateColumns);
 				queries.BulkUpdate = (connection, objs, transaction, commandTimeout) =>
 				{
 					connection.Execute(createUpdateStagingTableQuery, null, transaction, commandTimeout);
 					TableFactory.BulkInsert(connection, objs, transaction, BulkStagingTable, BulkUpdateColumns, BulkUpdateProperties, commandTimeout,
 						SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
 					int count = connection.Execute(bulkUpdateQuery, null, transaction, commandTimeout);
-					connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
+					connection.Execute(dropStagingQuery, null, transaction, commandTimeout);
 					return count;
 				};
 				if (UpdateKeyProperties.Count == 0) {
@@ -624,7 +641,7 @@ DROP TABLE dbo.{BulkStagingTable};";
 						SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
 					int countUpdate = connection.Execute(bulkUpdateQuery, null, transaction, commandTimeout);
 					int countInsert = connection.Execute(bulkInsertIfNotExistsQuery, null, transaction, commandTimeout);
-					connection.Execute(dropStagingTableQuery, null, transaction, commandTimeout);
+					connection.Execute(dropStagingQuery, null, transaction, commandTimeout);
 					return countInsert;
 				};
 
@@ -672,6 +689,16 @@ DROP TABLE dbo.{BulkStagingTable};";
 			{
 				int count = connection.Execute(deleteSingleQuery, key, transaction, commandTimeout);
 				return count > 0;
+			};
+			string bulkGetKeysQuery = "SELECT " + paramsSelectFrom + "WHERE " + KeyColumns[0] + " in @Keys";
+			queries.BulkGet = (connection, keys, transaction, commandTimeout) =>
+			{
+				List<T> result = new List<T>();
+				foreach (IEnumerable<KeyType> Keys in Partition<KeyType>(keys.AsList(), 2000)) {
+					IEnumerable<T> list = connection.Query<T>(bulkGetKeysQuery, new { Keys }, transaction, true, commandTimeout);
+					result.AddRange(list);
+				}
+				return result;
 			};
 			return queries;
 		}

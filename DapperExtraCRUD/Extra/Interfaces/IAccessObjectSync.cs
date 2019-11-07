@@ -34,6 +34,8 @@ namespace Dapper.Extra.Interfaces
 
 		int RecordCount(string whereCondition = "", object param = null, int? commandTimeout = null);
 
+		List<T> BulkGet(IEnumerable<T> keys, int? commandTimeout = null);
+		List<T> BulkGet<KeyType>(IEnumerable<KeyType> keys, int? commandTimeout = null);
 		void BulkInsert(IEnumerable<T> objs, int? commandTimeout = null);
 		int BulkUpdate(IEnumerable<T> objs, int? commandTimeout = null);
 		int BulkDelete(IEnumerable<T> objs, int? commandTimeout = null);
