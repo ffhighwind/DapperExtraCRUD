@@ -9,7 +9,7 @@ namespace Dapper
 	/// <summary>
 	/// Ignores the <see cref="PropertyInfo"/>.
 	/// </summary>
-	[AttributeUsage(AttributeTargets.Property)]
+	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 	public class IgnoreAttribute : Attribute
 	{
 	}

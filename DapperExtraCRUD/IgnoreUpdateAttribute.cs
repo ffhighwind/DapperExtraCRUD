@@ -11,7 +11,7 @@ namespace Dapper
 	/// <summary>
 	/// Ignores the <see cref="PropertyInfo"/> for updates.
 	/// </summary>
-	[AttributeUsage(AttributeTargets.Property)]
+	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 	public class IgnoreUpdateAttribute : IDefaultAttribute
 	{
 		/// <summary>

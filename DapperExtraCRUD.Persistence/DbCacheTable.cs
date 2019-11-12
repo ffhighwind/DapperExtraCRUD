@@ -11,6 +11,7 @@ using Dapper;
 using Dapper.Extra.Interfaces;
 using Dapper.Extra.Persistence.Interfaces;
 using Dapper.Extra.Persistence.Internal;
+using Dapper.Extra.Utilities;
 
 namespace Dapper.Extra.Persistence
 {
@@ -35,7 +36,7 @@ namespace Dapper.Extra.Persistence
 		private readonly DataAccessObject<T> DAO;
 		private readonly AutoAccessObject<T> AAO;
 
-		public CacheItem<T> Find(T key, int? commandTimeout = null)
+		public CacheItem<T> Find(T key, int commandTimeout = 30)
 		{
 			if (!Storage.TryGetValue(key, out CacheItem<T> value)) {
 				T obj = Access.Get(key, commandTimeout);
@@ -46,7 +47,7 @@ namespace Dapper.Extra.Persistence
 			return value;
 		}
 
-		public CacheItem<T> Find<KeyType>(KeyType key, int? commandTimeout = null)
+		public CacheItem<T> Find<KeyType>(KeyType key, int commandTimeout = 30)
 		{
 			T obj = TableData<T>.CreateObject<KeyType>(key);
 			CacheItem<T> ret = Find(obj, commandTimeout);
@@ -210,34 +211,34 @@ namespace Dapper.Extra.Persistence
 			Storage.Clear();
 		}
 
-		public IEnumerable<T> GetKeys(string whereCondition = "", object param = null, int? commandTimeout = null)
+		public IEnumerable<T> GetKeys(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			IEnumerable<T> keys = Access.GetKeys(whereCondition, param, commandTimeout);
 			return keys;
 		}
 
-		public bool Delete(T key, int? commandTimeout = null)
+		public bool Delete(T key, int commandTimeout = 30)
 		{
 			bool success = Access.Delete(key, commandTimeout);
 			Storage.RemoveKey(key);
 			return success;
 		}
 
-		public int BulkDelete(IEnumerable<T> keys, int? commandTimeout = null)
+		public int BulkDelete(IEnumerable<T> keys, int commandTimeout = 30)
 		{
 			int count = Access.BulkDelete(keys, commandTimeout);
 			Storage.RemoveKeys(keys);
 			return count;
 		}
 
-		public IEnumerable<T> DeleteList(string whereCondition = "", object param = null, int? commandTimeout = null)
+		public IEnumerable<T> DeleteList(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			IEnumerable<T> keys = Access.DeleteList(whereCondition, param, commandTimeout);
 			Storage.RemoveKeys(keys);
 			return keys;
 		}
 
-		public CacheItem<T> Get(T key, int? commandTimeout = null)
+		public CacheItem<T> Get(T key, int commandTimeout = 30)
 		{
 			T obj = Access.Get(key, commandTimeout);
 			if (obj == null) {
@@ -248,21 +249,21 @@ namespace Dapper.Extra.Persistence
 			return value;
 		}
 
-		public int Delete(string whereCondition = "", object param = null, int? commandTimeout = null)
+		public int Delete(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			IEnumerable<T> keys = DeleteList(whereCondition, param, commandTimeout);
 			Storage.RemoveKeys(keys);
 			return keys.Count();
 		}
 
-		public CacheItem<T> Insert(T obj, int? commandTimeout = null)
+		public CacheItem<T> Insert(T obj, int commandTimeout = 30)
 		{
 			Access.Insert(obj, commandTimeout);
 			CacheItem<T> value = Storage.Add(obj);
 			return value;
 		}
 
-		public bool Update(T obj, int? commandTimeout = null)
+		public bool Update(T obj, int commandTimeout = 30)
 		{
 			if (!Access.Update(obj, commandTimeout)) {
 				Storage.AddOrUpdate(obj);
@@ -272,7 +273,7 @@ namespace Dapper.Extra.Persistence
 			return false;
 		}
 
-		public int BulkUpdate(IEnumerable<T> objs, int? commandTimeout = null)
+		public int BulkUpdate(IEnumerable<T> objs, int commandTimeout = 30)
 		{
 			int count = Access.BulkUpdate(objs, commandTimeout);
 			if(TableData<T>.UpdateKeyProperties.Count == 0) {
@@ -281,54 +282,54 @@ namespace Dapper.Extra.Persistence
 			return count;
 		}
 
-		public CacheItem<T> Upsert(T obj, int? commandTimeout = null)
+		public CacheItem<T> Upsert(T obj, int commandTimeout = 30)
 		{
 			bool updated = Access.Upsert(obj, commandTimeout);
 			CacheItem<T> ret = Storage.AddOrUpdate(obj);
 			return ret;
 		}
 
-		public IEnumerable<CacheItem<T>> GetList(string whereCondition = "", object param = null, int? commandTimeout = null)
+		public IEnumerable<CacheItem<T>> GetList(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			IEnumerable<T> list = Access.GetList(whereCondition, param, commandTimeout);
 			List<CacheItem<T>> result = Storage.AddOrUpdate(list);
 			return result;
 		}
 
-		public IEnumerable<CacheItem<T>> GetLimit(int limit, string whereCondition = "", object param = null, int? commandTimeout = null)
+		public IEnumerable<CacheItem<T>> GetLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			IEnumerable<T> list = Access.GetLimit(limit, whereCondition, param, commandTimeout);
 			List<CacheItem<T>> result = Storage.AddOrUpdate(list);
 			return result;
 		}
 
-		public IEnumerable<CacheItem<T>> GetDistinct(string whereCondition = "", object param = null, int? commandTimeout = null)
+		public IEnumerable<CacheItem<T>> GetDistinct(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			IEnumerable<T> list = Access.GetDistinct(whereCondition, param, commandTimeout);
 			List<CacheItem<T>> result = Storage.AddOrUpdate(list);
 			return result;
 		}
 
-		public int RecordCount(string whereCondition = "", object param = null, int? commandTimeout = null)
+		public int RecordCount(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			int count = Access.RecordCount(whereCondition, param, commandTimeout);
 			return count;
 		}
 
-		public IEnumerable<CacheItem<T>> GetDistinctLimit(int limit, string whereCondition = "", object param = null, int? commandTimeout = null)
+		public IEnumerable<CacheItem<T>> GetDistinctLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			IEnumerable<T> list = Access.GetDistinctLimit(limit, whereCondition, commandTimeout);
 			List<CacheItem<T>> result = Storage.AddOrUpdate(list);
 			return result;
 		}
 
-		public IEnumerable<KeyType> GetKeys<KeyType>(string whereCondition = "", object param = null, int? commandTimeout = null)
+		public IEnumerable<KeyType> GetKeys<KeyType>(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			IEnumerable<KeyType> keys = Access.GetKeys<KeyType>(whereCondition, param, commandTimeout);
 			return keys;
 		}
 
-		public bool Delete<KeyType>(KeyType key, int? commandTimeout = null)
+		public bool Delete<KeyType>(KeyType key, int commandTimeout = 30)
 		{
 			bool success = Access.Delete<KeyType>(key, commandTimeout);
 			T obj = TableData<T>.CreateObject<KeyType>(key);
@@ -336,21 +337,21 @@ namespace Dapper.Extra.Persistence
 			return success;
 		}
 
-		public CacheItem<T> Get<KeyType>(KeyType key, int? commandTimeout = null)
+		public CacheItem<T> Get<KeyType>(KeyType key, int commandTimeout = 30)
 		{
 			T obj = Access.Get<KeyType>(key, commandTimeout);
 			CacheItem<T> ret = Storage.AddOrUpdate(obj);
 			return ret;
 		}
 
-		public int BulkDelete<KeyType>(IEnumerable<KeyType> keys, int? commandTimeout = null)
+		public int BulkDelete<KeyType>(IEnumerable<KeyType> keys, int commandTimeout = 30)
 		{
 			int count = Access.BulkDelete<KeyType>(keys, commandTimeout);
 			Storage.RemoveKeys(keys);
 			return count;
 		}
 
-		public List<CacheItem<T>> BulkInsert(IEnumerable<T> objs, int? commandTimeout = null)
+		public List<CacheItem<T>> BulkInsert(IEnumerable<T> objs, int commandTimeout = 30)
 		{
 			IEnumerable<T> list;
 			if (TableData<T>.AutoKeyProperty != null) {
@@ -368,14 +369,14 @@ namespace Dapper.Extra.Persistence
 			return result;
 		}
 
-		public List<CacheItem<T>> BulkGet(IEnumerable<T> objs, int? commandTimeout = null)
+		public List<CacheItem<T>> BulkGet(IEnumerable<T> objs, int commandTimeout = 30)
 		{
 			List<T> list = Access.BulkGet(objs, commandTimeout);
 			List<CacheItem<T>> result = Storage.AddOrUpdate(list);
 			return result;
 		}
 
-		public List<CacheItem<T>> BulkGet<KeyType>(IEnumerable<KeyType> keys, int? commandTimeout = null)
+		public List<CacheItem<T>> BulkGet<KeyType>(IEnumerable<KeyType> keys, int commandTimeout = 30)
 		{
 			List<T> list = Access.BulkGet<KeyType>(keys, commandTimeout);
 			List<CacheItem<T>> result = Storage.AddOrUpdate(list);

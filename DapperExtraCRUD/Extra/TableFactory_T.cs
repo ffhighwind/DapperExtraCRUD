@@ -11,6 +11,7 @@ using Dapper.Extra.Interfaces;
 
 namespace Dapper.Extra
 {
+	/*
 	public class TableFactory<T>
 		where T : class
 	{
@@ -79,7 +80,7 @@ namespace Dapper.Extra
 		internal TableFactory(SqlSyntax syntax)
 		{
 			Syntax = syntax;
-			string tableName = typeof(T).GetCustomAttribute<TableAttribute>(true)?.Name ?? typeof(T).Name;
+			string tableName = typeof(T).GetCustomAttribute<TableAttribute>(false)?.Name ?? typeof(T).Name;
 			TableName = EscapeIdentifier(tableName);
 			BulkStagingTable = EscapeIdentifier("#_" + tableName);
 
@@ -272,40 +273,40 @@ DROP TABLE dbo.{BulkStagingTable};";
 		}
 
 		#region DoNothing
-		private static int DoNothing(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction, int? commandTimeout)
+		private static int DoNothing(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction, int commandTimeout)
 		{
 			return 0;
 		}
 
-		private static void DoNothingSqlList(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction, int? commandTimeout)
+		private static void DoNothingSqlList(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction, int commandTimeout)
 		{
 		}
 
-		private static bool DoNothing(IDbConnection connection, T obj, IDbTransaction transaction, int? commandTimeout)
-		{
-			return false;
-		}
-
-		private static bool DoNothing(IDbConnection connection, T obj, object filter, IDbTransaction transaction, int? commandTimeout)
+		private static bool DoNothing(IDbConnection connection, T obj, IDbTransaction transaction, int commandTimeout)
 		{
 			return false;
 		}
 
-		private static int DoNothing(IDbConnection connection, string whereCondition, object param, IDbTransaction transaction, int? commandTimeout)
+		private static bool DoNothing(IDbConnection connection, T obj, object filter, IDbTransaction transaction, int commandTimeout)
+		{
+			return false;
+		}
+
+		private static int DoNothing(IDbConnection connection, string whereCondition, object param, IDbTransaction transaction, int commandTimeout)
 		{
 			return 0;
 		}
 
-		private static void DoNothingVoid(IDbConnection connection, T obj, IDbTransaction transaction, int? commandTimeout)
+		private static void DoNothingVoid(IDbConnection connection, T obj, IDbTransaction transaction, int commandTimeout)
 		{
 		}
 		#endregion DoNothing
 
 		private static readonly Dictionary<object, string> FilterMap = new Dictionary<object, string>();
 
-		public TableQueries<T> Create()
+		public SqlQueries<T> Create()
 		{
-			TableQueries<T> queries = new TableQueries<T>();
+			SqlQueries<T> queries = new SqlQueries<T>();
 
 			string createStagingTableQuery = dropStagingQuery + SelectIntoTableQuery(BulkStagingTable, Columns);
 			string bulkInsertIfNotExistsQuery = insertTableParams + "SELECT " + paramsInsert + "\nFROM " + BulkStagingTable + "\nWHERE NOT EXISTS (\nSELECT * FROM " + TableName + tableEqualsStagingParams + ")";
@@ -659,11 +660,11 @@ DROP TABLE dbo.{BulkStagingTable};";
 			return queries;
 		}
 
-		public TableQueries<T, KeyType> Create<KeyType>()
+		public SqlQueries<T, KeyType> Create<KeyType>()
 		{
 			if (KeyProperties.Count != 1)
 				throw new InvalidOperationException(typeof(T).Name + " requires a single key");
-			TableQueries<T, KeyType> queries = new TableQueries<T, KeyType>();
+			SqlQueries<T, KeyType> queries = new SqlQueries<T, KeyType>();
 			queries.GetKeys = (connection, whereCondition, param, transaction, buffered, commandTimeout) =>
 			{
 				string query = selectKeysQuery + whereCondition;
@@ -879,4 +880,5 @@ DROP TABLE dbo.{BulkStagingTable};";
 
 		#endregion Utility Methods
 	}
+*/
 }

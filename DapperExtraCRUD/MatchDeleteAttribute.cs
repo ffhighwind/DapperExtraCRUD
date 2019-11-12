@@ -9,7 +9,7 @@ namespace Dapper
 	/// <summary>
 	/// Turns a <see cref="PropertyInfo"/> into a pseudo key for deletions.
 	/// </summary>
-	[AttributeUsage(AttributeTargets.Property)]
+	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 	public class MatchDeleteAttribute : Attribute
 	{
 	}

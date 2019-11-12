@@ -68,7 +68,7 @@ namespace Dapper.Extra.Persistence.Internal
 			int index = SavePointNames.IndexOf(savePointName);
 			if (index >= 0)
 				throw new InvalidOperationException("Save point already exists: " + savePointName);
-			SavePoint = new Dictionary<T, CacheItem<T>>(TableData<T>.EqualityComparer);
+			SavePoint = new Dictionary<T, CacheItem<T>>(ExtraCrud.EqualityComparer<T>());
 			SavePointNames.Add(savePointName);
 			SavePoints.Add(SavePoint);
 		}

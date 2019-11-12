@@ -11,17 +11,18 @@ namespace Dapper
 	/// <summary>
 	/// The name of the database table. If this <see cref="Attribute"/> is not supplied then the table name is assumed to be the same as the <see langword="class"/> name.
 	/// </summary>
-	[AttributeUsage(AttributeTargets.Class)]
+	[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
 	public class TableAttribute : Attribute
 	{
 		/// <summary>
 		/// The database table name.
 		/// </summary>
 		/// <param name="name">The name of the database table.</param>
-		public TableAttribute(string name = null, SqlSyntax syntax = SqlSyntax.SQLServer)
+		public TableAttribute(string name = null, bool onlyDeclaredProperties = true, SqlSyntax syntax = SqlSyntax.SQLServer)
 		{
 			Name = name;
 			Syntax = syntax;
+			OnlyDeclaredProperties = onlyDeclaredProperties;
 		}
 
 		/// <summary>
@@ -29,5 +30,6 @@ namespace Dapper
 		/// </summary>
 		public string Name { get; private set; }
 		public SqlSyntax Syntax { get; private set; }
+		public bool OnlyDeclaredProperties { get; private set;}
 	}
 }

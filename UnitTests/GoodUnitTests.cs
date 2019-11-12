@@ -27,7 +27,7 @@ namespace UnitTests
 		public void TestInit()
 		{
 			string[] tables = new string[] {
-				TableData<TestDTO>.TableName, TableData<TestDTO2>.TableName, TableData<Test3>.TableName, TableData<TestDTO4>.TableName,
+				ExtraCrud.Builder<TestDTO>().TableName, ExtraCrud.Builder<TestDTO2>().TableName, ExtraCrud.Builder<Test3>().TableName, ExtraCrud.Builder<TestDTO4>().TableName,
 			};
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
 				conn.Open();

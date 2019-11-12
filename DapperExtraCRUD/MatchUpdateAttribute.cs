@@ -11,7 +11,7 @@ namespace Dapper
 	/// <summary>
 	/// Turns the <see cref="PropertyInfo"/> into a pseudo key for updates.
 	/// </summary>
-	[AttributeUsage(AttributeTargets.Property)]
+	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 	public class MatchUpdateAttribute : IDefaultAttribute
 	{
 		/// <summary>

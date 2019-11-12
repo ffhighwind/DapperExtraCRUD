@@ -17,14 +17,14 @@ namespace UnitTests
 		[ExpectedException(typeof(System.InvalidOperationException))]
 		public void Bad1()
 		{
-			TableFactory.Create<Bad1>();
+			ExtraCrud.Builder<Bad1>();
 		}
 
 		[TestMethod]
 		[ExpectedException(typeof(System.InvalidOperationException))]
 		public void Bad2()
 		{
-			TableFactory.Create<Bad2>();
+			ExtraCrud.Builder<Bad2>();
 		}
 	}
 }

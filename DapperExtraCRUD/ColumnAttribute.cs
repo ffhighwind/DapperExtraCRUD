@@ -9,7 +9,7 @@ namespace Dapper
 	/// <summary>
 	/// The name of the column.
 	/// </summary>
-	[AttributeUsage(AttributeTargets.Property)]
+	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 	public class ColumnAttribute : Attribute
 	{
 		/// <summary>

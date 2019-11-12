@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace Dapper.Extra
 {
+	/*
 	public static class TableFactory
 	{
 		private static SqlSyntax _DefaultSyntax = SqlSyntax.SQLServer;
@@ -29,68 +30,6 @@ namespace Dapper.Extra
 						break;
 				}
 			}
-		}
-
-		public static SqlSyntax DetectSyntax(IDbConnection conn)
-		{
-			bool notOpen = conn.State != ConnectionState.Open;
-			if (notOpen)
-				conn.Open();
-			SqlSyntax syntax = _DetectSyntax(conn);
-			if (notOpen)
-				conn.Close();
-			return syntax;
-		}
-
-		public static SqlSyntax _DetectSyntax(IDbConnection conn)
-		{
-			// SQLServer
-			try {
-				//int c = conn.QuerySingle<int>("SELECT 1 as [x]");
-				//int? b = conn.QueryFirstOrDefault<int?>("SELECT CAST(SCOPE_IDENTITY() as INT) as [Id]");
-				string s = conn.QuerySingle<string>("SELECT 'a' + 'b'");
-				int a = conn.QuerySingle<int>("SELECT TOP(1) * FROM (SELECT 1) as X(Id)");
-				//int a = conn.QuerySingle<int>("SELECT SQUARE(1)");
-				//DateTime date = conn.QuerySingle<DateTime>("SELECT GETDATE()");
-				//string s = conn.QuerySingle<string>("SELECT RTRIM(LTRIM(' a '))");
-				return SqlSyntax.SQLServer;
-			}
-			catch { }
-
-			// MySQL
-			try {
-				int z = conn.QuerySingle<int>("SELECT 1 as `x`");
-				int? c = conn.QueryFirstOrDefault<int?>("SELECT LAST_INSERT_ID() as Id");
-				//decimal b = conn.QuerySingle<decimal>("SELECT POW(1,1)"); // MySQL
-				//string s = conn.QuerySingle<string>("SELECT @@version"); // SQLServer + MySQL
-				//int a = conn.QuerySingle<int>("SELECT 1 LIMIT 1");
-				return SqlSyntax.MySQL;
-			}
-			catch { }
-
-			try {
-				int? a = conn.QueryFirstOrDefault<int?>("SELECT LAST_INSERT_ROWID() as Id");
-				return SqlSyntax.SQLite;
-			}
-			catch { }
-
-			// PostgreSQL
-			try {
-				string s = conn.QuerySingle<string>("'a' || 'b'"); // Oracle + PostgreSQL
-																   //DateTime now = conn.QuerySingle<DateTime>("NOW()"); // PostgreSQL + MySQL
-				int? a = conn.QueryFirstOrDefault<int?>("SELECT LASTVAL() as Id");
-				return SqlSyntax.PostgreSQL;
-			}
-			catch { }
-
-			// Oracle
-			//try {
-			//	int a = conn.QuerySingle<int>("SELECT BITAND(1,1)");
-			//	decimal b = conn.QuerySingle<decimal>("POWER(1,1)");
-			//	return SqlSyntax.Oracle;
-			//}
-			//catch { }
-			throw new InvalidOperationException("Unknown RDBMS");
 		}
 
 		public static TableFactory<T> Create<T>(SqlSyntax syntax)
@@ -143,7 +82,7 @@ namespace Dapper.Extra
 		};
 
 		/// <summary>
-		/// [Column("Name")] or the name of the property.
+		/// Returns the unquoted column name which is determined by the ColumnAttribute or the property's name.
 		/// </summary>
 		/// <param name="property">The <see cref="PropertyInfo"/> representing the column.</param>
 		/// <returns>The name of the column.</returns>
@@ -172,7 +111,7 @@ namespace Dapper.Extra
 		}
 
 		public static void BulkInsert<T>(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction, string tableName, IReadOnlyList<string> columns,
-			IReadOnlyList<PropertyInfo> properties, int? commandTimeout, SqlBulkCopyOptions options)
+			IReadOnlyList<PropertyInfo> properties, int commandTimeout, SqlBulkCopyOptions options)
 			where T : class
 		{
 			FastMember.ObjectReader dataReader = FastMember.ObjectReader.Create<T>(objs, properties.Select(p => p.Name).ToArray());
@@ -186,4 +125,5 @@ namespace Dapper.Extra
 			}
 		}
 	}
+	*/
 }

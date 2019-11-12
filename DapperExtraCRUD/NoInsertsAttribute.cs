@@ -9,7 +9,7 @@ namespace Dapper
 	/// <summary>
 	/// Makes inserts to do nothing and changes upserts into updates.
 	/// </summary>
-	[AttributeUsage(AttributeTargets.Class)]
+	[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
 	public class NoInsertsAttribute : System.Attribute
 	{
 	}

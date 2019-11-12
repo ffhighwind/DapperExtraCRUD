@@ -10,7 +10,7 @@ namespace Dapper
 	/// <summary>
 	/// Ignores the <see cref="PropertyInfo"/> for selects.
 	/// </summary>
-	[AttributeUsage(AttributeTargets.Property)]
+	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 	public class IgnoreSelectAttribute : Attribute
 	{
 	}

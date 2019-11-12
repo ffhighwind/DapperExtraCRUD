@@ -9,7 +9,7 @@ namespace Dapper
 	/// <summary>
 	/// Makes deletes to do nothing.
 	/// </summary>
-	[AttributeUsage(AttributeTargets.Class)]
+	[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
 	public class NoDeletesAttribute : System.Attribute
 	{
 	}

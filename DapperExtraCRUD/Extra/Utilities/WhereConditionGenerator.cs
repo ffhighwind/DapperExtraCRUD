@@ -14,13 +14,13 @@ namespace Dapper.Extra.Utilities
 	/// Converts a <see cref="Predicate{T}"/> to a WHERE expression in SQL.
 	/// </summary>
 	/// <typeparam name="T">The input type.</typeparam>
-	public class WhereConditionVisitor<T> : ExpressionVisitor
+	public class WhereConditionGenerator<T> : ExpressionVisitor
 	{
 		protected ParameterExpression param;
 		protected readonly string tableName;
 		protected StringBuilder results = new StringBuilder(150);
 
-		public WhereConditionVisitor() : base()
+		public WhereConditionGenerator() : base()
 		{
 			tableName = typeof(T).GetCustomAttribute<TableAttribute>(false)?.Name ?? param.Type.Name;
 		}

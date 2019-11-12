@@ -9,7 +9,7 @@ namespace Dapper
 	/// <summary>
 	/// A primary key column.
 	/// </summary>
-	[AttributeUsage(AttributeTargets.Property)]
+	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 	public class KeyAttribute : Attribute
 	{
 		/// <summary>
