@@ -4,10 +4,12 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using Dapper.Extra.Interfaces;
 
 namespace Dapper.Extra.Internal
 {
+	/// <summary>
+	/// Stores metadata for a property/column.
+	/// </summary>
 	public sealed class SqlColumn
 	{
 		/// <summary>

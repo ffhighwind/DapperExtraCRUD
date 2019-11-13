@@ -4,7 +4,6 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Dapper.Extra.Interfaces;
 using Dapper.Extra.Persistence.Internal;
 
 namespace Dapper.Extra.Persistence

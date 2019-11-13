@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Dapper.Extra.Internal
 {
+	/// <summary>
+	/// The accepted attributes for the column.
+	/// </summary>
 	public enum SqlColumnAttributes
 	{
 		None = 0,

@@ -5,7 +5,6 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Dapper.Extra.Interfaces;
 
 namespace Dapper.Extra.Utilities
 {
@@ -13,7 +12,7 @@ namespace Dapper.Extra.Utilities
 	/// Connects to the database and performs SQL operations. This is not thread-safe because the 
 	/// <see cref="SqlConnection"/> and <see cref="SqlTransaction"/> are reused.
 	/// </summary>
-	/// <typeparam name="T">The table's type.</typeparam>
+	/// <typeparam name="T">The table type.</typeparam>
 	public class DataAccessObject<T> : IAccessObject<T>, IDataAccessConnection
 		where T : class
 	{

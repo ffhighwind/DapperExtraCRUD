@@ -7,7 +7,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Dapper.Extra.Interfaces
+namespace Dapper.Extra.Utilities
 {
 	public interface IAccessObjectSync<T>
 		where T : class

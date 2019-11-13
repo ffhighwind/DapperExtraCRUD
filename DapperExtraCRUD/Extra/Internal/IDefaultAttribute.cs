@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Dapper.Extra.Interfaces
+namespace Dapper.Extra.Internal
 {
 	/// <summary>
 	/// Base Attribute for MatchUpdate, IgnoreInsert, and IgnoreUpdate

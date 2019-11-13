@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Dapper.Extra.Internal
 {
 	/// <summary>
-	/// Generates SQL commands using a given RDBMS syntax.
+	/// Generates specialized commands using a given syntax.
 	/// </summary>
 	public class SqlAdapter
 	{

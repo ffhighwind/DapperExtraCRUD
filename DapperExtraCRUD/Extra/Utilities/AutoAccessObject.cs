@@ -4,7 +4,6 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Dapper.Extra.Interfaces;
 using Dapper.Extra.Internal;
 
 namespace Dapper.Extra.Utilities
@@ -12,7 +11,7 @@ namespace Dapper.Extra.Utilities
 	/// <summary>
 	/// Automatically connects to the database and performs SQL operations.
 	/// </summary>
-	/// <typeparam name="T">The table's type.</typeparam>
+	/// <typeparam name="T">The table type.</typeparam>
 	public class AutoAccessObject<T> : IAccessObject<T>
 		where T : class
 	{

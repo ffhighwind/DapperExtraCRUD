@@ -11,53 +11,85 @@ namespace Dapper.Extra
 	public static class ExtraCrud
 	{
 		public static SqlSyntax Syntax { get; set; } = SqlSyntax.SQLServer;
-		public static bool ThreadSafe { get; set; } = true;
-		private static ConcurrentDictionary<Type, object> Cache = new ConcurrentDictionary<Type, object>();
+		private static ConcurrentDictionary<Type, object> BuilderCache = new ConcurrentDictionary<Type, object>();
+		private static ConcurrentDictionary<Type, object> QueriesCache = new ConcurrentDictionary<Type, object>();
+		private static ConcurrentDictionary<Type, object> KeyQueriesCache = new ConcurrentDictionary<Type, object>();
 
+		/// <summary>
+		/// Creates or gets a cached <see cref="SqlBuilder{T}"/>.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <returns>The <see cref="SqlBuilder{T}"/>.</returns>
 		public static SqlBuilder<T> Builder<T>() where T : class
 		{
-			Type type = typeof(SqlBuilder<T>);
-			if (Cache.TryGetValue(type, out object builder)) {
-				return (SqlBuilder<T>) builder;
+			Type type = typeof(T);
+			if (BuilderCache.TryGetValue(type, out object obj)) {
+				return (SqlBuilder<T>) obj;
 			}
-			SqlBuilder<T> b = new SqlBuilder<T>(new SqlTypeInfo(type), ThreadSafe ? System.Threading.LazyThreadSafetyMode.ExecutionAndPublication : System.Threading.LazyThreadSafetyMode.None);
-			return (SqlBuilder<T>) Cache.GetOrAdd(type, b);
+			SqlBuilder<T> builder = new SqlBuilder<T>(new SqlTypeInfo(type));
+			return (SqlBuilder<T>) BuilderCache.GetOrAdd(type, builder);
 		}
 
+		/// <summary>
+		/// Creates or gets a cached <see cref="SqlBuilder{T, KeyType}"/>.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <returns>The <see cref="SqlBuilder{T, KeyType}"/>.</returns>
 		public static SqlBuilder<T, KeyType> Builder<T, KeyType>() where T : class
 		{
 			SqlBuilder<T> builder = Builder<T>();
 			return builder.Create<KeyType>();
 		}
 
+		/// <summary>
+		/// Creates or gets the queries and commands for a given type.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <returns>The queries for the given type.</returns>
 		public static SqlQueries<T> Queries<T>() where T : class
 		{
-			Type type = typeof(SqlQueries<T>);
-			if (Cache.TryGetValue(type, out object queries)) {
-				return (SqlQueries<T>) queries;
+			Type type = typeof(T);
+			if (QueriesCache.TryGetValue(type, out object obj)) {
+				return (SqlQueries<T>) obj;
 			}
-			SqlBuilder<T> builder = Builder<T>();
-			return (SqlQueries<T>) Cache.GetOrAdd(type, builder.Queries);
+			ISqlQueries<T> queries = Builder<T>().Queries;
+			return (SqlQueries<T>) QueriesCache.GetOrAdd(type, queries);
 		}
 
+		/// <summary>
+		/// Creates or gets the queries and commands for a given type.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <returns>The queries for the given type.</returns>
 		public static SqlQueries<T, KeyType> Queries<T, KeyType>() where T : class
 		{
-			Type type = typeof(SqlQueries<T, KeyType>);
-			if (Cache.TryGetValue(type, out object queries)) {
-				return (SqlQueries<T, KeyType>) queries;
+			Type type = typeof(T);
+			if (KeyQueriesCache.TryGetValue(type, out object obj)) {
+				return (SqlQueries<T, KeyType>) obj;
 			}
-			SqlBuilder<T, KeyType> builder = Builder<T, KeyType>();
-			return (SqlQueries<T, KeyType>) Cache.GetOrAdd(type, builder.Queries);
+			ISqlQueries<T, KeyType> queries = Builder<T, KeyType>().Queries;
+			return (SqlQueries<T, KeyType>) KeyQueriesCache.GetOrAdd(type, queries);
 		}
 
+		/// <summary>
+		/// Compares two objects of the given type and determines if they are equal.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
 		public static IEqualityComparer<T> EqualityComparer<T>() where T : class
 		{
 			return Builder<T>().EqualityComparer;
 		}
 
+		/// <summary>
+		/// Clears the cache of queries and builders. This is not recommended unless you run out of memory.
+		/// </summary>
 		public static void ClearCache()
 		{
-			Cache.Clear();
+			BuilderCache.Clear();
+			QueriesCache.Clear();
+			KeyQueriesCache.Clear();
 		}
 	}
 }

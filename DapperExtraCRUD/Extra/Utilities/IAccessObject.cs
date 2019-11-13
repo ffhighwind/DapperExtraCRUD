@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Dapper.Extra.Utilities;
 
-namespace Dapper.Extra.Interfaces
+namespace Dapper.Extra.Utilities
 {
 	public abstract class IAccessObject<T> : IAccessObjectSync<T>, IAccessObjectAsync<T>
 		where T : class

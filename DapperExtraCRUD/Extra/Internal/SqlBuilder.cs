@@ -9,10 +9,13 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Dapper.Extra.Interfaces;
 
 namespace Dapper.Extra.Internal
 {
+	/// <summary>
+	/// Stores metadata and generates SQL commands and queries for the given type.
+	/// </summary>
+	/// <typeparam name="T">The type of to generate queries for.</typeparam>
 	public sealed class SqlBuilder<T>
 		where T : class
 	{
@@ -27,6 +30,7 @@ namespace Dapper.Extra.Internal
 				GetList = CreateGetList(),
 				Insert = CreateInsert(),
 				Update = CreateUpdate(),
+				LazyUpdateObj = new Lazy<DbObjBool<T>>(() => CreateUpdateObj()),
 				LazyBulkDelete = new Lazy<SqlListInt<T>>(() => CreateBulkDelete(), threadSafety),
 				LazyBulkGet = new Lazy<SqlListList<T>>(() => CreateBulkGet(), threadSafety),
 				LazyBulkInsert = new Lazy<SqlListVoid<T>>(() => CreateBulkInsert(), threadSafety),
@@ -53,54 +57,54 @@ namespace Dapper.Extra.Internal
 					TypeCode typeCode = Type.GetTypeCode(type);
 					switch (typeCode) {
 						case TypeCode.Int16:
-							Child = new SqlBuilder<T, short>(this);
+							KeyBuilder = new SqlBuilder<T, short>(this);
 							break;
 						case TypeCode.Int32:
-							Child = new SqlBuilder<T, int>(this);
+							KeyBuilder = new SqlBuilder<T, int>(this);
 							break;
 						case TypeCode.Int64:
-							Child = new SqlBuilder<T, long>(this);
+							KeyBuilder = new SqlBuilder<T, long>(this);
 							break;
 						case TypeCode.SByte:
-							Child = new SqlBuilder<T, sbyte>(this);
+							KeyBuilder = new SqlBuilder<T, sbyte>(this);
 							break;
 						case TypeCode.Single:
-							Child = new SqlBuilder<T, float>(this);
+							KeyBuilder = new SqlBuilder<T, float>(this);
 							break;
 						case TypeCode.String:
-							Child = new SqlBuilder<T, string>(this);
+							KeyBuilder = new SqlBuilder<T, string>(this);
 							break;
 						case TypeCode.UInt16:
-							Child = new SqlBuilder<T, ushort>(this);
+							KeyBuilder = new SqlBuilder<T, ushort>(this);
 							break;
 						case TypeCode.Double:
-							Child = new SqlBuilder<T, double>(this);
+							KeyBuilder = new SqlBuilder<T, double>(this);
 							break;
 						case TypeCode.UInt32:
-							Child = new SqlBuilder<T, uint>(this);
+							KeyBuilder = new SqlBuilder<T, uint>(this);
 							break;
 						case TypeCode.UInt64:
-							Child = new SqlBuilder<T, ulong>(this);
+							KeyBuilder = new SqlBuilder<T, ulong>(this);
 							break;
 						case TypeCode.Byte:
-							Child = new SqlBuilder<T, byte>(this);
+							KeyBuilder = new SqlBuilder<T, byte>(this);
 							break;
 						case TypeCode.Char:
-							Child = new SqlBuilder<T, char>(this);
+							KeyBuilder = new SqlBuilder<T, char>(this);
 							break;
 						case TypeCode.DateTime:
-							Child = new SqlBuilder<T, DateTime>(this);
+							KeyBuilder = new SqlBuilder<T, DateTime>(this);
 							break;
 						case TypeCode.Decimal:
-							Child = new SqlBuilder<T, decimal>(this);
+							KeyBuilder = new SqlBuilder<T, decimal>(this);
 							break;
 						default:
 							if (type == typeof(Guid))
-								Child = new SqlBuilder<T, Guid>(this);
+								KeyBuilder = new SqlBuilder<T, Guid>(this);
 							else if (type == typeof(DateTimeOffset))
-								Child = new SqlBuilder<T, DateTimeOffset>(this);
+								KeyBuilder = new SqlBuilder<T, DateTimeOffset>(this);
 							else if (type == typeof(TimeSpan))
-								Child = new SqlBuilder<T, TimeSpan>(this);
+								KeyBuilder = new SqlBuilder<T, TimeSpan>(this);
 							break;
 					}
 				}
@@ -110,34 +114,57 @@ namespace Dapper.Extra.Internal
 		}
 
 		/// <summary>
-		/// [Table("Name")] or the class name
+		/// The quoted table name or the class name.
 		/// </summary>
 		public string TableName => Info.TableName;
+		/// <summary>
+		/// The temporary table name for bulk operations.
+		/// </summary>
 		public string BulkStagingTable { get; private set; }
+		/// <summary>
+		/// The syntax used to generate SQL commands.
+		/// </summary>
 		public SqlSyntax Syntax => Info.Syntax;
+		/// <summary>
+		/// Stores metadata for for the given type.
+		/// </summary>
 		public SqlTypeInfo Info { get; private set; }
+		/// <summary>
+		///  All valid columns for the given type.
+		/// </summary>
 		public IReadOnlyList<SqlColumn> Columns => Info.Columns;
+		/// <summary>
+		/// The columns that determine uniqueness. This is every column if there are no keys.
+		/// </summary>
 		public IReadOnlyList<SqlColumn> EqualityColumns => Info.EqualityColumns;
-
+		/// <summary>
+		/// The queries and commands for this type.
+		/// </summary>
 		public ISqlQueries<T> Queries { get; private set; }
+		/// <summary>
+		/// Compares two objects of the given type and determines if they are equal.
+		/// </summary>
 		public IEqualityComparer<T> EqualityComparer { get; private set; }
-
-		public object Child { get; private set; }
-
+		/// <summary>
+		/// A <see cref="SqlBuilder{T, KeyType}"/> if a single key exists.
+		/// </summary>
+		public object KeyBuilder { get; private set; }
+		/// <summary>
+		/// Casts <see cref="KeyBuilder"/> to the given <see cref="SqlBuilder{T, KeyType}"/>.
+		/// </summary>
+		/// <typeparam name="KeyType">The key type.</typeparam>
 		public SqlBuilder<T, KeyType> Create<KeyType>()
 		{
-			if (Child is SqlBuilder<T, KeyType> child)
+			if (KeyBuilder is SqlBuilder<T, KeyType> child)
 				return child;
 			if (Info.KeyColumns.Count != 1)
 				throw new InvalidOperationException(typeof(T).Name + " requires a single key");
-			if (Child != null) {
+			if (KeyBuilder != null) {
 				Type expected = Info.KeyColumns[0].Property.PropertyType;
 				throw new InvalidOperationException(expected.Name + " is not the correct key type for " + typeof(T).Name + ". Expected " + expected.Name + ".");
 			}
 			throw new InvalidOperationException(typeof(KeyType).Name + " is an unsupported key type.");
 		}
-
-		private ConcurrentDictionary<Type, string> UpdateSetMap;
 
 		#region StringCache
 		/// <summary>
@@ -219,7 +246,7 @@ namespace Dapper.Extra.Internal
 
 		internal string SelectAutoKey()
 		{
-			return Store(Info.Adapter.SelectIdentityQuery(typeof(T)));
+			return Store(Info.Adapter.SelectIdentityQuery(Info.AutoKeyColumn.Type));
 		}
 
 		internal string UpdateSet(IEnumerable<SqlColumn> columns)
@@ -584,7 +611,7 @@ namespace Dapper.Extra.Internal
 			}
 			else {
 				string whereUpdateEquals = WhereEquals(Info.UpdateKeyColumns);
-				UpdateSetMap = new ConcurrentDictionary<Type, string>(); // lazy initialization - assumes this is only called once
+				ConcurrentDictionary<Type, string> UpdateSetMap = new ConcurrentDictionary<Type, string>();
 				return (connection, obj, transaction, commandTimeout) =>
 				{
 					Type type = obj.GetType();
@@ -712,6 +739,11 @@ namespace Dapper.Extra.Internal
 		#endregion Upserts
 	}
 
+	/// <summary>
+	/// Stores metadata and generates SQL commands and queries for the given type.
+	/// </summary>
+	/// <typeparam name="T">The table type.</typeparam>
+	/// <typeparam name="KeyType">The key type.</typeparam>
 	public sealed class SqlBuilder<T, KeyType>
 		where T : class
 	{
@@ -729,14 +761,38 @@ namespace Dapper.Extra.Internal
 			Queries = queries;
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public SqlBuilder<T> Parent { get; private set; }
+		/// <summary>
+		/// The quoted table name or the class name.
+		/// </summary>
 		public string TableName => Info.TableName;
+		/// <summary>
+		/// The temporary table name for bulk operations.
+		/// </summary>
 		public string BulkStagingTable => Parent.BulkStagingTable;
+		/// <summary>
+		/// The syntax used to generate SQL commands.
+		/// </summary>
 		public SqlSyntax Syntax => Info.Syntax;
+		/// <summary>
+		/// Stores metadata for for the given type.
+		/// </summary>
 		public SqlTypeInfo Info => Parent.Info;
+		/// <summary>
+		///  All valid columns for the given type.
+		/// </summary>
 		public IReadOnlyList<SqlColumn> Columns => Parent.Columns;
+		/// <summary>
+		/// The key column.
+		/// </summary>
 		public SqlColumn EqualityColumn => Parent.EqualityColumns[0];
 
+		/// <summary>
+		/// The queries and commands for this type.
+		/// </summary>
 		public ISqlQueries<T, KeyType> Queries { get; private set; }
 
 		#region Create Delegates

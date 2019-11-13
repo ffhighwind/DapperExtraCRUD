@@ -5,7 +5,6 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Dapper.Extra.Interfaces;
 using Dapper.Extra.Persistence.Interfaces;
 using Dapper.Extra.Persistence.Internal;
 

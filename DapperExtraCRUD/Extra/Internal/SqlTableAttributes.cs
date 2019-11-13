@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Dapper.Extra.Internal
 {
+	/// <summary>
+	/// The attributes for the class.
+	/// </summary>
 	public enum SqlTableAttributes
 	{
 		None = 0,

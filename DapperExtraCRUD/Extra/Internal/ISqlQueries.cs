@@ -6,10 +6,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using Dapper.Extra.Interfaces;
-using Dapper.Extra.Internal;
 
-namespace Dapper.Extra.Interfaces
+namespace Dapper.Extra.Internal
 {
 	public interface ISqlQueries<T, KeyType> where T : class
 	{

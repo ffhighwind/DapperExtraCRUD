@@ -4,12 +4,11 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using Dapper.Extra.Interfaces;
 
 namespace Dapper.Extra.Internal
 {
 	/// <summary>
-	/// Contains data for constructing SQL commands for the given type.
+	/// Stores metadata for for the given type.
 	/// </summary>
 	public sealed class SqlTypeInfo
 	{

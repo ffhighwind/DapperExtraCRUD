@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Dapper.Extra
 {
 	/// <summary>
-	/// Determines the RDBMS syntax used for generating queries.
+	/// Determines the  syntax used for generating queries.
 	/// </summary>
 	public enum SqlSyntax
 	{
