@@ -56,6 +56,7 @@
     <Compile Include="Bad\Bad1.cs" />
     <Compile Include="Bad\Bad2.cs" />
     <Compile Include="Bad\CustomType.cs" />
+    <Compile Include="Good\IDto.cs" />
     <Compile Include="Good\Test3.cs" />
     <Compile Include="Good\TestDTO.cs" />
     <Compile Include="Good\TestDTO2.cs" />

@@ -31,6 +31,13 @@ namespace Dapper
 			return count;
 		}
 
+		[Obsolete("Use BulkDelete or a loop", true)]
+		public static bool Delete<T, KeyType>(this IDbConnection connection, IEnumerable<KeyType> keys, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
+		}
+
 		/// <summary>
 		/// Deletes the row with the given key.
 		/// </summary>
@@ -46,6 +53,30 @@ namespace Dapper
 		{
 			bool success = ExtraCrud.Queries<T, KeyType>().Delete(transaction.Connection, key, transaction, commandTimeout);
 			return success;
+		}
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <param name="connection">The connection to query on.</param>
+		/// <param name="keys">The keys of the rows to select.</param>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows with the given keys.</returns>
+		public static IEnumerable<T> BulkGet<T, KeyType>(this IDbConnection connection, IEnumerable<KeyType> keys, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			IEnumerable<T> list = ExtraCrud.Queries<T, KeyType>().BulkGet(connection, keys, transaction, commandTimeout);
+			return list;
+		}
+
+		[Obsolete("Use BulkGet or a loop", true)]
+		public static T Get<T, KeyType>(this IDbConnection connection, IEnumerable<KeyType> keys, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -102,6 +133,13 @@ namespace Dapper
 			return await Task.Run(() => BulkDelete<T, KeyType>(connection, keys, transaction, commandTimeout));
 		}
 
+		[Obsolete("Use BulkDeleteAsync or a loop", true)]
+		public static Task<bool> DeleteAsync<T, KeyType>(this IDbConnection connection, IEnumerable<KeyType> keys, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
+		}
+
 		/// <summary>
 		/// Deletes the row with the given key asynchronously.
 		/// </summary>
@@ -116,6 +154,29 @@ namespace Dapper
 			where T : class
 		{
 			return await Task.Run(() => Delete<T, KeyType>(connection, key, transaction, commandTimeout));
+		}
+
+		/// <summary>
+		/// Selects the rows with the given keys asynchronously.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <param name="connection">The connection to query on.</param>
+		/// <param name="keys">The keys of the rows to select.</param>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows with the given keys.</returns>
+		public static async Task<IEnumerable<T>> BulkGetAsync<T, KeyType>(this IDbConnection connection, IEnumerable<KeyType> keys, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			return await Task.Run(() => BulkGet<T, KeyType>(connection, keys, transaction, commandTimeout));
+		}
+
+		[Obsolete("Use BulkGet or a loop", true)]
+		public static Task<T> GetAsync<T, KeyType>(this IDbConnection connection, IEnumerable<KeyType> keys, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -173,6 +234,13 @@ namespace Dapper
 			return keys;
 		}
 
+		[Obsolete("Use BulkDelete or a loop", true)]
+		public static bool Delete<T>(this IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
+		}
+
 		/// <summary>
 		/// Deletes the given row.
 		/// </summary>
@@ -222,6 +290,13 @@ namespace Dapper
 			return count;
 		}
 
+		[Obsolete("Use BulkInsert or a loop", true)]
+		public static void Insert<T>(this IDbConnection connection, IEnumerable<T> obj, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
+		}
+
 		/// <summary>
 		/// Inserts a row.
 		/// </summary>
@@ -250,6 +325,13 @@ namespace Dapper
 			ExtraCrud.Queries<T>().BulkInsert(connection, objs, transaction, commandTimeout);
 		}
 
+		[Obsolete("Use BulkUpdate or a loop", true)]
+		public static bool Update<T>(this IDbConnection connection, IEnumerable<object> objs, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
+		}
+
 		/// <summary>
 		/// Updates a row.
 		/// </summary>
@@ -264,6 +346,13 @@ namespace Dapper
 		{
 			bool success = ExtraCrud.Queries<T>().UpdateObj(connection, obj, transaction, commandTimeout);
 			return success;
+		}
+
+		[Obsolete("Use BulkUpdate or a loop", true)]
+		public static bool Update<T>(this IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -298,6 +387,13 @@ namespace Dapper
 			return count;
 		}
 
+		[Obsolete("Use BulkUpsert or a loop", true)]
+		public static bool Upsert<T>(this IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
+		}
+
 		/// <summary>
 		/// Upserts a row.
 		/// </summary>
@@ -330,6 +426,13 @@ namespace Dapper
 			return count;
 		}
 
+		[Obsolete("Use BulkGet or a loop", true)]
+		public static T Get<T>(this IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
+		}
+
 		/// <summary>
 		/// Selects a row.
 		/// </summary>
@@ -343,6 +446,22 @@ namespace Dapper
 			where T : class
 		{
 			T result = ExtraCrud.Queries<T>().Get(connection, obj, transaction, commandTimeout);
+			return result;
+		}
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <param name="connection">The connection to query on.</param>
+		/// <param name="obj">The objects to select.</param>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given keys.</returns>
+		public static IEnumerable<T> BulkGet<T>(this SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			IEnumerable<T> result = ExtraCrud.Queries<T>().BulkGet(connection, objs, transaction, commandTimeout);
 			return result;
 		}
 
@@ -456,6 +575,13 @@ namespace Dapper
 			return await Task.Run(() => GetKeys<T>(connection, whereCondition, param, transaction, buffered, commandTimeout));
 		}
 
+		[Obsolete("Use BulkDeleteAsync or a loop", true)]
+		public static Task<bool> DeleteAsync<T>(this IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
+		}
+
 		/// <summary>
 		/// Deletes the given row asynchronously.
 		/// </summary>
@@ -502,6 +628,13 @@ namespace Dapper
 			return await Task.Run(() => Delete<T>(connection, whereCondition, param, transaction, commandTimeout));
 		}
 
+		[Obsolete("Use BulkInsertAsync or a loop", true)]
+		public static Task InsertAsync<T>(this IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
+		}
+
 		/// <summary>
 		/// Inserts a row asynchronously.
 		/// </summary>
@@ -530,6 +663,13 @@ namespace Dapper
 			await Task.Run(() => BulkInsert(connection, objs, transaction, commandTimeout));
 		}
 
+		[Obsolete("Use BulkUpdateAsync or a loop", true)]
+		public static Task<bool> UpdateAsync<T>(this IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
+		}
+
 		/// <summary>
 		/// Updates a row asynchronously.
 		/// </summary>
@@ -543,6 +683,13 @@ namespace Dapper
 			where T : class
 		{
 			return await Task.Run(() => Update<T>(connection, obj, transaction, commandTimeout));
+		}
+
+		[Obsolete("Use a loop", true)]
+		public static Task<bool> UpdateAsync<T>(this IDbConnection connection, IEnumerable<object> objs, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -575,6 +722,13 @@ namespace Dapper
 			return await Task.Run(() => BulkUpdate(connection, objs, transaction, commandTimeout));
 		}
 
+		[Obsolete("Use BulkUpsertAsync or a loop", true)]
+		public static Task<bool> UpsertAsync<T>(this IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
+		}
+
 		/// <summary>
 		/// Upserts a row asynchronously.
 		/// </summary>
@@ -584,10 +738,10 @@ namespace Dapper
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>True if the object was upserted; false otherwise.</returns>
-		public static async Task UpsertAsync<T>(this IDbConnection connection, T obj, IDbTransaction transaction = null, int commandTimeout = 30)
+		public static async Task<bool> UpsertAsync<T>(this IDbConnection connection, T obj, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			await Task.Run(() => Upsert(connection, obj, transaction, commandTimeout));
+			return await Task.Run(() => Upsert(connection, obj, transaction, commandTimeout));
 		}
 
 		/// <summary>
@@ -599,10 +753,17 @@ namespace Dapper
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The number of upserted rows.</returns>
-		public static async Task BulkUpsertAsync<T>(this SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction = null, int commandTimeout = 30)
+		public static async Task<int> BulkUpsertAsync<T>(this SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			await Task.Run(() => BulkUpsert(connection, objs, transaction, commandTimeout));
+			return await Task.Run(() => BulkUpsert(connection, objs, transaction, commandTimeout));
+		}
+
+		[Obsolete("Use BulkGetAsync or a loop", true)]
+		public static Task<T> GetAsync<T>(this IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			throw new InvalidOperationException();
 		}
 
 		/// <summary>

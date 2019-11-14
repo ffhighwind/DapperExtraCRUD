@@ -8,8 +8,16 @@ using Dapper;
 namespace UnitTests
 {
 	[Table("Test4")]
-	public class TestDTO4
+	public class TestDTO4 : IEquatable<TestDTO4>, IDto<TestDTO4>
 	{
+		public TestDTO4() { }
+		public TestDTO4(Random random)
+		{
+			//ID = random.Next();
+			FirstName = random.Next().ToString();
+			LastName = random.Next().ToString();
+		}
+
 		[Key]
 		public int ID { get; set; }
 
@@ -30,6 +38,18 @@ CREATE TABLE [dbo].[Test4](
 	[ID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+		}
+
+		public bool Equals(TestDTO4 other)
+		{
+			return other.ID == ID
+				&& other.FirstName == FirstName
+				&& other.LastName == LastName;
+		}
+
+		public bool IsKeyEqual(TestDTO4 other)
+		{
+			return other.ID == ID;
 		}
 	}
 }

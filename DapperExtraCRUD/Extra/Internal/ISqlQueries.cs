@@ -11,7 +11,7 @@ namespace Dapper.Extra.Internal
 {
 	public interface ISqlQueries<T, KeyType> where T : class
 	{
-		SqlKeysList<T, KeyType> BulkGet { get; }
+		DbKeysList<T, KeyType> BulkGet { get; }
 		SqlKeysInt<T, KeyType> BulkDelete { get; }
 		DbKeyBool<KeyType> Delete { get; }
 		DbKeyObj<T, KeyType> Get { get; }

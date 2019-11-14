@@ -10,13 +10,13 @@ namespace Dapper.Extra.Internal
 	{
 		public DbKeyObj<T, KeyType> Get { get; internal set; }
 
-		public SqlKeysList<T, KeyType> BulkGet => LazyBulkGet.Value;
+		public DbKeysList<T, KeyType> BulkGet => LazyBulkGet.Value;
 		public SqlKeysInt<T, KeyType> BulkDelete => LazyBulkDelete.Value;
 		public DbKeyBool<KeyType> Delete => LazyDelete.Value;
 		public DbWhereKeys<KeyType> GetKeys => LazyGetKeys.Value;
 
 		#region Lazy Internal
-		internal Lazy<SqlKeysList<T, KeyType>> LazyBulkGet { get; set; }
+		internal Lazy<DbKeysList<T, KeyType>> LazyBulkGet { get; set; }
 		internal Lazy<SqlKeysInt<T, KeyType>> LazyBulkDelete { get; set; }
 		internal Lazy<DbKeyBool<KeyType>> LazyDelete { get; set; }
 		internal Lazy<DbWhereKeys<KeyType>> LazyGetKeys { get; set; }

@@ -24,8 +24,10 @@ namespace Dapper.Extra.Internal
 			else {
 				Adapter = SqlAdapter.GetAdapter(tableAttr.Syntax);
 				TableName = string.IsNullOrWhiteSpace(tableAttr.Name) ? type.Name : tableAttr.Name.Trim();
-				if (tableAttr.OnlyDeclaredProperties)
+				if (tableAttr.OnlyDeclaredProperties) {
 					flags |= BindingFlags.DeclaredOnly;
+					Attributes |= SqlTableAttributes.DeclaredOnly;
+				}
 			}
 
 			PropertyInfo[] properties = type.GetProperties(flags);
@@ -35,6 +37,7 @@ namespace Dapper.Extra.Internal
 
 			List<SqlColumn> keys = new List<SqlColumn>();
 			List<SqlColumn> columns = new List<SqlColumn>();
+			int autoKeyCount = 0;
 			foreach (PropertyInfo prop in validProperties) {
 				ColumnAttribute columnAttr = prop.GetCustomAttribute<ColumnAttribute>(false);
 				string columnName = columnAttr == null || string.IsNullOrWhiteSpace(columnAttr.Name) ? prop.Name : Adapter.QuoteIdentifier(columnAttr.Name);
@@ -42,6 +45,9 @@ namespace Dapper.Extra.Internal
 				columns.Add(column);
 				KeyAttribute keyAttr = prop.GetCustomAttribute<KeyAttribute>(false);
 				if (keyAttr != null) {
+					if (keyAttr.AutoIncrement) {
+						autoKeyCount++;
+					}
 					column.Attributes = keyAttr.AutoIncrement ? SqlColumnAttributes.AutoKey : SqlColumnAttributes.Key;
 					keys.Add(column);
 				}
@@ -82,7 +88,10 @@ namespace Dapper.Extra.Internal
 			if (KeyColumns.Count == 1 && KeyColumns[0].IsAutoKey && SqlInternal.IsValidAutoIncrementType(keys[0].Type)) {
 				AutoKeyColumn = keys[0];
 			}
-			else {
+			else if (KeyColumns.Count != 0) {
+				if(autoKeyCount != 0 && KeyColumns.Count != autoKeyCount) {
+					throw new InvalidOperationException(Type.FullName + " cannot have a both a composite key and an autoincrement key.");
+				}
 				// remove SqlColumnAttributes.AutoKey from all columns
 				foreach (SqlColumn key in keys) {
 					key.Attributes = SqlColumnAttributes.Key;

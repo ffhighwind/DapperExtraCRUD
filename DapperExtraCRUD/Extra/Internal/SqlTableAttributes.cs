@@ -14,6 +14,7 @@ namespace Dapper.Extra.Internal
 		None = 0,
 		NoDeletes = 1,
 		NoInserts = 2,
-		NoUpdates = 4
+		NoUpdates = 4,
+		DeclaredOnly = 8,
 	}
 }

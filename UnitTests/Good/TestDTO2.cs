@@ -8,19 +8,22 @@ using Dapper;
 namespace UnitTests
 {
 	[Table("Test2")]
-	public class TestDTO2 : IEquatable<TestDTO2>
+	public class TestDTO2 : IEquatable<TestDTO2>, IDto<TestDTO2>
 	{
 		public TestDTO2() { }
-		public TestDTO2(string str, int i)
+		public TestDTO2(Random random)
 		{
-			Col1 = i;
-			Col2 = str;
+			Col1 = random.Next();
+			Col2 = random.Next().ToString();
+			Col3 = (float) random.NextDouble();
 		}
 
+		[Key(false)]
 		public int Col1 { get; set; }
+		[Key(false)]
 		public string Col2 { get; set; }
-		public float Col3;
-		public string Col4;
+		[Key(false)]
+		public float Col3 { get; set; }
 
 		public override bool Equals(object obj)
 		{
@@ -32,8 +35,7 @@ namespace UnitTests
 			return other != null &&
 				   Col1 == other.Col1 &&
 				   Col2 == other.Col2 &&
-				   Col3 == other.Col3 &&
-				   Col4 == other.Col4;
+				   Col3 == other.Col3;
 		}
 
 		public override int GetHashCode()
@@ -42,7 +44,6 @@ namespace UnitTests
 			hashCode = hashCode * -1521134295 + Col1.GetHashCode();
 			hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Col2);
 			hashCode = hashCode * -1521134295 + Col3.GetHashCode();
-			hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Col4);
 			return hashCode;
 		}
 
@@ -51,9 +52,20 @@ namespace UnitTests
 			return @"
 CREATE TABLE [dbo].[Test2](
 	[Col1] [int] NOT NULL,
-	[Col2] [nvarchar](max) NOT NULL,
-	[Col3] [float] NOT NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+	[Col2] [nvarchar](50) NOT NULL,
+	[Col3] [float] NOT NULL,
+ CONSTRAINT [PK_Test2] PRIMARY KEY CLUSTERED 
+(
+	[Col1] ASC,
+	[Col2] ASC,
+	[Col3] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]";
+		}
+
+		public bool IsKeyEqual(TestDTO2 other)
+		{
+			return Equals(other);
 		}
 	}
 }

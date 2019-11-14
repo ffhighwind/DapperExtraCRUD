@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 namespace Dapper.Extra.Internal
 {
 	#region Keys
+	public delegate List<T> DbKeysList<T, KeyType>(IDbConnection connection, IEnumerable<KeyType> keys, IDbTransaction transaction = null, int commandTimeout = 30)
+		where T : class;
 	public delegate List<T> SqlKeysList<T, KeyType>(SqlConnection connection, IEnumerable<KeyType> keys, SqlTransaction transaction = null, int commandTimeout = 30)
 		where T : class;
 	public delegate IEnumerable<KeyType> SqlKeysKeys<T, KeyType>(SqlConnection connection, IEnumerable<KeyType> keys, SqlTransaction transaction = null, bool buffered = true, int commandTimeout = 30)

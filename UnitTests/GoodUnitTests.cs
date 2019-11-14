@@ -21,6 +21,12 @@ namespace UnitTests
 		//private const string ConnString = @"Data Source=.; Initial Catalog=Test; Integrated Security=true;";
 
 		private const string ConnString = @"Data Source=DESKTOP-V0JVTST\SQLEXPRESS;Initial Catalog=Test;Integrated Security=True;";
+		private static Random random = new Random(123512);
+
+		List<TestDTO> list1 = new List<TestDTO>();
+		List<TestDTO2> list2 = new List<TestDTO2>();
+		List<Test3> list3 = new List<Test3>();
+		List<TestDTO4> list4 = new List<TestDTO4>();
 
 		#region Initialize
 		[TestInitialize]
@@ -29,9 +35,9 @@ namespace UnitTests
 			string[] tables = new string[] {
 				ExtraCrud.Builder<TestDTO>().TableName, ExtraCrud.Builder<TestDTO2>().TableName, ExtraCrud.Builder<Test3>().TableName, ExtraCrud.Builder<TestDTO4>().TableName,
 			};
-			using (SqlConnection conn = new SqlConnection(ConnString)) {
+			using(SqlConnection conn = new SqlConnection(ConnString)) {
 				conn.Open();
-				using (SqlTransaction trans = conn.BeginTransaction()) {
+				using(trans = conn.BeginTransaction()) {
 					foreach (string table in tables) {
 						string cmd = DropTable(table);
 						conn.Execute(cmd, null, trans);
@@ -42,6 +48,22 @@ namespace UnitTests
 					conn.Execute(TestDTO4.CreateTable(), null, trans);
 					trans.Commit();
 				}
+			}
+			 list1 = new List<TestDTO>();
+			for (int i = 0, max = random.Next() % 50 + 25; i < max; i++) {
+				list1.Add(new TestDTO(random));
+			}
+			list2 = new List<TestDTO2>();
+			for (int i = 0, max = random.Next() % 50 + 25; i < max; i++) {
+				list2.Add(new TestDTO2(random));
+			}
+			list3 = new List<Test3>();
+			for (int i = 0, max = random.Next() % 50 + 25; i < max; i++) {
+				list3.Add(new Test3(random));
+			}
+			list4 = new List<TestDTO4>();
+			for (int i = 0, max = random.Next() % 50 + 25; i < max; i++) {
+				list4.Add(new TestDTO4(random));
 			}
 		}
 
@@ -59,36 +81,16 @@ DROP TABLE dbo.{tableName};";
 		#endregion Initialize
 
 		[TestMethod]
-		public void Test1()
+		public void Insert()
 		{
-			List<TestDTO> list = new List<TestDTO>()
-			{
-				new TestDTO() { ID = -1, CreatedDt = new DateTime(2019, 1, 1), Name = "Wesley" },
-				new TestDTO() { ID = -1, CreatedDt = new DateTime(2019, 1, 2), Name = "Wesley2" },
-				new TestDTO() { ID = -1, CreatedDt = new DateTime(2019, 1, 3), Name = "Wesley3" }
-			};
-
-			//List<TestDTO2> list2 = new List<TestDTO2>()
-			//{
-			//	new TestDTO2() { Col1 =  },
-			//}
-
-			List<TestDTO4> list4 = new List<TestDTO4>()
-			{
-				new TestDTO4() { ID = -1, FirstName = "Wesley1", LastName = "Hamilton" },
-				new TestDTO4() { ID = -1, FirstName = "Wesley2", LastName = "Hamilton"  },
-				new TestDTO4() { ID = -1, FirstName = "Wesley3", LastName = "Hamilton"  }
-			};
-			//WhereConditionVisitor<TestDTO4> gen = new WhereConditionVisitor<TestDTO4>();
-			//string str = gen.Create(x => x.FirstName == "A" && (new string[] { "A", "B" }.Contains(x.LastName) && x.ID <= 3));
-
-			TestDTO dto = new TestDTO() { CreatedDt = new DateTime(2019, 1, 15), Name = "Test" };
-
-
-			/*
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
 				conn.Open();
 				using (SqlTransaction trans = conn.BeginTransaction()) {
+					for(int i = 0; i < 4; i++) {
+						conn.Insert(list2[i]);
+						TestDTO2 obj = conn.Get(list2[i]);
+					}
+					/*
 					int deleted1 = conn.Delete<TestDTO>("", null, trans);
 					int deleted4 = conn.Delete<TestDTO4>("", null, trans);
 					// Bulk Insert
@@ -202,9 +204,9 @@ DROP TABLE dbo.{tableName};";
 					if (!conn.Delete(list2[1], trans)) {
 						throw new InvalidOperationException();
 					}
+					*/
 				}
 			}
-			*/
 		}
 	}
 }

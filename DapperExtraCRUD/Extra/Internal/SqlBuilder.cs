@@ -754,7 +754,7 @@ namespace Dapper.Extra.Internal
 			{
 				Get = CreateGet(),
 				LazyBulkDelete = new Lazy<SqlKeysInt<T, KeyType>>(() => CreateBulkDelete()),
-				LazyBulkGet = new Lazy<SqlKeysList<T, KeyType>>(() => CreateBulkGet()),
+				LazyBulkGet = new Lazy<DbKeysList<T, KeyType>>(() => CreateBulkGet()),
 				LazyDelete = new Lazy<DbKeyBool<KeyType>>(() => CreateDelete()),
 				LazyGetKeys = new Lazy<DbWhereKeys<KeyType>>(() => CreateGetKeys()),
 			};
@@ -868,7 +868,7 @@ namespace Dapper.Extra.Internal
 			}
 		}
 
-		private SqlKeysList<T, KeyType> CreateBulkGet()
+		private DbKeysList<T, KeyType> CreateBulkGet()
 		{
 			string paramsSelectFromTable = Parent.ParamsSelectFromTable();
 			string keyName = EqualityColumn.ColumnName;
