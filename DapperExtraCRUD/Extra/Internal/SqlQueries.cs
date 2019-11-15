@@ -37,7 +37,7 @@ namespace Dapper.Extra.Internal
 		public SqlListInt<T> BulkUpdate => LazyBulkUpdate.Value;
 		public SqlListInt<T> BulkUpsert => LazyBulkUpsert.Value;
 		public SqlListInt<T> BulkInsertIfNotExists => LazyBulkInsertIfNotExists.Value;
-		public DbWhereInt<T> DeleteWhere => LazyDeleteList.Value;
+		public DbWhereInt<T> DeleteList => LazyDeleteList.Value;
 		public DbVoid DeleteAll => LazyDeleteAll.Value;
 		public DbWhereList<T> GetKeys => LazyGetKeys.Value;
 		public DbWhereList<T> GetDistinct => LazyGetDistinct.Value;

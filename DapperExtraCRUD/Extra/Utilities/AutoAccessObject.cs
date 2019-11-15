@@ -65,7 +65,7 @@ namespace Dapper.Extra.Utilities
 		public override int Delete(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				int count = ExtraCrud.Queries<T>().DeleteWhere(conn, whereCondition, param, null, commandTimeout);
+				int count = ExtraCrud.Queries<T>().DeleteList(conn, whereCondition, param, null, commandTimeout);
 				return count;
 			}
 		}
@@ -77,7 +77,7 @@ namespace Dapper.Extra.Utilities
 				conn.Open();
 				using (SqlTransaction trans = conn.BeginTransaction()) {
 					IEnumerable<T> keys = queries.GetKeys(conn, whereCondition, param, null, true, commandTimeout);
-					int count = queries.DeleteWhere(conn, whereCondition, param, null, commandTimeout);
+					int count = queries.DeleteList(conn, whereCondition, param, null, commandTimeout);
 					trans.Commit();
 					return keys;
 				}

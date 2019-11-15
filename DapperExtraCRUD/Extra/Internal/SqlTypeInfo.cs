@@ -35,6 +35,16 @@ namespace Dapper.Extra.Internal
 			if (!validProperties.Any())
 				throw new InvalidOperationException(type.FullName + " does not have any valid properties.");
 
+			IgnoreDeleteAttribute noDeletes = type.GetCustomAttribute<IgnoreDeleteAttribute>(false);
+			if (noDeletes != null)
+				Attributes |= SqlTableAttributes.IgnoreDelete;
+			IgnoreInsertAttribute noInserts = type.GetCustomAttribute<IgnoreInsertAttribute>(false);
+			if (noInserts != null)
+				Attributes |= SqlTableAttributes.IgnoreInsert;
+			IgnoreUpdateAttribute noUpdates = type.GetCustomAttribute<IgnoreUpdateAttribute>(false);
+			if (noUpdates != null)
+				Attributes |= SqlTableAttributes.IgnoreUpdate;
+
 			List<SqlColumn> keys = new List<SqlColumn>();
 			List<SqlColumn> columns = new List<SqlColumn>();
 			int autoKeyCount = 0;
@@ -56,18 +66,24 @@ namespace Dapper.Extra.Internal
 					if (ignoreAttr != null)
 						column.Attributes = SqlColumnAttributes.Ignore;
 					else {
+						// Selects
 						IgnoreSelectAttribute selectAttr = prop.GetCustomAttribute<IgnoreSelectAttribute>(false);
 						if (selectAttr != null)
 							column.Attributes |= SqlColumnAttributes.IgnoreSelect;
+						// Inserts
 						IgnoreInsertAttribute insertAttr = prop.GetCustomAttribute<IgnoreInsertAttribute>(false);
-						if (insertAttr != null) {
+						if (insertAttr != null || IgnoreInsert) {
 							column.Attributes |= SqlColumnAttributes.IgnoreInsert;
 							column.InsertValue = insertAttr.Value;
 						}
+						// Updates
 						IDefaultAttribute updateAttr = prop.GetCustomAttribute<IgnoreUpdateAttribute>(false);
 						if (updateAttr != null) {
 							column.Attributes |= SqlColumnAttributes.IgnoreUpdate;
 							column.UpdateValue = updateAttr.Value;
+						}
+						else if (IgnoreUpdate) {
+							column.Attributes |= SqlColumnAttributes.IgnoreUpdate;
 						}
 						else {
 							updateAttr = prop.GetCustomAttribute<MatchUpdateAttribute>(false);
@@ -76,8 +92,9 @@ namespace Dapper.Extra.Internal
 								column.UpdateValue = updateAttr.Value;
 							}
 						}
+						// Deletes
 						MatchDeleteAttribute deleteAttr = prop.GetCustomAttribute<MatchDeleteAttribute>(false);
-						if (deleteAttr != null) {
+						if (deleteAttr != null || IgnoreDelete) {
 							column.Attributes |= SqlColumnAttributes.MatchDelete;
 						}
 					}
@@ -97,15 +114,6 @@ namespace Dapper.Extra.Internal
 					key.Attributes = SqlColumnAttributes.Key;
 				}
 			}
-			NoDeletesAttribute noDeletes = type.GetCustomAttribute<NoDeletesAttribute>(false);
-			if (noDeletes != null)
-				Attributes |= SqlTableAttributes.NoDeletes;
-			NoInsertsAttribute noInserts = type.GetCustomAttribute<NoInsertsAttribute>(false);
-			if (noInserts != null)
-				Attributes |= SqlTableAttributes.NoInserts;
-			NoUpdatesAttribute noUpdates = type.GetCustomAttribute<NoUpdatesAttribute>(false);
-			if (noUpdates != null)
-				Attributes |= SqlTableAttributes.NoUpdates;
 			EqualityColumns = KeyColumns.Count == 0 || KeyColumns.Count == Columns.Count ? Columns : KeyColumns;
 			UpdateKeyColumns = Columns == EqualityColumns ? Array.Empty<SqlColumn>() : Columns.Where(c => c.IsKey || c.MatchUpdate).ToArray();
 			DeleteKeyColumns = Columns == EqualityColumns ? Columns : Columns.Where(c => c.IsKey || c.MatchDelete).ToArray();
@@ -119,9 +127,10 @@ namespace Dapper.Extra.Internal
 		public Type Type { get; private set; }
 
 		public SqlTableAttributes Attributes { get; private set; }
-		public bool NoDeletes => Attributes.HasFlag(SqlTableAttributes.NoDeletes);
-		public bool NoInserts => Attributes.HasFlag(SqlTableAttributes.NoInserts);
-		public bool NoUpdates => Attributes.HasFlag(SqlTableAttributes.NoUpdates);
+		public bool DeclaredOnly => Attributes.HasFlag(SqlTableAttributes.DeclaredOnly);
+		public bool IgnoreDelete => Attributes.HasFlag(SqlTableAttributes.IgnoreDelete);
+		public bool IgnoreInsert => Attributes.HasFlag(SqlTableAttributes.IgnoreInsert);
+		public bool IgnoreUpdate => Attributes.HasFlag(SqlTableAttributes.IgnoreUpdate);
 
 		/// <summary>
 		/// The name of the table.
@@ -160,7 +169,7 @@ namespace Dapper.Extra.Internal
 		/// </summary>
 		public IEnumerable<SqlColumn> UpdateColumns {
 			get {
-				if (NoUpdates || EqualityColumns == Columns)
+				if (IgnoreUpdate || EqualityColumns == Columns)
 					return Array.Empty<SqlColumn>();
 				return Columns.Where(c => !c.IsKey && (!c.IgnoreUpdate || c.UpdateValue != null));
 			}
@@ -170,7 +179,7 @@ namespace Dapper.Extra.Internal
 		/// </summary>
 		public IEnumerable<SqlColumn> InsertColumns {
 			get {
-				if (NoInserts)
+				if (IgnoreInsert)
 					return Array.Empty<SqlColumn>();
 				return Columns.Where(c => !c.IsAutoKey && (!c.IgnoreInsert || c.UpdateValue != null));
 			}
@@ -188,7 +197,7 @@ namespace Dapper.Extra.Internal
 		/// </summary>
 		public IEnumerable<SqlColumn> BulkUpdateColumns {
 			get {
-				if (NoUpdates || EqualityColumns == Columns)
+				if (IgnoreUpdate || EqualityColumns == Columns)
 					return Array.Empty<SqlColumn>();
 				return Columns.Where(c => !c.IgnoreUpdate || c.UpdateValue != null);
 			}

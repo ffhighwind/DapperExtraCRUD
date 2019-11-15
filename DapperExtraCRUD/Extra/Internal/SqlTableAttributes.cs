@@ -12,9 +12,11 @@ namespace Dapper.Extra.Internal
 	public enum SqlTableAttributes
 	{
 		None = 0,
-		NoDeletes = 1,
-		NoInserts = 2,
-		NoUpdates = 4,
-		DeclaredOnly = 8,
+		DeclaredOnly = 1,
+		//Reserved 1 << 1,
+		//IgnoreSelect = 1 << 2,
+		IgnoreInsert = 1 << 3,
+		IgnoreUpdate = 1 << 4,
+		IgnoreDelete = 1 << 5
 	}
 }

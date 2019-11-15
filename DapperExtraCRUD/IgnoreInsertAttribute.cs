@@ -10,7 +10,7 @@ namespace Dapper
 	/// <summary>
 	/// Ignores the <see cref="PropertyInfo"/> for inserts.
 	/// </summary>
-	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
 	public class IgnoreInsertAttribute : IDefaultAttribute
 	{
 		/// <summary>

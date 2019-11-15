@@ -28,7 +28,7 @@ namespace Dapper.Extra.Internal
 		SqlListInt<T> BulkUpsert { get; }
 		SqlListInt<T> BulkInsertIfNotExists { get; }
 		DbTBool<T> Delete { get; }
-		DbWhereInt<T> DeleteWhere { get; }
+		DbWhereInt<T> DeleteList { get; }
 		DbVoid DeleteAll { get; }
 		DbTT<T> Get { get; }
 		DbWhereList<T> GetKeys { get; }

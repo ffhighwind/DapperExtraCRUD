@@ -4,11 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace UnitTests
+namespace Dapper
 {
-	public interface IDto<T>
+	public interface ITypeHandler : Dapper.SqlMapper.ITypeHandler
 	{
-		bool IsKeyEqual(T other);
-		bool IsInserted();
 	}
 }

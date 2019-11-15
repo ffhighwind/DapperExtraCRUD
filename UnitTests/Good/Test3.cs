@@ -7,7 +7,7 @@ using Dapper;
 
 namespace UnitTests
 {
-	public class Test3 : IEquatable<Test3>, IDto<Test3>
+	public class Test3 : IEquatable<Test3>, IDto<Test3>, IEqualityComparer<Test3>
 	{
 		public Test3() { }
 		public Test3(Random random)
@@ -54,9 +54,24 @@ CREATE TABLE [dbo].[Test3](
 				&& other.Col4 == Col4;
 		}
 
+		public bool Equals(Test3 x, Test3 y)
+		{
+			return x.Equals(y);
+		}
+
+		public int GetHashCode(Test3 obj)
+		{
+			return obj.GetHashCode();
+		}
+
 		public bool IsKeyEqual(Test3 other)
 		{
 			return other.Col1 == Col1;
+		}
+
+		public bool IsInserted()
+		{
+			return true;
 		}
 	}
 }

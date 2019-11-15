@@ -6,6 +6,7 @@ using System.Data.SqlClient;
 using System.Dynamic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,6 +22,10 @@ namespace Dapper.Extra.Internal
 	{
 		public SqlBuilder(SqlTypeInfo info, LazyThreadSafetyMode threadSafety = LazyThreadSafetyMode.ExecutionAndPublication)
 		{
+			if (info.Type.IsGenericTypeDefinition && info.Type.GetGenericTypeDefinition() == typeof(List<>))
+				throw new InvalidOperationException("List<> is not a valid table type");
+			if (info.Type.IsArray)
+				throw new InvalidOperationException("Array<> is not a valid table type");
 			Info = info;
 			BulkStagingTable = Info.Adapter.QuoteIdentifier("_" + Info.Type.Name + (Info.Type.FullName.GetHashCode() % 1000));
 			SqlQueries<T> queries = new SqlQueries<T>()
@@ -235,7 +240,7 @@ namespace Dapper.Extra.Internal
 
 		internal string InsertCmd()
 		{
-			return Store($"INSERT {TableName} ({string.Join(",", Info.InsertColumns.Select(c => c.ColumnName))})\nVALUES ({InsertedValues(Info.InsertColumns)})\n");
+			return Store($"INSERT {TableName} ({string.Join(",", Info.InsertColumns.Select(c => c.ColumnName))})\n{InsertedValues(Info.InsertColumns)}");
 		}
 
 		internal string UpdateSetTables()
@@ -403,7 +408,11 @@ namespace Dapper.Extra.Internal
 				string deleteEquals = WhereEquals(Info.DeleteKeyColumns);
 				return (connection, obj, transaction, commandTimeout) =>
 				{
-					int count = connection.Execute(deleteCmd + "WHERE \t" + deleteEquals, obj, transaction, commandTimeout);
+					string cmd = deleteCmd + "WHERE \t" + deleteEquals;
+#if DEBUG
+					Console.WriteLine(cmd);
+#endif
+					int count = connection.Execute(cmd, obj, transaction, commandTimeout);
 					return count > 0;
 				};
 			}
@@ -420,6 +429,9 @@ namespace Dapper.Extra.Internal
 				return (connection, whereCondition, param, transaction, commandTimeout) =>
 				{
 					string cmd = deleteCmd + whereCondition;
+#if DEBUG
+					Console.WriteLine(cmd);
+#endif
 					int count = connection.Execute(cmd, param, transaction, commandTimeout);
 					return count;
 				};
@@ -436,6 +448,9 @@ namespace Dapper.Extra.Internal
 				string truncateCmd = Store(Info.Adapter.TruncateTable(TableName));
 				return (connection, transaction, commandTimeout) =>
 				{
+#if DEBUG
+					Console.WriteLine(truncateCmd);
+#endif
 					int count = connection.Execute(truncateCmd, null, transaction, commandTimeout);
 				};
 			}
@@ -453,7 +468,13 @@ namespace Dapper.Extra.Internal
 				string equalsTables = WhereEqualsTables(EqualityColumns);
 				return (connection, objs, transaction, commandTimeout) =>
 				{
+#if DEBUG
+					Console.WriteLine(dropBulkTableCmd);
+#endif
 					connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+#if DEBUG
+					Console.WriteLine(selectEqualityIntoStagingCmd);
+#endif
 					connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
 					SqlInternal.BulkInsert(connection, objs, transaction, BulkStagingTable, EqualityColumns, commandTimeout,
 						SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
@@ -749,6 +770,9 @@ namespace Dapper.Extra.Internal
 	{
 		internal SqlBuilder(SqlBuilder<T> parent)
 		{
+#if DEBUG
+			Console.WriteLine("Constructing " + typeof(SqlBuilder<T>).Name);
+#endif
 			Parent = parent;
 			SqlQueries<T, KeyType> queries = new SqlQueries<T, KeyType>()
 			{

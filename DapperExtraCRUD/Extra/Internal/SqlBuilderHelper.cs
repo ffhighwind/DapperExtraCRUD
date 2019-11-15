@@ -117,10 +117,10 @@ namespace Dapper.Extra.Internal
 		/// <param name="columns">The columns to insert.</param>
 		public static string InsertedValues(IEnumerable<SqlColumn> columns)
 		{
-			StringBuilder sb = new StringBuilder("VALUES(");
+			StringBuilder sb = new StringBuilder("VALUES (");
 			foreach (var column in columns) {
 				if (column.InsertValue != null)
-					sb.Append(column.InsertValue);
+					sb.Append(column.InsertValue).Append(',');
 				else if (!column.Attributes.HasFlag(SqlColumnAttributes.IgnoreInsert))
 					sb.Append($"@{column.Property.Name},");
 			}

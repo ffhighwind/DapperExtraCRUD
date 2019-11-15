@@ -8,7 +8,7 @@ using Dapper;
 namespace UnitTests
 {
 	[Table("Test2")]
-	public class TestDTO2 : IEquatable<TestDTO2>, IDto<TestDTO2>
+	public class TestDTO2 : IEquatable<TestDTO2>, IDto<TestDTO2>, IEqualityComparer<TestDTO2>
 	{
 		public TestDTO2() { }
 		public TestDTO2(Random random)
@@ -66,6 +66,21 @@ CREATE TABLE [dbo].[Test2](
 		public bool IsKeyEqual(TestDTO2 other)
 		{
 			return Equals(other);
+		}
+
+		public bool Equals(TestDTO2 x, TestDTO2 y)
+		{
+			return x.Equals(y);
+		}
+
+		public int GetHashCode(TestDTO2 obj)
+		{
+			return obj.GetHashCode();
+		}
+
+		public bool IsInserted()
+		{
+			return true;
 		}
 	}
 }

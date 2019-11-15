@@ -39,9 +39,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dapper, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Dapper.2.0.30\lib\net461\Dapper.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.VisualStudio.TestPlatform.TestFramework, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\MSTest.TestFramework.1.3.2\lib\net45\Microsoft.VisualStudio.TestPlatform.TestFramework.dll</HintPath>
     </Reference>
@@ -55,7 +52,6 @@
   <ItemGroup>
     <Compile Include="Bad\Bad1.cs" />
     <Compile Include="Bad\Bad2.cs" />
-    <Compile Include="Bad\CustomType.cs" />
     <Compile Include="Good\IDto.cs" />
     <Compile Include="Good\Test3.cs" />
     <Compile Include="Good\TestDTO.cs" />
@@ -72,6 +68,10 @@
     <ProjectReference Include="..\DapperExtraCRUD\DapperExtraCRUD.csproj">
       <Project>{4dbe71c1-2ecd-4192-bc66-e4d1c8dcec08}</Project>
       <Name>DapperExtraCRUD</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DapperTracer\DapperTracer.csproj">
+      <Project>{b5f579c6-357f-43e4-9d2d-de5ae46a9bd7}</Project>
+      <Name>DapperTracer</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />

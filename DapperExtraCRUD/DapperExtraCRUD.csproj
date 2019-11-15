@@ -36,9 +36,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dapper, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Dapper.2.0.30\lib\net461\Dapper.dll</HintPath>
-    </Reference>
     <Reference Include="FastMember, Version=1.5.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\FastMember.1.5.0\lib\net461\FastMember.dll</HintPath>
     </Reference>
@@ -71,13 +68,11 @@
     <Compile Include="Extra\Utilities\IAccessObjectSync.cs" />
     <Compile Include="Extra\Internal\IDefaultAttribute.cs" />
     <Compile Include="Extra\Utilities\ReferenceComparer.cs" />
-    <Compile Include="NoDeletesAttribute.cs" />
-    <Compile Include="NoInsertsAttribute.cs" />
-    <Compile Include="NoUpdatesAttribute.cs" />
     <Compile Include="Extra\Internal\ISqlQueries.cs" />
     <Compile Include="Extra\Internal\Delegates.cs" />
     <Compile Include="Extra\Utilities\WhereConditionGenerator.cs" />
     <Compile Include="IgnoreAttribute.cs" />
+    <Compile Include="IgnoreDeleteAttribute.cs" />
     <Compile Include="IgnoreInsertAttribute.cs" />
     <Compile Include="IgnoreSelectAttribute.cs" />
     <Compile Include="IgnoreUpdateAttribute.cs" />
@@ -90,6 +85,11 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\DapperTracer\DapperTracer.csproj">
+      <Project>{b5f579c6-357f-43e4-9d2d-de5ae46a9bd7}</Project>
+      <Name>DapperTracer</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

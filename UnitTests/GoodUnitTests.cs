@@ -23,10 +23,10 @@ namespace UnitTests
 		private const string ConnString = @"Data Source=DESKTOP-V0JVTST\SQLEXPRESS;Initial Catalog=Test;Integrated Security=True;";
 		private static Random random = new Random(123512);
 
-		List<TestDTO> list1 = new List<TestDTO>();
-		List<TestDTO2> list2 = new List<TestDTO2>();
-		List<Test3> list3 = new List<Test3>();
-		List<TestDTO4> list4 = new List<TestDTO4>();
+		//Dictionary<int, TestDTO> map1 = new Dictionary<int, TestDTO>();
+		//Dictionary<TestDTO2, TestDTO2> map2 = new Dictionary<TestDTO2, TestDTO2>();
+		//Dictionary<Test3, Test3> map3 = new Dictionary<Test3, Test3>();
+		//Dictionary<int, TestDTO4> map4 = new Dictionary<int, TestDTO4>();
 
 		#region Initialize
 		[TestInitialize]
@@ -35,9 +35,9 @@ namespace UnitTests
 			string[] tables = new string[] {
 				ExtraCrud.Builder<TestDTO>().TableName, ExtraCrud.Builder<TestDTO2>().TableName, ExtraCrud.Builder<Test3>().TableName, ExtraCrud.Builder<TestDTO4>().TableName,
 			};
-			using(SqlConnection conn = new SqlConnection(ConnString)) {
+			using (SqlConnection conn = new SqlConnection(ConnString)) {
 				conn.Open();
-				using(trans = conn.BeginTransaction()) {
+				using (SqlTransaction trans = conn.BeginTransaction()) {
 					foreach (string table in tables) {
 						string cmd = DropTable(table);
 						conn.Execute(cmd, null, trans);
@@ -49,22 +49,19 @@ namespace UnitTests
 					trans.Commit();
 				}
 			}
-			 list1 = new List<TestDTO>();
+			/*
 			for (int i = 0, max = random.Next() % 50 + 25; i < max; i++) {
 				list1.Add(new TestDTO(random));
 			}
-			list2 = new List<TestDTO2>();
 			for (int i = 0, max = random.Next() % 50 + 25; i < max; i++) {
 				list2.Add(new TestDTO2(random));
 			}
-			list3 = new List<Test3>();
 			for (int i = 0, max = random.Next() % 50 + 25; i < max; i++) {
 				list3.Add(new Test3(random));
 			}
-			list4 = new List<TestDTO4>();
 			for (int i = 0, max = random.Next() % 50 + 25; i < max; i++) {
 				list4.Add(new TestDTO4(random));
-			}
+			}*/
 		}
 
 		private static string DropTable(string tableName)
@@ -81,15 +78,69 @@ DROP TABLE dbo.{tableName};";
 		#endregion Initialize
 
 		[TestMethod]
-		public void Insert()
+		public void InsertGet()
 		{
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
 				conn.Open();
 				using (SqlTransaction trans = conn.BeginTransaction()) {
-					for(int i = 0; i < 4; i++) {
-						conn.Insert(list2[i]);
-						TestDTO2 obj = conn.Get(list2[i]);
+					TestDTO dto1 = new TestDTO(random);
+					TestDTO2 dto2 = new TestDTO2(random);
+					Test3 dto3 = new Test3(random);
+					TestDTO4 dto4 = new TestDTO4(random);
+					conn.Insert(dto1, trans);
+					conn.Insert(dto2, trans);
+					conn.Insert(dto3, trans);
+					conn.Insert(dto4, trans);
+					if (dto1.ID == 0)
+						throw new InvalidOperationException();
+					if (dto4.ID == 0)
+						throw new InvalidOperationException();
+
+					TestDTO dto1_ = conn.Get(dto1, trans);
+					if (dto1.CreatedDt == dto1_.CreatedDt || !dto1.IsKeyEqual(dto1_))
+						throw new InvalidOperationException();
+					TestDTO2 dto2_ = conn.Get(dto2, trans);
+					if (!dto2.IsKeyEqual(dto2))
+						throw new InvalidOperationException();
+					Test3 dto3_ = conn.Get(dto3, trans);
+					if (!dto3.IsKeyEqual(dto3_))
+						throw new InvalidOperationException();
+					TestDTO4 dto4_ = conn.Get(dto4, trans);
+					if (!dto4.IsKeyEqual(dto4_))
+						throw new InvalidOperationException();
+				}
+			}
+		}
+
+		public void RecordCount()
+		{
+			using (SqlConnection conn = new SqlConnection(ConnString)) {
+				conn.Open();
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					int count1 = random.Next() % 35 + 25;
+					int count2 = random.Next() % 15 + 10;
+					int count3 = random.Next() % 10 + 30;
+					int count4 = random.Next() % 22 + 11;
+					for (int i = 0; i < count1; i++) {
+						conn.Insert(new TestDTO(random));
 					}
+					for (int i = 0; i < count2; i++) {
+						conn.Insert(new TestDTO2(random));
+					}
+					for (int i = 0; i < count3; i++) {
+						conn.Insert(new Test3(random));
+					}
+					for (int i = 0; i < count4; i++) {
+						conn.Insert(new TestDTO4(random));
+					}
+					if (count1 != conn.RecordCount<TestDTO>())
+						throw new InvalidOperationException();
+					if (count2 != conn.RecordCount<TestDTO2>())
+						throw new InvalidOperationException();
+					if (count3 != conn.RecordCount<Test3>())
+						throw new InvalidOperationException();
+					if (count4 != conn.RecordCount<TestDTO4>())
+						throw new InvalidOperationException();
 					/*
 					int deleted1 = conn.Delete<TestDTO>("", null, trans);
 					int deleted4 = conn.Delete<TestDTO4>("", null, trans);
@@ -205,6 +256,7 @@ DROP TABLE dbo.{tableName};";
 						throw new InvalidOperationException();
 					}
 					*/
+
 				}
 			}
 		}
