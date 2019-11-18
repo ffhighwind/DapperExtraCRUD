@@ -209,7 +209,7 @@ This generates SQL WHERE conditions from a Linq.Expression<Predicate<T>>. It can
 This class is not well tested, so I do not recommend using it in a production environment. The main reason to use this utility is if you need a type-safe query 
 or need to map a predicate to SQL command. Specifically, I have used this to remove items from a dictionary after deleting rows from a database.
 
-### IEnumerable<IEnumerable<T>> Partition<T>(this IEnumerable<T> source, int size)
+#### Partition<T>(this IEnumerable<T> source, int size)
 
 This extension is used internally by the KeyType queries in order to get around Dapper's limitation of 2100 parameters. You should not need to use this with any DapperExtraCRUD methods, but you may 
 need it for Dapper queries.
