@@ -146,7 +146,7 @@ public static void Main(string[] args)
 
 		// Get all users created within the last month
 		DateTime minDate = DateTime.Today.AddDays(-30);
-		List<User> users = queries.GetList("WHERE Created >= @minDate, new { minDate });
+		List<User> users = queries.GetList("WHERE Created >= @minDate", new { minDate });
 
 		User johnDoe = new User()
 		{
