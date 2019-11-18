@@ -46,12 +46,26 @@ CREATE TABLE [dbo].[Users](
  CONSTRAINT [PK_Users] PRIMARY KEY CLUSTERED 
 (
 	[UserID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, 
+) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, 
 	ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY];
+
+ALTER TABLE [dbo].[Users] ADD CONSTRAINT [DF_Users_Created]  DEFAULT (getdate()) FOR [Created];
+
+ALTER TABLE [dbo].[Users] ADD CONSTRAINT [DF_Users_Modified]  DEFAULT (getdate()) FOR [Modified];
 ```
 
 ```csharp
+
+// Represents and RDBMS syntax used for generating queries.
+public enum SqlSyntax
+{
+	SQLServer,
+	PostgreSQL,
+	MySQL,
+	SQLite,
+}
+
 public enum UserPermissions
 {
 	None = 0,
@@ -64,7 +78,7 @@ public enum UserPermissions
 [Table("Users", declaredOnly: true, inheritAttrs: true, syntax: SqlSyntax.SQLServer)]
 public class User
 {
-	// The primary key
+	// Primary Key
 	[Key(autoIncrement: false)]
 	public int UserID { get; set; }
 
@@ -107,11 +121,11 @@ public class User
 be synchronized with the database after an insert.
 * [MatchUpdate(value: "getdate()", autoSync: true)] means that the property acts as a Versioning key for updates. Updates will fail unless
 this value matches what is in the database. After a successful update the value will be set to 'getdate()'. You are better off
-using a trigger to update a column representing the "last modified time" columns, but this can work as well if you are lazy.
+using a trigger to update a column representing the "last modified time" columns, but this can work as well.
 * [MatchDelete] means that the property acts as a pseudo-key for deletes. The row will only be deleted if the property matches what is in
 the database.
 * [NotMapped] means that the property should be ignored completely. This is should be used on properties that do not map directly to the database.
-* The rest of the columns are ignored for various reasons: _Friends, Friends, NotUsed, BestFriendID, Points, and IsDirty. 
+* The following columns are ignored for various reasons: _Friends, Friends, NotUsed, BestFriendID, Points, and IsDirty. 
 Only properties with public get/set methods are allowed. These properties are only accepted if they are standard SQL types, enums, 
 or classes that implement Dapper.SqlMapper.ITypeHandler.
 
@@ -184,20 +198,20 @@ public static void Main(string[] args)
 
 # Utilities:
 
-#### Dapper.Extra.Utilities.AutoAccessObject<T> / DataAccessObject<T>
+#### AutoAccessObject<T> / DataAccessObject<T>
 
 These include the same the functionality as the extension methods but require fewer parameters per call because they store an SqlConnection or SqlTransaction. 
 They also perform a slightly better than the extension methods because they store a reference to the ISqlQueries.
 
-#### Dapper.Extra.Utilities.WhereConditionGenerator
+#### WhereConditionGenerator
 
 This generates SQL WHERE conditions from a Linq.Expression<Predicate<T>>. It can be somewhat expensive, so I recommend caching the results when possible.
 This class is not well tested, so I do not recommend using it in a production environment. The main reason to use this utility is if you need a type-safe query 
 or need to map a predicate to SQL command. Specifically, I have used this to remove items from a dictionary after deleting rows from a database.
 
-### Dapper.Extra.Internal.Extensions.Partition<T>
+### IEnumerable<IEnumerable<T>> Partition<T>(this IEnumerable<T> source, int size)
 
-This is internally used by the KeyType queries to get around Dapper's limitation of 2100 parameters. You should not need to use this with any DapperExtraCRUD methods, but you may 
+This extension is used internally by the KeyType queries in order to get around Dapper's limitation of 2100 parameters. You should not need to use this with any DapperExtraCRUD methods, but you may 
 need it for Dapper queries.
 
 # Tips:
