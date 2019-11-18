@@ -36,13 +36,13 @@ constraints.
 
 ```sql
 CREATE TABLE [dbo].[Users](
-	\[UserID] [int] NOT NULL,
-	\[FirstName] \[varchar](100) NOT NULL,
-	\[LastName] \[varchar](100) NOT NULL,
-	\[Account Name] \[varchar](255) NOT NULL,
-	\[Permissions] [tinyint] NOT NULL,
-	\[Modified] \[datetime2](7) NOT NULL,
-	\[Created] \[datetime2](7) NOT NULL,
+	[UserID] [int] NOT NULL,
+	[FirstName] [varchar](100) NOT NULL,
+	[LastName] [varchar](100) NOT NULL,
+	[Account Name] [varchar](255) NOT NULL,
+	[Permissions] [tinyint] NOT NULL,
+	[Modified] [datetime2](7) NOT NULL,
+	[Created] [datetime2](7) NOT NULL,
  CONSTRAINT [PK_Users] PRIMARY KEY CLUSTERED 
 (
 	[UserID] ASC
