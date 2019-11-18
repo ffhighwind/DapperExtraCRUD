@@ -200,6 +200,6 @@ namespace Dapper.Extra.Utilities
 			int count = Queries.BulkInsertIfNotExists(Connection, objs, Transaction, commandTimeout);
 			return count;
 		}
-		#endregion  IAccessObjectSync<T>
+		#endregion IAccessObjectSync<T>
 	}
 }
