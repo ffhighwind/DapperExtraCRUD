@@ -115,26 +115,23 @@ public class User
 ```
 
 * User objects represent rows in the [Users] table. 
-* [IgnoreDelete] means nothing will occur when delete methods.
-* [Key(autoIncrement: false)] means UserID is the primary key of the table. This column is not an identity (not auto-incrementing).
-* [IgnoreInsert(autoSync: true)] means that the property will receive the default value on inserts. The property will also automatically 
-be synchronized with the database after an insert.
-* [MatchUpdate(value: "getdate()", autoSync: true)] means that the property acts as a Versioning key for updates. Updates will fail unless
-this value matches what is in the database. After a successful update the value will be set to 'getdate()'. You are better off
-using a trigger to update a column representing the "last modified time" columns, but this can work as well.
-* [MatchDelete] means that the property acts as a pseudo-key for deletes. The row will only be deleted if the property matches what is in
-the database.
-* [NotMapped] means that the property should be ignored completely. This is should be used on properties that do not map directly to the database.
+* [IgnoreDelete] means nothing will occur when delete methods are invoked.
+* [Key(autoIncrement: false)] means the property is a primary key of the table. It is also not an identity (not auto-incrementing) key.
+* [IgnoreInsert(autoSync: true)] means that the property will receive the default value 'getdate()' on inserts. Autosync means that the property 
+will be automatically updated using a select after an insert.
+* [MatchUpdate(value: "getdate()", autoSync: true)] means that the property acts as a versioning key for updates. This means that updates will 
+fail unless the property's value matches what is in the database. After a successful update the value will be set to 'getdate()'.
+* [MatchDelete] means that the property acts as a pseudo-key for deletes. The row will only be deleted if the property's value matches 
+what is in the database.
+* [NotMapped] means that the property should be ignored completely. This should be used on properties that do not represent a column
+in the table.
 * The following columns are ignored for various reasons: _Friends, Friends, NotUsed, BestFriendID, Points, and IsDirty. 
-Only properties with public get/set methods are allowed. These properties are only accepted if they are standard SQL types, enums, 
-or classes that implement Dapper.SqlMapper.ITypeHandler.
+Properties are ignored unless they have public get/set methods are allowed and their type is a standard SQL type, 
+enums, or a type that implement Dapper.SqlMapper.ITypeHandler.
 
 # Accessing Metadata:
 
 ```csharp
-using Dapper.Extra;
-
-public static class Program {
 public static void Main(string[] args)
 {
 	// change the default syntax
@@ -192,7 +189,6 @@ public static void Main(string[] args)
 			map.Add(user, user);
 		}
 	}
-}
 }
 ```
 
