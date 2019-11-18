@@ -143,9 +143,10 @@ public static void Main(string[] args)
 
 	using (SqlConnection conn = new SqlConnection(ConnString)) {
 		conn.Open();
+
 		// Get all users created within the last month
-		List<User> users = queries.GetList("WHERE Created >= @minDate, 
-			new { minDate = DateTime.Today.AddDays(-30) });
+		DateTime minDate = DateTime.Today.AddDays(-30);
+		List<User> users = queries.GetList("WHERE Created >= @minDate, new { minDate });
 
 		User johnDoe = new User()
 		{
@@ -154,6 +155,7 @@ public static void Main(string[] args)
 			LastName = "Doe",
 			Permissions = UserPermissions.Basic,
 		};
+
 		using (SqlTransaction trans = conn.BeginTransaction()) {
 			if(!conn.InsertIfNotExists(user, trans)) {
 				Console.WriteLine("User already exists!"); // based on the UserID
@@ -161,6 +163,7 @@ public static void Main(string[] args)
 			else
 				trans.Commit();
 		}
+
 		johnDoe = conn.Get(johnDoe.UserID, trans);
 
 		// IEqualityComparer which can be used by Dictionary<User, User>
@@ -181,11 +184,10 @@ public static void Main(string[] args)
 
 # Utilities:
 
-#### Dapper.Extra.Utilities.AutoAccessObject<T> 
-#### Dapper.Extra.Utilities.DataAccessObject<T>
+#### Dapper.Extra.Utilities.AutoAccessObject<T> / DataAccessObject<T>
 
-These include the same the functionality as the extension methods without needing to pass an SqlConnection or SqlTransaction every method call. 
-They also store the ISqlQueries internally and therefore perform a little better than the extension methods.
+These include the same the functionality as the extension methods but require fewer parameters per call because they store an SqlConnection or SqlTransaction. 
+They also perform a slightly better than the extension methods because they store a reference to the ISqlQueries.
 
 #### Dapper.Extra.Utilities.WhereConditionGenerator
 
@@ -194,6 +196,9 @@ This class is not well tested, so I do not recommend using it in a production en
 or need to map a predicate to SQL command. Specifically, I have used this to remove items from a dictionary after deleting rows from a database.
 
 ### Dapper.Extra.Internal.Extensions.Partition<T>
+
+This is internally used by the KeyType queries to get around Dapper's limitation of 2100 parameters. You should not need to use this with any DapperExtraCRUD methods, but you may 
+need it for Dapper queries.
 
 # Tips:
 
