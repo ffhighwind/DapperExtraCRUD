@@ -130,21 +130,21 @@ what is in the database.
 * [NotMapped] means that the property should be ignored completely. This should be used on properties that do not represent a column
 in the table.
 * The following columns are ignored for various reasons: _Friends, Friends, NotUsed, BestFriendID, Points, and IsDirty. 
-Properties are ignored unless they have public get/set methods are allowed and their type is a standard SQL type, 
-enums, or a type that implement Dapper.SqlMapper.ITypeHandler.
+Properties are accepted only if they have public get/set methods and their type is a standard SQL type, 
+enums, or a type that implements Dapper.SqlMapper.ITypeHandler.
 
 # Accessing Metadata:
 
 ```csharp
 public static void Main(string[] args)
 {
-	// change the default syntax
-	ExtraCrud.Syntax = SqlSyntax.PostgreSQL; // change the default syntax
+	// Changes the default syntax
+	ExtraCrud.Syntax = SqlSyntax.PostgreSQL;
 
-	// contains class/property information such as attributes that are used internally
+	// Contains class/property information such as attributes that are used internally
 	SqlTypeInfo typeInfo = ExtraCrud.TypeInfo<User>();
 
-	// contains delegates and other metadata for accessing this table/type
+	// Contains delegates and other metadata for accessing this table/type
 	SqlBuilder<User> builder = ExtraCrud.Builder<User>(); 
 
 	// Access query delegates
@@ -181,7 +181,7 @@ public static void Main(string[] args)
 
 		johnDoe = conn.Get(johnDoe.UserID, trans);
 
-		// IEqualityComparer which can be used by Dictionary<User, User>
+		// Compares <User> for equality based on the keys
 		IEqualityComparer<User> comparer = ExtraCrud.EqualityComparer<User>();
 
 		Dictionary<User, User> map = new Dictionary<User, User>(comparer);
@@ -205,9 +205,9 @@ They also perform a slightly better than the extension methods because they stor
 
 #### WhereConditionGenerator
 
-This generates SQL WHERE conditions from a Linq.Expression<Predicate<T>>. It can be somewhat expensive, so I recommend caching the results when possible.
-This class is not well tested, so I do not recommend using it in a production environment. The main reason to use this utility is if you need a type-safe query 
-or need to map a predicate to SQL command. Specifically, I have used this to remove items from a dictionary after deleting rows from a database.
+This generates SQL WHERE conditions from a Linq.Expression<Predicate<T>>. It can be somewhat expensive to generate, so I recommend caching the results when possible.
+The main reason to use this utility is if you need a type-safe query or need to map a predicate to SQL command. Specifically, I have used this to remove items 
+from a dictionary after deleting rows from a database. It is not well tested, so I do not recommend using it without proper testing.
 
 #### Partition<T>(this IEnumerable<T> source, int size)
 
@@ -222,8 +222,8 @@ Use a view if you need joins. If this is not sufficient then you can use Dapper'
 
 The extension methods in Dapper.DapperExtraExtensions perform a lookup on a ConcurrentDictionary and a cast the results every time they are called. You can prevent this 
 by using a AutoAccessObject/DataAccessObject or by storing the ISqlQueries object and accessing the delegates directly. 
-Less frequently used delegates such as bulk operations have lazy initialization. These have a very small performance hit every time 
-they are accessed due to synchronization. You can prevent this cost by storing a reference to each delegate outside of the ISqlQueries object.
+Less frequently used delegates such as bulk operations have lazy initialization. These have a small synchronization cost every time 
+they are accessed. You can prevent this by storing a reference to each delegate outside of the ISqlQueries object.
 
 # License:
 
