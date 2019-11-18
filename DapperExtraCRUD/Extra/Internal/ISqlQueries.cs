@@ -44,6 +44,7 @@ namespace Dapper.Extra.Internal
 		DbTVoid<T> Insert { get; }
 		DbWhereInt<T> RecordCount { get; }
 		DbTBool<T> Update { get; }
+		DbObjBool<T> UpdateObj { get; }
 		DbTBool<T> Upsert { get; }
 		DbTBool<T> InsertIfNotExists { get; }
 

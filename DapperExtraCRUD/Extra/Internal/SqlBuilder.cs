@@ -17,7 +17,7 @@ namespace Dapper.Extra.Internal
 	/// Stores metadata and generates SQL commands and queries for the given type.
 	/// </summary>
 	/// <typeparam name="T">The type of to generate queries for.</typeparam>
-	public sealed class SqlBuilder<T>
+	public sealed class SqlBuilder<T> : ISqlBuilder
 		where T : class
 	{
 		public SqlBuilder(SqlTypeInfo info, LazyThreadSafetyMode threadSafety = LazyThreadSafetyMode.ExecutionAndPublication)
@@ -152,7 +152,12 @@ namespace Dapper.Extra.Internal
 		/// <summary>
 		/// A <see cref="SqlBuilder{T, KeyType}"/> if a single key exists.
 		/// </summary>
-		public object KeyBuilder { get; private set; }
+		public ISqlBuilder KeyBuilder { get; private set; }
+		/// <summary>
+		/// The same value as <see cref="Queries"/>.
+		/// </summary>
+		public object QueriesObject => Queries;
+
 		/// <summary>
 		/// Casts <see cref="KeyBuilder"/> to the given <see cref="SqlBuilder{T, KeyType}"/>.
 		/// </summary>
@@ -773,7 +778,7 @@ namespace Dapper.Extra.Internal
 	/// </summary>
 	/// <typeparam name="T">The table type.</typeparam>
 	/// <typeparam name="KeyType">The key type.</typeparam>
-	public sealed class SqlBuilder<T, KeyType>
+	public sealed class SqlBuilder<T, KeyType> : ISqlBuilder
 		where T : class
 	{
 		internal SqlBuilder(SqlBuilder<T> parent)
@@ -791,7 +796,7 @@ namespace Dapper.Extra.Internal
 		}
 
 		/// <summary>
-		/// 
+		/// The <see cref="SqlBuilder{T}"/> that created this object.
 		/// </summary>
 		public SqlBuilder<T> Parent { get; private set; }
 		/// <summary>
@@ -818,11 +823,14 @@ namespace Dapper.Extra.Internal
 		/// The key column.
 		/// </summary>
 		public SqlColumn EqualityColumn => Parent.EqualityColumns[0];
-
 		/// <summary>
 		/// The queries and commands for this type.
 		/// </summary>
 		public ISqlQueries<T, KeyType> Queries { get; private set; }
+		/// <summary>
+		/// The same value as <see cref="Queries"/>.
+		/// </summary>
+		public object QueriesObject => Queries;
 
 		#region Create Delegates
 		private DbWhereKeys<KeyType> CreateGetKeys()

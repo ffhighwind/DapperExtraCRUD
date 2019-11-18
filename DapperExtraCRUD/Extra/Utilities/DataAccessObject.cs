@@ -30,10 +30,13 @@ namespace Dapper.Extra.Utilities
 		{
 			Connection = new SqlConnection(connectionString);
 			Buffered = buffered;
-			Queries = ExtraCrud.Queries<T>();
+			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
+			Queries = builder.Queries;
+			KeyQueries = builder.KeyBuilder?.QueriesObject;
 		}
 
 		protected ISqlQueries<T> Queries { get; }
+		protected object KeyQueries { get; }
 
 		/// <summary>
 		/// The connection used for queries. This will be temporarily opened it if is closed. 
@@ -52,149 +55,149 @@ namespace Dapper.Extra.Utilities
 		#region IAccessObjectSync<T>
 		public override int BulkDelete(IEnumerable<T> objs, int commandTimeout = 30)
 		{
-			int count = ExtraCrud.Queries<T>().BulkDelete(Connection, objs, Transaction, commandTimeout);
+			int count = Queries.BulkDelete(Connection, objs, Transaction, commandTimeout);
 			return count;
 		}
 
 		public override void BulkInsert(IEnumerable<T> objs, int commandTimeout = 30)
 		{
-			ExtraCrud.Queries<T>().BulkInsert(Connection, objs, Transaction, commandTimeout);
+			Queries.BulkInsert(Connection, objs, Transaction, commandTimeout);
 		}
 
 		public override int BulkUpdate(IEnumerable<T> objs, int commandTimeout = 30)
 		{
-			int count = ExtraCrud.Queries<T>().BulkUpdate(Connection, objs, Transaction, commandTimeout);
+			int count = Queries.BulkUpdate(Connection, objs, Transaction, commandTimeout);
 			return count;
 		}
 
 		public override int BulkUpsert(IEnumerable<T> objs, int commandTimeout = 30)
 		{
-			int count = ExtraCrud.Queries<T>().BulkUpsert(Connection, objs, Transaction, commandTimeout);
+			int count = Queries.BulkUpsert(Connection, objs, Transaction, commandTimeout);
 			return count;
 		}
 
 		public override bool Delete(T obj, int commandTimeout = 30)
 		{
-			bool success = ExtraCrud.Queries<T>().Delete(Connection, obj, Transaction, commandTimeout);
+			bool success = Queries.Delete(Connection, obj, Transaction, commandTimeout);
 			return success;
 		}
 
 		public override int Delete(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			int count = ExtraCrud.Queries<T>().DeleteList(Connection, whereCondition, param, Transaction, commandTimeout);
+			int count = Queries.DeleteList(Connection, whereCondition, param, Transaction, commandTimeout);
 			return count;
 		}
 
 		public override T Get(T obj, int commandTimeout = 30)
 		{
-			T value = ExtraCrud.Queries<T>().Get(Connection, obj, Transaction, commandTimeout);
+			T value = Queries.Get(Connection, obj, Transaction, commandTimeout);
 			return value;
 		}
 
 		public override IEnumerable<T> GetDistinct(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			IEnumerable<T> list = ExtraCrud.Queries<T>().GetDistinct(Connection, whereCondition, param, Transaction, Buffered, commandTimeout);
+			IEnumerable<T> list = Queries.GetDistinct(Connection, whereCondition, param, Transaction, Buffered, commandTimeout);
 			return list;
 		}
 
 		public override IEnumerable<T> GetKeys(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			IEnumerable<T> list = ExtraCrud.Queries<T>().GetKeys(Connection, whereCondition, param, Transaction, Buffered, commandTimeout);
+			IEnumerable<T> list = Queries.GetKeys(Connection, whereCondition, param, Transaction, Buffered, commandTimeout);
 			return list;
 		}
 
 		public override IEnumerable<T> GetList(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			IEnumerable<T> list = ExtraCrud.Queries<T>().GetList(Connection, whereCondition, param, Transaction, Buffered, commandTimeout);
+			IEnumerable<T> list = Queries.GetList(Connection, whereCondition, param, Transaction, Buffered, commandTimeout);
 			return list;
 		}
 
 		public override IEnumerable<T> GetLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			IEnumerable<T> list = ExtraCrud.Queries<T>().GetLimit(Connection, limit, whereCondition, param, Transaction, Buffered, commandTimeout);
+			IEnumerable<T> list = Queries.GetLimit(Connection, limit, whereCondition, param, Transaction, Buffered, commandTimeout);
 			return list;
 		}
 
 		public override void Insert(T obj, int commandTimeout = 30)
 		{
-			ExtraCrud.Queries<T>().Insert(Connection, obj, Transaction, commandTimeout);
+			Queries.Insert(Connection, obj, Transaction, commandTimeout);
 		}
 
 		public override int RecordCount(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			int count = ExtraCrud.Queries<T>().RecordCount(Connection, whereCondition, param, Transaction, commandTimeout);
+			int count = Queries.RecordCount(Connection, whereCondition, param, Transaction, commandTimeout);
 			return count;
 		}
 
 		public override bool Update(object obj, int commandTimeout = 30)
 		{
-			bool success = ExtraCrud.Queries<T>().UpdateObj(Connection, obj, Transaction, commandTimeout);
+			bool success = Queries.UpdateObj(Connection, obj, Transaction, commandTimeout);
 			return success;
 		}
 	
 		public override bool Update(T obj, int commandTimeout = 30)
 		{
-			bool success = ExtraCrud.Queries<T>().Update(Connection, obj, Transaction, commandTimeout);
+			bool success = Queries.Update(Connection, obj, Transaction, commandTimeout);
 			return success;
 		}
 
 		public override bool Upsert(T obj, int commandTimeout = 30)
 		{
-			bool updated = ExtraCrud.Queries<T>().Upsert(Connection, obj, Transaction, commandTimeout);
+			bool updated = Queries.Upsert(Connection, obj, Transaction, commandTimeout);
 			return updated;
 		}
 
 		public override bool InsertIfNotExists(T obj, int commandTimeout = 30)
 		{
-			bool updated = ExtraCrud.Queries<T>().InsertIfNotExists(Connection, obj, Transaction, commandTimeout);
+			bool updated = Queries.InsertIfNotExists(Connection, obj, Transaction, commandTimeout);
 			return updated;
 		}
 
 		public override IEnumerable<T> GetDistinctLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			IEnumerable<T> list = ExtraCrud.Queries<T>().GetDistinctLimit(Connection, limit, whereCondition, param, Transaction, Buffered, commandTimeout);
+			IEnumerable<T> list = Queries.GetDistinctLimit(Connection, limit, whereCondition, param, Transaction, Buffered, commandTimeout);
 			return list;
 		}
 
 		public override bool Delete<KeyType>(KeyType key, int commandTimeout = 30)
 		{
-			bool success = ExtraCrud.Queries<T, KeyType>().Delete(Connection, key, Transaction, commandTimeout);
+			bool success = ((ISqlQueries<T, KeyType>) KeyQueries).Delete(Connection, key, Transaction, commandTimeout);
 			return success;
 		}
 
 		public override T Get<KeyType>(KeyType key, int commandTimeout = 30)
 		{
-			T obj = ExtraCrud.Queries<T, KeyType>().Get(Connection, key, Transaction, commandTimeout);
+			T obj = ((ISqlQueries<T, KeyType>) KeyQueries).Get(Connection, key, Transaction, commandTimeout);
 			return obj;
 		}
 
 		public override int BulkDelete<KeyType>(IEnumerable<KeyType> keys, int commandTimeout = 30)
 		{
-			int count = ExtraCrud.Queries<T, KeyType>().BulkDelete(Connection, keys, Transaction, commandTimeout);
+			int count = ((ISqlQueries<T, KeyType>) KeyQueries).BulkDelete(Connection, keys, Transaction, commandTimeout);
 			return count;
 		}
 
 		public override IEnumerable<KeyType> GetKeys<KeyType>(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			IEnumerable<KeyType> keys = ExtraCrud.Queries<T, KeyType>().GetKeys(Connection, whereCondition, param, Transaction, Buffered, commandTimeout);
+			IEnumerable<KeyType> keys = ((ISqlQueries<T, KeyType>) KeyQueries).GetKeys(Connection, whereCondition, param, Transaction, Buffered, commandTimeout);
 			return keys;
 		}
 
 		public override List<T> BulkGet(IEnumerable<T> keys, int commandTimeout = 30)
 		{
-			List<T> list = ExtraCrud.Queries<T>().BulkGet(Connection, keys, Transaction, commandTimeout).AsList();
+			List<T> list = Queries.BulkGet(Connection, keys, Transaction, commandTimeout).AsList();
 			return list;
 		}
 
 		public override List<T> BulkGet<KeyType>(IEnumerable<KeyType> keys, int commandTimeout = 30)
 		{
-			List<T> list = ExtraCrud.Queries<T, KeyType>().BulkGet(Connection, keys, Transaction, commandTimeout);
+			List<T> list = ((ISqlQueries<T, KeyType>) KeyQueries).BulkGet(Connection, keys, Transaction, commandTimeout);
 			return list;
 		}
 
 		public override int BulkInsertIfNotExists(IEnumerable<T> objs, int commandTimeout = 30)
 		{
-			int count = ExtraCrud.Queries<T>().BulkInsertIfNotExists(Connection, objs, Transaction, commandTimeout);
+			int count = Queries.BulkInsertIfNotExists(Connection, objs, Transaction, commandTimeout);
 			return count;
 		}
 		#endregion  IAccessObjectSync<T>

@@ -23,7 +23,13 @@ namespace Dapper.Extra.Utilities
 		public AutoAccessObject(string connectionString = null)
 		{
 			ConnectionString = connectionString;
+			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
+			Queries = builder.Queries;
+			KeyQueries = builder.KeyBuilder?.QueriesObject;
 		}
+
+		protected ISqlQueries<T> Queries { get; }
+		protected object KeyQueries { get; }
 
 		public string ConnectionString { get; set; }
 
@@ -31,7 +37,7 @@ namespace Dapper.Extra.Utilities
 		public override int BulkDelete(IEnumerable<T> objs, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				int count = ExtraCrud.Queries<T>().BulkDelete(conn, objs, null, commandTimeout);
+				int count = Queries.BulkDelete(conn, objs, null, commandTimeout);
 				return count;
 			}
 		}
@@ -39,14 +45,14 @@ namespace Dapper.Extra.Utilities
 		public override void BulkInsert(IEnumerable<T> objs, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				ExtraCrud.Queries<T>().BulkInsert(conn, objs, null, commandTimeout);
+				Queries.BulkInsert(conn, objs, null, commandTimeout);
 			}
 		}
 
 		public override int BulkUpdate(IEnumerable<T> objs, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				int count = ExtraCrud.Queries<T>().BulkUpdate(conn, objs, null, commandTimeout);
+				int count = Queries.BulkUpdate(conn, objs, null, commandTimeout);
 				return count;
 			}
 		}
@@ -54,7 +60,7 @@ namespace Dapper.Extra.Utilities
 		public override int BulkUpsert(IEnumerable<T> objs, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				int count = ExtraCrud.Queries<T>().BulkUpsert(conn, objs, null, commandTimeout);
+				int count = Queries.BulkUpsert(conn, objs, null, commandTimeout);
 				return count;
 			}
 		}
@@ -62,14 +68,14 @@ namespace Dapper.Extra.Utilities
 		public override int BulkInsertIfNotExists(IEnumerable<T> objs, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				return ExtraCrud.Queries<T>().BulkInsertIfNotExists(conn, objs, null, commandTimeout);
+				return Queries.BulkInsertIfNotExists(conn, objs, null, commandTimeout);
 			}
 		}
 
 		public override bool Delete(T obj, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				bool success = ExtraCrud.Queries<T>().Delete(conn, obj, null, commandTimeout);
+				bool success = Queries.Delete(conn, obj, null, commandTimeout);
 				return success;
 			}
 		}
@@ -77,7 +83,7 @@ namespace Dapper.Extra.Utilities
 		public override int Delete(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				int count = ExtraCrud.Queries<T>().DeleteList(conn, whereCondition, param, null, commandTimeout);
+				int count = Queries.DeleteList(conn, whereCondition, param, null, commandTimeout);
 				return count;
 			}
 		}
@@ -85,7 +91,7 @@ namespace Dapper.Extra.Utilities
 		public override T Get(T obj, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				T value = ExtraCrud.Queries<T>().Get(conn, obj, null, commandTimeout);
+				T value = Queries.Get(conn, obj, null, commandTimeout);
 				return value;
 			}
 		}
@@ -93,7 +99,7 @@ namespace Dapper.Extra.Utilities
 		public override IEnumerable<T> GetDistinct(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				IEnumerable<T> list = ExtraCrud.Queries<T>().GetDistinct(conn, whereCondition, param, null, true, commandTimeout);
+				IEnumerable<T> list = Queries.GetDistinct(conn, whereCondition, param, null, true, commandTimeout);
 				return list;
 			}
 		}
@@ -101,7 +107,7 @@ namespace Dapper.Extra.Utilities
 		public override IEnumerable<T> GetKeys(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				IEnumerable<T> list = ExtraCrud.Queries<T>().GetKeys(conn, whereCondition, param, null, true, commandTimeout);
+				IEnumerable<T> list = Queries.GetKeys(conn, whereCondition, param, null, true, commandTimeout);
 				return list;
 			}
 		}
@@ -109,7 +115,7 @@ namespace Dapper.Extra.Utilities
 		public override IEnumerable<T> GetList(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				IEnumerable<T> list = ExtraCrud.Queries<T>().GetList(conn, whereCondition, param, null, true, commandTimeout);
+				IEnumerable<T> list = Queries.GetList(conn, whereCondition, param, null, true, commandTimeout);
 				return list;
 			}
 		}
@@ -117,7 +123,7 @@ namespace Dapper.Extra.Utilities
 		public override IEnumerable<T> GetLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				IEnumerable<T> list = ExtraCrud.Queries<T>().GetLimit(conn, limit, whereCondition, param, null, true, commandTimeout);
+				IEnumerable<T> list = Queries.GetLimit(conn, limit, whereCondition, param, null, true, commandTimeout);
 				return list;
 			}
 		}
@@ -125,14 +131,14 @@ namespace Dapper.Extra.Utilities
 		public override void Insert(T obj, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				ExtraCrud.Queries<T>().Insert(conn, obj, null, commandTimeout);
+				Queries.Insert(conn, obj, null, commandTimeout);
 			}
 		}
 
 		public override int RecordCount(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				int count = ExtraCrud.Queries<T>().RecordCount(conn, whereCondition, param, null, commandTimeout);
+				int count = Queries.RecordCount(conn, whereCondition, param, null, commandTimeout);
 				return count;
 			}
 		}
@@ -140,7 +146,7 @@ namespace Dapper.Extra.Utilities
 		public override bool Update(object obj, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				bool success = ExtraCrud.Queries<T>().UpdateObj(conn, obj, null, commandTimeout);
+				bool success = Queries.UpdateObj(conn, obj, null, commandTimeout);
 				return success;
 			}
 		}
@@ -148,7 +154,7 @@ namespace Dapper.Extra.Utilities
 		public override bool Update(T obj, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				bool success = ExtraCrud.Queries<T>().Update(conn, obj, null, commandTimeout);
+				bool success = Queries.Update(conn, obj, null, commandTimeout);
 				return success;
 			}
 		}
@@ -156,7 +162,7 @@ namespace Dapper.Extra.Utilities
 		public override bool Upsert(T obj, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				bool updated = ExtraCrud.Queries<T>().Upsert(conn, obj, null, commandTimeout);
+				bool updated = Queries.Upsert(conn, obj, null, commandTimeout);
 				return updated;
 			}
 		}
@@ -164,7 +170,7 @@ namespace Dapper.Extra.Utilities
 		public override bool InsertIfNotExists(T obj, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				bool updated = ExtraCrud.Queries<T>().InsertIfNotExists(conn, obj, null, commandTimeout);
+				bool updated = Queries.InsertIfNotExists(conn, obj, null, commandTimeout);
 				return updated;
 			}
 		}
@@ -172,7 +178,7 @@ namespace Dapper.Extra.Utilities
 		public override IEnumerable<T> GetDistinctLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				IEnumerable<T> list = ExtraCrud.Queries<T>().GetDistinctLimit(conn, limit, whereCondition, param, null, true, commandTimeout);
+				IEnumerable<T> list = Queries.GetDistinctLimit(conn, limit, whereCondition, param, null, true, commandTimeout);
 				return list;
 			}
 		}
@@ -180,7 +186,7 @@ namespace Dapper.Extra.Utilities
 		public override bool Delete<KeyType>(KeyType key, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				bool success = ExtraCrud.Queries<T, KeyType>().Delete(conn, key, null, commandTimeout);
+				bool success = ((ISqlQueries<T, KeyType>) KeyQueries).Delete(conn, key, null, commandTimeout);
 				return success;
 			}
 		}
@@ -188,7 +194,7 @@ namespace Dapper.Extra.Utilities
 		public override T Get<KeyType>(KeyType key, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				T obj = ExtraCrud.Queries<T, KeyType>().Get(conn, key, null, commandTimeout);
+				T obj = ((ISqlQueries<T, KeyType>) KeyQueries).Get(conn, key, null, commandTimeout);
 				return obj;
 			}
 		}
@@ -196,7 +202,7 @@ namespace Dapper.Extra.Utilities
 		public override int BulkDelete<KeyType>(IEnumerable<KeyType> keys, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				int count = ExtraCrud.Queries<T, KeyType>().BulkDelete(conn, keys, null, commandTimeout);
+				int count = ((ISqlQueries<T, KeyType>) KeyQueries).BulkDelete(conn, keys, null, commandTimeout);
 				return count;
 			}
 		}
@@ -204,7 +210,7 @@ namespace Dapper.Extra.Utilities
 		public override IEnumerable<KeyType> GetKeys<KeyType>(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				IEnumerable<KeyType> keys = ExtraCrud.Queries<T, KeyType>().GetKeys(conn, whereCondition, param, null, true, commandTimeout);
+				IEnumerable<KeyType> keys = ((ISqlQueries<T, KeyType>) KeyQueries).GetKeys(conn, whereCondition, param, null, true, commandTimeout);
 				return keys;
 			}
 		}
@@ -212,7 +218,7 @@ namespace Dapper.Extra.Utilities
 		public override List<T> BulkGet(IEnumerable<T> keys, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				List<T> list = ExtraCrud.Queries<T>().BulkGet(conn, keys, null, commandTimeout).AsList();
+				List<T> list = Queries.BulkGet(conn, keys, null, commandTimeout).AsList();
 				return list;
 			}
 		}
@@ -220,7 +226,7 @@ namespace Dapper.Extra.Utilities
 		public override List<T> BulkGet<KeyType>(IEnumerable<KeyType> keys, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				List<T> list = ExtraCrud.Queries<T, KeyType>().BulkGet(conn, keys, null, commandTimeout);
+				List<T> list = ((ISqlQueries<T, KeyType>) KeyQueries).BulkGet(conn, keys, null, commandTimeout);
 				return list;
 			}
 		}

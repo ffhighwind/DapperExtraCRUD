@@ -51,6 +51,7 @@
     <Compile Include="Extra\Annotations\ColumnAttribute.cs" />
     <Compile Include="DapperExtraExtensions.cs" />
     <Compile Include="Extra\ExtraCrud.cs" />
+    <Compile Include="Extra\Internal\ISqlBuilder.cs" />
     <Compile Include="Extra\Internal\SqlBuilder.cs" />
     <Compile Include="Extra\Internal\SqlBuilderHelper.cs" />
     <Compile Include="Extra\Internal\SqlColumnAttributes.cs" />
