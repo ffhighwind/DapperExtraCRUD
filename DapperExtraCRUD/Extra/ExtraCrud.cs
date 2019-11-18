@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Released under MIT License 
+// Copyright(c) 2018 Wesley Hamilton
+// License: https://www.mit.edu/~amini/LICENSE.md
+// Home page: https://github.com/ffhighwind/DapperExtraCRUD
+
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,9 +16,20 @@ namespace Dapper.Extra
 	public static class ExtraCrud
 	{
 		public static SqlSyntax Syntax { get; set; } = SqlSyntax.SQLServer;
+		private static ConcurrentDictionary<Type, object> TypeInfoCache = new ConcurrentDictionary<Type, object>();
 		private static ConcurrentDictionary<Type, object> BuilderCache = new ConcurrentDictionary<Type, object>();
 		private static ConcurrentDictionary<Type, object> QueriesCache = new ConcurrentDictionary<Type, object>();
 		private static ConcurrentDictionary<Type, object> KeyQueriesCache = new ConcurrentDictionary<Type, object>();
+
+		public static SqlTypeInfo TypeInfo<T>() where T : class
+		{
+			Type type = typeof(T);
+			if (TypeInfoCache.TryGetValue(type, out object obj)) {
+				return (SqlTypeInfo) obj;
+			}
+			SqlTypeInfo typeInfo = new SqlTypeInfo(type);
+			return (SqlTypeInfo) TypeInfoCache.GetOrAdd(type, typeInfo);
+		}
 
 		/// <summary>
 		/// Creates or gets a cached <see cref="SqlBuilder{T}"/>.
@@ -26,7 +42,8 @@ namespace Dapper.Extra
 			if (BuilderCache.TryGetValue(type, out object obj)) {
 				return (SqlBuilder<T>) obj;
 			}
-			SqlBuilder<T> builder = new SqlBuilder<T>(new SqlTypeInfo(type));
+			SqlTypeInfo typeInfo = TypeInfo<T>();
+			SqlBuilder<T> builder = new SqlBuilder<T>(typeInfo);
 			return (SqlBuilder<T>) BuilderCache.GetOrAdd(type, builder);
 		}
 
@@ -85,11 +102,25 @@ namespace Dapper.Extra
 		/// <summary>
 		/// Clears the cache of queries and builders. This is not recommended unless you run out of memory.
 		/// </summary>
-		public static void ClearCache()
+		public static void PurgeCache()
 		{
+			TypeInfoCache.Clear();
 			BuilderCache.Clear();
 			QueriesCache.Clear();
 			KeyQueriesCache.Clear();
+		}
+
+		/// <summary>
+		/// Clears the cache of queries and builders for the given type.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		public static void Purge<T>() where T : class
+		{
+			Type type = typeof(T);
+			TypeInfoCache.TryRemove(type, out object obj);
+			BuilderCache.TryRemove(type, out obj);
+			QueriesCache.TryRemove(type, out obj);
+			KeyQueriesCache.TryRemove(type, out obj);
 		}
 	}
 }

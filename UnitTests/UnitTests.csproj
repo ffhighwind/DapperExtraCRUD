@@ -50,13 +50,6 @@
     <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bad\Bad1.cs" />
-    <Compile Include="Bad\Bad2.cs" />
-    <Compile Include="Good\IDto.cs" />
-    <Compile Include="Good\Test3.cs" />
-    <Compile Include="Good\TestDTO.cs" />
-    <Compile Include="Good\TestDTO2.cs" />
-    <Compile Include="Good\TestDTO4.cs" />
     <Compile Include="BadUnitTests.cs" />
     <Compile Include="GoodUnitTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -65,6 +58,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ConsoleTests\ConsoleTests.csproj">
+      <Project>{965bb116-b0e0-4bac-b1d3-c1f573420f37}</Project>
+      <Name>ConsoleTests</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DapperExtraCRUD\DapperExtraCRUD.csproj">
       <Project>{4dbe71c1-2ecd-4192-bc66-e4d1c8dcec08}</Project>
       <Name>DapperExtraCRUD</Name>

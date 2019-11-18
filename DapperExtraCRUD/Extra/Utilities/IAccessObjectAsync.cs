@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Released under MIT License 
+// Copyright(c) 2018 Wesley Hamilton
+// License: https://www.mit.edu/~amini/LICENSE.md
+// Home page: https://github.com/ffhighwind/DapperExtraCRUD
+
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -18,12 +23,12 @@ namespace Dapper.Extra.Utilities
 		Task<bool> DeleteAsync(T obj, int commandTimeout = 30);
 		Task<bool> DeleteAsync<KeyType>(KeyType key, int commandTimeout = 30);
 		Task<int> DeleteAsync(string whereCondition = "", object param = null, int commandTimeout = 30);
-		Task<IEnumerable<T>> DeleteListAsync(string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		Task InsertAsync(T obj, int commandTimeout = 30);
 		Task<bool> UpdateAsync(object obj, int commandTimeout = 30);
 		Task<bool> UpdateAsync(T obj, int commandTimeout = 30);
 		Task<bool> UpsertAsync(T obj, int commandTimeout = 30);
+		Task<bool> InsertIfNotExistsAsync(T obj, int commandTimeout = 30);
 
 		Task<T> GetAsync(T obj, int commandTimeout = 30);
 		Task<T> GetAsync<KeyType>(KeyType key, int commandTimeout = 30);
@@ -41,5 +46,6 @@ namespace Dapper.Extra.Utilities
 		Task<int> BulkDeleteAsync(IEnumerable<T> objs, int commandTimeout = 30);
 		Task<int> BulkDeleteAsync<KeyType>(IEnumerable<KeyType> keys, int commandTimeout = 30);
 		Task<int> BulkUpsertAsync(IEnumerable<T> objs, int commandTimeout = 30);
+		Task<int> BulkInsertIfNotExistsAsync(IEnumerable<T> objs, int commandTimeout = 30);
 	}
 }

@@ -9,19 +9,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Dapper.Extra.Internal
+namespace Dapper.Extra.Annotations
 {
 	/// <summary>
-	/// The attributes for the class.
+	/// Turns a <see cref="PropertyInfo"/> into a pseudo key for deletions.
 	/// </summary>
-	public enum SqlTableAttributes
+	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+	public class MatchDeleteAttribute : Attribute
 	{
-		None = 0,
-		DeclaredOnly = 1,
-		InheritAttributes = 1 << 1,
-		//IgnoreSelect = 1 << 2,
-		IgnoreInsert = 1 << 3,
-		IgnoreUpdate = 1 << 4,
-		IgnoreDelete = 1 << 5
 	}
 }

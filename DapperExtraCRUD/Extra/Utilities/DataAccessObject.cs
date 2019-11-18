@@ -1,10 +1,16 @@
-﻿using System;
+﻿// Released under MIT License 
+// Copyright(c) 2018 Wesley Hamilton
+// License: https://www.mit.edu/~amini/LICENSE.md
+// Home page: https://github.com/ffhighwind/DapperExtraCRUD
+
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Dapper.Extra.Internal;
 
 namespace Dapper.Extra.Utilities
 {
@@ -16,16 +22,18 @@ namespace Dapper.Extra.Utilities
 	public class DataAccessObject<T> : IAccessObject<T>, IDataAccessConnection
 		where T : class
 	{
-		public DataAccessObject(bool buffered = true)
+		public DataAccessObject(bool buffered = true) : this(null, buffered)
 		{
-			Buffered = buffered;
 		}
 
 		public DataAccessObject(string connectionString, bool buffered = true)
 		{
 			Connection = new SqlConnection(connectionString);
 			Buffered = buffered;
+			Queries = ExtraCrud.Queries<T>();
 		}
+
+		protected ISqlQueries<T> Queries { get; }
 
 		/// <summary>
 		/// The connection used for queries. This will be temporarily opened it if is closed. 
@@ -136,33 +144,16 @@ namespace Dapper.Extra.Utilities
 			return updated;
 		}
 
+		public override bool InsertIfNotExists(T obj, int commandTimeout = 30)
+		{
+			bool updated = ExtraCrud.Queries<T>().InsertIfNotExists(Connection, obj, Transaction, commandTimeout);
+			return updated;
+		}
+
 		public override IEnumerable<T> GetDistinctLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			IEnumerable<T> list = ExtraCrud.Queries<T>().GetDistinctLimit(Connection, limit, whereCondition, param, Transaction, Buffered, commandTimeout);
 			return list;
-		}
-
-		public override IEnumerable<T> DeleteList(string whereCondition = "", object param = null, int commandTimeout = 30)
-		{
-			Internal.SqlQueries<T> queries = ExtraCrud.Queries<T>();
-			if (Transaction == null) {
-				bool wasClosed = Connection.State == ConnectionState.Closed;
-				if (wasClosed)
-					Connection.Open();
-				using (SqlTransaction trans = Connection.BeginTransaction()) {
-					IEnumerable<T> keys = queries.GetKeys(Connection, whereCondition, param, trans, true, commandTimeout);
-					int count = queries.DeleteList(Connection, whereCondition, param, trans, commandTimeout);
-					trans.Commit();
-					if (wasClosed)
-						Connection.Close();
-					return keys;
-				}
-			}
-			else {
-				IEnumerable<T> keys = queries.GetKeys(Transaction.Connection, whereCondition, param, Transaction, true, commandTimeout);
-				int count = queries.DeleteList(Transaction.Connection, whereCondition, param, Transaction, commandTimeout);
-				return keys;
-			}
 		}
 
 		public override bool Delete<KeyType>(KeyType key, int commandTimeout = 30)
@@ -199,6 +190,12 @@ namespace Dapper.Extra.Utilities
 		{
 			List<T> list = ExtraCrud.Queries<T, KeyType>().BulkGet(Connection, keys, Transaction, commandTimeout);
 			return list;
+		}
+
+		public override int BulkInsertIfNotExists(IEnumerable<T> objs, int commandTimeout = 30)
+		{
+			int count = ExtraCrud.Queries<T>().BulkInsertIfNotExists(Connection, objs, Transaction, commandTimeout);
+			return count;
 		}
 		#endregion  IAccessObjectSync<T>
 	}

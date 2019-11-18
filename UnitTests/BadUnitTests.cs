@@ -5,6 +5,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using Dapper;
 using Dapper.Extra;
+using Dapper.Extra.Annotations;
 using Dapper.Extra.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 

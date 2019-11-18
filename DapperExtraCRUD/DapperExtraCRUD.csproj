@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Dapper</RootNamespace>
-    <AssemblyName>DapperExtraCRUD</AssemblyName>
+    <AssemblyName>Dapper.ExtraCRUD</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -36,15 +36,19 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Dapper, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Dapper.2.0.30\lib\net461\Dapper.dll</HintPath>
+    </Reference>
     <Reference Include="FastMember, Version=1.5.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\FastMember.1.5.0\lib\net461\FastMember.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ColumnAttribute.cs" />
+    <Compile Include="Extra\Annotations\ColumnAttribute.cs" />
     <Compile Include="DapperExtraExtensions.cs" />
     <Compile Include="Extra\ExtraCrud.cs" />
     <Compile Include="Extra\Internal\SqlBuilder.cs" />
@@ -66,30 +70,24 @@
     <Compile Include="Extra\Utilities\IAccessObject.cs" />
     <Compile Include="Extra\Utilities\IAccessObjectAsync.cs" />
     <Compile Include="Extra\Utilities\IAccessObjectSync.cs" />
-    <Compile Include="Extra\Internal\IDefaultAttribute.cs" />
+    <Compile Include="Extra\Annotations\IDefaultAttribute.cs" />
     <Compile Include="Extra\Utilities\ReferenceComparer.cs" />
     <Compile Include="Extra\Internal\ISqlQueries.cs" />
     <Compile Include="Extra\Internal\Delegates.cs" />
     <Compile Include="Extra\Utilities\WhereConditionGenerator.cs" />
-    <Compile Include="IgnoreAttribute.cs" />
-    <Compile Include="IgnoreDeleteAttribute.cs" />
-    <Compile Include="IgnoreInsertAttribute.cs" />
-    <Compile Include="IgnoreSelectAttribute.cs" />
-    <Compile Include="IgnoreUpdateAttribute.cs" />
-    <Compile Include="KeyAttribute.cs" />
-    <Compile Include="MatchDeleteAttribute.cs" />
-    <Compile Include="MatchUpdateAttribute.cs" />
+    <Compile Include="Extra\Annotations\NotMappedAttribute.cs" />
+    <Compile Include="Extra\Annotations\IgnoreDeleteAttribute.cs" />
+    <Compile Include="Extra\Annotations\IgnoreInsertAttribute.cs" />
+    <Compile Include="Extra\Annotations\IgnoreUpdateAttribute.cs" />
+    <Compile Include="Extra\Annotations\KeyAttribute.cs" />
+    <Compile Include="Extra\Annotations\MatchDeleteAttribute.cs" />
+    <Compile Include="Extra\Annotations\MatchUpdateAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TableAttribute.cs" />
+    <Compile Include="Extra\Annotations\TableAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\DapperTracer\DapperTracer.csproj">
-      <Project>{b5f579c6-357f-43e4-9d2d-de5ae46a9bd7}</Project>
-      <Name>DapperTracer</Name>
-    </ProjectReference>
+    <None Include="README.md" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

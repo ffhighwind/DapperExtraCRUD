@@ -4,16 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
+using Dapper.Extra.Annotations;
 
 namespace UnitTests
 {
 	[Table("Test4")]
-	public class TestDTO4 : IEquatable<TestDTO4>, IDto<TestDTO4>, IEqualityComparer<TestDTO4>
+	public class TestDTO4 : IDtoKey<TestDTO4, int>
 	{
 		public TestDTO4() { }
 		public TestDTO4(Random random)
 		{
-			//ID = random.Next();
+			ID = random.Next();
 			FirstName = random.Next().ToString();
 			LastName = random.Next().ToString();
 		}
@@ -26,7 +27,7 @@ namespace UnitTests
 		[MatchUpdate]
 		public string LastName { get; set; }
 
-		public static string CreateTable()
+		public string CreateTable()
 		{
 			return @"
 CREATE TABLE [dbo].[Test4](
@@ -40,11 +41,14 @@ CREATE TABLE [dbo].[Test4](
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
 		}
 
+		public int CompareTo(TestDTO4 other)
+		{
+			return ID.CompareTo(other.ID);
+		}
+
 		public bool Equals(TestDTO4 other)
 		{
-			return other.ID == ID
-				&& other.FirstName == FirstName
-				&& other.LastName == LastName;
+			return other.ID == ID;
 		}
 
 		public bool Equals(TestDTO4 x, TestDTO4 y)
@@ -57,14 +61,39 @@ CREATE TABLE [dbo].[Test4](
 			return obj.GetHashCode();
 		}
 
-		public bool IsInserted()
+		public override int GetHashCode()
 		{
-			return ID != 0;
+			return 1213502048 + ID.GetHashCode();
 		}
 
-		public bool IsKeyEqual(TestDTO4 other)
+		public int GetKey()
 		{
-			return other.ID == ID;
+			return ID;
+		}
+
+		public bool IsIdentical(TestDTO4 other)
+		{
+			return other.ID == ID
+				&& other.FirstName == FirstName
+				&& other.LastName == LastName;
+		}
+
+		public bool IsInserted(TestDTO4 other)
+		{
+			return Equals(other) && ID != 0;
+		}
+
+
+		public bool IsUpdated(TestDTO4 other)
+		{
+			return Equals(other) && FirstName == other.FirstName;
+		}
+
+		public TestDTO4 UpdateRandomize(Random random)
+		{
+			TestDTO4 clone = (TestDTO4) MemberwiseClone();
+			clone.FirstName = random.Next().ToString();
+			return clone;
 		}
 	}
 }

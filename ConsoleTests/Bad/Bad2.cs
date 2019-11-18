@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
+using Dapper.Extra.Annotations;
 
 namespace UnitTests
 {

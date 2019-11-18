@@ -233,7 +233,8 @@ namespace Dapper.Extra.Persistence
 
 		public IEnumerable<T> DeleteList(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			IEnumerable<T> keys = Access.DeleteList(whereCondition, param, commandTimeout);
+			IEnumerable<T> keys = Access.GetKeys<T>(whereCondition, param, commandTimeout);
+			int count = Access.Delete(whereCondition, param, commandTimeout);
 			Storage.RemoveKeys(keys);
 			return keys;
 		}

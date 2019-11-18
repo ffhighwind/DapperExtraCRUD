@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
+using Dapper.Extra.Annotations;
 
 namespace UnitTests
 {
-	public class Test3 : IEquatable<Test3>, IDto<Test3>, IEqualityComparer<Test3>
+	public class Test3 : IDto<Test3>
 	{
 		public Test3() { }
 		public Test3(Random random)
@@ -25,7 +26,7 @@ namespace UnitTests
 		public float Col3 { get; set; }
 		public int? Col4 { get; set; }
 
-		public static string CreateTable()
+		public string CreateTable()
 		{
 			return @"
 CREATE TABLE [dbo].[Test3](
@@ -50,8 +51,7 @@ CREATE TABLE [dbo].[Test3](
 		{
 			return other.Col1 == Col1
 				&& other.Col2 == Col2
-				&& other.Col3 == Col3
-				&& other.Col4 == Col4;
+				&& other.Col3 == Col3;
 		}
 
 		public bool Equals(Test3 x, Test3 y)
@@ -64,14 +64,50 @@ CREATE TABLE [dbo].[Test3](
 			return obj.GetHashCode();
 		}
 
-		public bool IsKeyEqual(Test3 other)
+		public int CompareTo(Test3 other)
 		{
-			return other.Col1 == Col1;
+			int ret = Col1.CompareTo(other.Col1);
+			if(ret == 0) {
+				ret = Col2.CompareTo(other.Col2);
+				if(ret == 0) {
+					ret = Col3.CompareTo(other.Col3);
+				}
+			}
+			return ret;
 		}
 
-		public bool IsInserted()
+		public bool IsInserted(Test3 other)
 		{
-			return true;
+			return Equals(other);
+		}
+
+		public bool IsIdentical(Test3 other)
+		{
+			return other.Col1 == Col1
+				&& other.Col2 == Col2
+				&& other.Col3 == Col3
+				&& other.Col4 == Col4;
+		}
+
+		public override int GetHashCode()
+		{
+			int hashCode = -1473066521;
+			hashCode = hashCode * -1521134295 + Col1.GetHashCode();
+			hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Col2);
+			hashCode = hashCode * -1521134295 + Col3.GetHashCode();
+			return hashCode;
+		}
+
+		public Test3 UpdateRandomize(Random random)
+		{
+			Test3 clone = (Test3) MemberwiseClone();
+			clone.Col4 = random.Next();
+			return clone;
+		}
+
+		public bool IsUpdated(Test3 other)
+		{
+			return Equals(other) && Col4 == other.Col4;
 		}
 	}
 }

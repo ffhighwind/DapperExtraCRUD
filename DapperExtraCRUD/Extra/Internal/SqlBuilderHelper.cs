@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Released under MIT License 
+// Copyright(c) 2018 Wesley Hamilton
+// License: https://www.mit.edu/~amini/LICENSE.md
+// Home page: https://github.com/ffhighwind/DapperExtraCRUD
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -12,9 +17,26 @@ namespace Dapper.Extra.Internal
 	/// </summary>
 	public static class SqlBuilderHelper
 	{
+		/// <summary>
+		/// Quotes and escapes a string with single quotes.
+		/// </summary>
+		/// <param name="str">The content of the string.</param>
+		/// <returns>A quoted and escaped string.</returns>
+		public static string CreateString(string str)
+		{
+			return "'" + str.Replace("'", "''") + "'";
+		}
+
+		/// <summary>
+		/// Creates a SELECT INTO command.
+		/// </summary>
+		/// <param name="sourceTable">The source table.</param>
+		/// <param name="destinationTable">The name of the table to create.</param>
+		/// <param name="columns">The columns to copy from the source table.</param>
+		/// <param name="whereCondition">The condition that determines which rows to copy.</param>
 		public static string SelectIntoTableQuery(string sourceTable, string destinationTable, IEnumerable<SqlColumn> columns, string whereCondition = "WHERE 1=0")
 		{
-			string sql = $"\nSELECT {string.Join(",", columns.Select(c => c.ColumnName))} INTO {destinationTable} FROM {sourceTable} " + whereCondition;
+			string sql = $"SELECT {string.Join(",", columns.Select(c => c.ColumnName))} INTO {destinationTable} FROM {sourceTable} " + whereCondition;
 			return sql;
 		}
 
@@ -71,6 +93,28 @@ namespace Dapper.Extra.Internal
 		}
 
 		/// <summary>
+		/// Creates the column list for select commands.<para></para>
+		/// TableName.[x] as X, TableName.[y], TableName.[z] as Z
+		/// </summary>
+		/// <param name="columns">The columns to select.</param>
+		/// <param name="tableName">The table name.</param>
+		public static string SelectedColumns(IEnumerable<SqlColumn> columns, string tableName)
+		{
+			StringBuilder sb = new StringBuilder();
+			foreach (SqlColumn column in columns) {
+				sb.Append(tableName);
+				sb.Append('.');
+				sb.Append(column.ColumnName);
+				if (column.Property.Name != column.ColumnName) {
+					sb.Append(" as ").Append(column.Property.Name);
+				}
+				sb.Append(',');
+			}
+			sb.Remove(sb.Length - 1, 1); // remove ','
+			return sb.ToString();
+		}
+
+		/// <summary>
 		/// Creates the SET section for bulk update commands.<para></para>
 		/// TableName.[x] = Source.[x], TableName.[y] = getdate()
 		/// </summary>
@@ -112,7 +156,7 @@ namespace Dapper.Extra.Internal
 
 		/// <summary>
 		/// Creates the VALUES section for insert commands.<para></para>
-		/// VALUES(@a,@b,getdate()) 
+		/// VALUES (@a,@b,getdate())
 		/// </summary>
 		/// <param name="columns">The columns to insert.</param>
 		public static string InsertedValues(IEnumerable<SqlColumn> columns)

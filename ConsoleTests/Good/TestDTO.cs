@@ -4,11 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
+using Dapper.Extra.Annotations;
 
 namespace UnitTests
 {
 	[Table("Test")]
-	public class TestDTO : IEquatable<TestDTO>, IDto<TestDTO>, IEqualityComparer<TestDTO>
+	public class TestDTO : IDtoKey<TestDTO, int>
 	{
 		public TestDTO() { }
 		public TestDTO(Random random)
@@ -29,7 +30,7 @@ namespace UnitTests
 
 		public TestDTO Test { get; set; }
 
-		public static string CreateTable()
+		public string CreateTable()
 		{
 			return @"
 CREATE TABLE [dbo].[Test](
@@ -43,11 +44,14 @@ CREATE TABLE [dbo].[Test](
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
 		}
 
+		public int CompareTo(TestDTO other)
+		{
+			return ID.CompareTo(other.ID);
+		}
+
 		public bool Equals(TestDTO other)
 		{
-			return other.ID == ID
-				&& other.Name == Name
-				&& other.CreatedDt == CreatedDt;
+			return other.ID == ID;
 		}
 
 		public bool Equals(TestDTO x, TestDTO y)
@@ -60,14 +64,41 @@ CREATE TABLE [dbo].[Test](
 			return obj.GetHashCode();
 		}
 
-		public bool IsInserted()
+		public override int GetHashCode()
 		{
-			return ID != 0;
+			return 1213502048 + ID.GetHashCode();
 		}
 
-		public bool IsKeyEqual(TestDTO other)
+		public int GetKey()
 		{
-			return ID == other.ID;
+			return ID;
+		}
+
+		public bool IsIdentical(TestDTO other)
+		{
+			return other.ID == ID
+				&& other.Name == Name
+				&& other.CreatedDt == CreatedDt;
+		}
+
+		public bool IsInserted(TestDTO other)
+		{
+			return ID == other.ID 
+				&& Name == other.Name 
+				&& CreatedDt != other.CreatedDt
+				&& ID != 0;
+		}
+
+		public TestDTO UpdateRandomize(Random random)
+		{
+			TestDTO clone = (TestDTO) MemberwiseClone();
+			clone.Name = random.Next().ToString();
+			return clone;
+		}
+
+		public bool IsUpdated(TestDTO other)
+		{
+			return Equals(other) && Name == other.Name;
 		}
 	}
 }

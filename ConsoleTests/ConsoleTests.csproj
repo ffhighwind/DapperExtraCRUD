@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{965BB116-B0E0-4BAC-B1D3-C1F573420F37}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>ConsoleTests</RootNamespace>
+    <RootNamespace>UnitTests</RootNamespace>
     <AssemblyName>ConsoleTests</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -33,6 +33,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Dapper, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Dapper.2.0.30\lib\net461\Dapper.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -43,24 +46,25 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Bad\Bad1.cs" />
+    <Compile Include="Bad\Bad2.cs" />
+    <Compile Include="Good\IDto.cs" />
+    <Compile Include="Good\IDtoKey.cs" />
+    <Compile Include="Good\Test3.cs" />
+    <Compile Include="Good\TestDTO.cs" />
+    <Compile Include="Good\TestDTO2.cs" />
+    <Compile Include="Good\TestDTO4.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DapperExtraCRUD\DapperExtraCRUD.csproj">
       <Project>{4dbe71c1-2ecd-4192-bc66-e4d1c8dcec08}</Project>
       <Name>DapperExtraCRUD</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DapperTracer\DapperTracer.csproj">
-      <Project>{b5f579c6-357f-43e4-9d2d-de5ae46a9bd7}</Project>
-      <Name>DapperTracer</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\UnitTests\UnitTests.csproj">
-      <Project>{81f97e4b-4bcf-44ea-951c-158d08fc9592}</Project>
-      <Name>UnitTests</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

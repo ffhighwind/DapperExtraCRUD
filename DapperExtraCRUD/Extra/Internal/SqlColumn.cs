@@ -1,9 +1,16 @@
-﻿using System;
+﻿// Released under MIT License 
+// Copyright(c) 2018 Wesley Hamilton
+// License: https://www.mit.edu/~amini/LICENSE.md
+// Home page: https://github.com/ffhighwind/DapperExtraCRUD
+
+using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Dapper.Extra.Annotations;
 
 namespace Dapper.Extra.Internal
 {
@@ -13,32 +20,42 @@ namespace Dapper.Extra.Internal
 	public sealed class SqlColumn
 	{
 		/// <summary>
-		/// Constructs an SqlColumn.
+		/// Constructs an <see cref="SqlColumn"/>.
 		/// </summary>
-		internal SqlColumn(PropertyInfo property, string columnName)
+		internal SqlColumn(PropertyInfo property, string columnName, int ordinal)
 		{
 			Property = property;
 			ColumnName = columnName;
 		}
 
 		/// <summary>
-		/// The property that this column represents.
+		/// The <see cref="PropertyInfo"/> that this column represents.
 		/// </summary>
 		public PropertyInfo Property { get; private set; }
 
-		public Type Type => Property.PropertyType;
 		/// <summary>
-		/// The name of the column. This will be quoted using the <see cref="SqlSyntax"/> from the constructor if necessary.
+		/// The <see cref="PropertyInfo"/> type.
+		/// </summary>
+		public Type Type => Property.PropertyType;
+
+		/// <summary>
+		/// The <see cref="DbType"/> that represents this column's type.
+		/// </summary>
+		public DbType DbType => SqlInternal.TryGetDbType(Property.PropertyType, out DbType dbType) ? dbType : DbType.Object;
+		/// <summary>
+		/// The name of the column. This is quoted using the <see cref="SqlAdapter"/> if necessary.
 		/// </summary>
 		public string ColumnName { get; private set; }
 		/// <summary>
-		/// This is the value stored in the <see cref="IgnoreInsertAttribute"/> if one exists. If it is <see langword="null"/> then it will be ignored. 
-		/// It will be the name of the property e.g. @Property if the attribute does not exist.
+		/// The zero-based ordinal of the column.
+		/// </summary>
+		public int Ordinal { get; internal set; }
+		/// <summary>
+		/// The value stored in the <see cref="IgnoreInsertAttribute"/> if one exists.
 		/// </summary>
 		public string InsertValue { get; internal set; }
 		/// <summary>
-		/// This is the value stored in the <see cref="IgnoreUpdateAttribute"/> if one exists. If it is <see langword="null"/> then it will be ignored. 
-		/// It will be the name of the property e.g. @Property if the attribute does not exist.
+		/// The value stored in the <see cref="IgnoreUpdateAttribute"/> or <see cref="MatchUpdateAttribute"/> if one exists. 
 		/// </summary>
 		public string UpdateValue { get; internal set; }
 		public bool IsKey => (Attributes & SqlColumnAttributes.Key) != 0;
@@ -46,7 +63,8 @@ namespace Dapper.Extra.Internal
 		public bool IgnoreSelect => (Attributes & SqlColumnAttributes.IgnoreSelect) != 0;
 		public bool IgnoreInsert => (Attributes & SqlColumnAttributes.IgnoreInsert) != 0;
 		public bool IgnoreUpdate => (Attributes & SqlColumnAttributes.IgnoreUpdate) != 0;
-		public bool Ignore => (Attributes & SqlColumnAttributes.Ignore) == SqlColumnAttributes.Ignore;
+		public bool IgnoreDelete => (Attributes & SqlColumnAttributes.IgnoreDelete) != 0;
+		public bool NotMapped => (Attributes & SqlColumnAttributes.NotMapped) == SqlColumnAttributes.NotMapped;
 		public bool MatchUpdate => (Attributes & SqlColumnAttributes.MatchUpdate) != 0;
 		public bool MatchDelete => (Attributes & SqlColumnAttributes.MatchDelete) != 0;
 		public SqlColumnAttributes Attributes { get; internal set; }

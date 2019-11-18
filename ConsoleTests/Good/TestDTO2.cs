@@ -4,11 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
+using Dapper.Extra.Annotations;
 
 namespace UnitTests
 {
 	[Table("Test2")]
-	public class TestDTO2 : IEquatable<TestDTO2>, IDto<TestDTO2>, IEqualityComparer<TestDTO2>
+	public class TestDTO2 : IDto<TestDTO2>
 	{
 		public TestDTO2() { }
 		public TestDTO2(Random random)
@@ -30,14 +31,6 @@ namespace UnitTests
 			return Equals(obj as TestDTO2);
 		}
 
-		public bool Equals(TestDTO2 other)
-		{
-			return other != null &&
-				   Col1 == other.Col1 &&
-				   Col2 == other.Col2 &&
-				   Col3 == other.Col3;
-		}
-
 		public override int GetHashCode()
 		{
 			int hashCode = -1473066521;
@@ -47,7 +40,7 @@ namespace UnitTests
 			return hashCode;
 		}
 
-		public static string CreateTable()
+		public string CreateTable()
 		{
 			return @"
 CREATE TABLE [dbo].[Test2](
@@ -63,11 +56,6 @@ CREATE TABLE [dbo].[Test2](
 ) ON [PRIMARY]";
 		}
 
-		public bool IsKeyEqual(TestDTO2 other)
-		{
-			return Equals(other);
-		}
-
 		public bool Equals(TestDTO2 x, TestDTO2 y)
 		{
 			return x.Equals(y);
@@ -78,9 +66,45 @@ CREATE TABLE [dbo].[Test2](
 			return obj.GetHashCode();
 		}
 
-		public bool IsInserted()
+		public int CompareTo(TestDTO2 other)
 		{
-			return true;
+			int ret = Col1.CompareTo(other.Col1);
+			if (ret == 0) {
+				ret = Col2.CompareTo(other.Col2);
+				if (ret == 0) {
+					ret = Col3.CompareTo(other.Col3);
+				}
+			}
+			return ret;
+		}
+
+		public bool IsInserted(TestDTO2 other)
+		{
+			return Equals(other);
+		}
+
+		public bool IsIdentical(TestDTO2 other)
+		{
+			return Equals(other);
+		}
+
+		public bool Equals(TestDTO2 other)
+		{
+			return other != null
+				&& other.Col1 == Col1
+				&& other.Col2 == Col2
+				&& other.Col3 == Col3;
+		}
+
+		public TestDTO2 UpdateRandomize(Random random)
+		{
+			TestDTO2 clone = (TestDTO2) MemberwiseClone();
+			return clone;
+		}
+
+		public bool IsUpdated(TestDTO2 other)
+		{
+			return Equals(other);
 		}
 	}
 }

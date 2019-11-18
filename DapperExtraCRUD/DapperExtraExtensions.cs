@@ -1,5 +1,11 @@
-﻿using System;
+﻿// Released under MIT License 
+// Copyright(c) 2018 Wesley Hamilton
+// License: https://www.mit.edu/~amini/LICENSE.md
+// Home page: https://github.com/ffhighwind/DapperExtraCRUD
+
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
@@ -29,13 +35,6 @@ namespace Dapper
 		{
 			int count = ExtraCrud.Queries<T, KeyType>().BulkDelete(transaction.Connection, keys, transaction, commandTimeout);
 			return count;
-		}
-
-		[Obsolete("Use BulkDelete or a loop", true)]
-		public static bool Delete<T, KeyType>(this IDbConnection connection, List<KeyType> keys, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -72,13 +71,6 @@ namespace Dapper
 			return list;
 		}
 
-		[Obsolete("Use BulkGet or a loop", true)]
-		public static T Get<T, KeyType>(this IDbConnection connection, List<KeyType> keys, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
-		}
-
 		/// <summary>
 		/// Selects the row with the given key.
 		/// </summary>
@@ -108,7 +100,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The keys that match the given condition.</returns>
-		public static IEnumerable<KeyType> GetKeys<T, KeyType>(this IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+		public static IEnumerable<KeyType> GetKeys<T, KeyType>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			IEnumerable<KeyType> keys = ExtraCrud.Queries<T, KeyType>().GetKeys(transaction.Connection, whereCondition, param, transaction, buffered, commandTimeout);
@@ -125,7 +117,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>All keys.</returns>
-		public static IEnumerable<KeyType> GetKeys<T, KeyType>(IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
+		public static IEnumerable<KeyType> GetKeys<T, KeyType>(this IDbConnection connection, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			IEnumerable<KeyType> keys = ExtraCrud.Queries<T, KeyType>().GetKeys(transaction.Connection, "", null, transaction, buffered, commandTimeout);
@@ -148,13 +140,6 @@ namespace Dapper
 			where T : class
 		{
 			return await Task.Run(() => BulkDelete<T, KeyType>(connection, keys, transaction, commandTimeout));
-		}
-
-		[Obsolete("Use BulkDeleteAsync or a loop", true)]
-		public static Task<bool> DeleteAsync<T, KeyType>(this IDbConnection connection, List<KeyType> keys, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -189,13 +174,6 @@ namespace Dapper
 			return await Task.Run(() => BulkGet<T, KeyType>(connection, keys, transaction, commandTimeout));
 		}
 
-		[Obsolete("Use BulkGet or a loop", true)]
-		public static Task<T> GetAsync<T, KeyType>(this IDbConnection connection, List<KeyType> keys, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
-		}
-
 		/// <summary>
 		/// Selects the row with the given key asynchronously.
 		/// </summary>
@@ -212,6 +190,7 @@ namespace Dapper
 			return await Task.Run(() => Get<T, KeyType>(connection, key, transaction, commandTimeout));
 		}
 
+
 		/// <summary>
 		/// Selects the rows with the given keys asynchronously.
 		/// </summary>
@@ -224,7 +203,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The keys that match the given condition.</returns>
-		public static async Task<IEnumerable<KeyType>> GetKeysAsync<T, KeyType>(this IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+		public static async Task<IEnumerable<KeyType>> GetKeysAsync<T, KeyType>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => GetKeys<T, KeyType>(connection, whereCondition, param, transaction, buffered, commandTimeout));
@@ -240,7 +219,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>All keys.</returns>
-		public static async Task<IEnumerable<KeyType>> GetKeysAsync<T, KeyType>(this IDbConnection connection, IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
+		public static async Task<IEnumerable<KeyType>> GetKeysAsync<T, KeyType>(this IDbConnection connection, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => GetKeys<T, KeyType>(connection, "", null, transaction, buffered, commandTimeout));
@@ -259,7 +238,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The keys that match the given condition.</returns>
-		public static IEnumerable<T> GetKeys<T>(this IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+		public static IEnumerable<T> GetKeys<T>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			IEnumerable<T> keys = ExtraCrud.Queries<T>().GetKeys(connection, whereCondition, param, transaction, buffered, commandTimeout);
@@ -275,18 +254,11 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>All keys.</returns>
-		public static IEnumerable<T> GetKeys<T>(this IDbConnection connection, IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
+		public static IEnumerable<T> GetKeys<T>(this IDbConnection connection, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			IEnumerable<T> keys = ExtraCrud.Queries<T>().GetKeys(connection, "", null, transaction, buffered, commandTimeout);
 			return keys;
-		}
-
-		[Obsolete("Use BulkDelete or a loop", true)]
-		public static bool Delete<T>(this IDbConnection connection, List<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -331,7 +303,7 @@ namespace Dapper
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The number of deleted rows.</returns>
-		public static int DeleteList<T>(this IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, int commandTimeout = 30)
+		public static int DeleteList<T>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
 			int count = ExtraCrud.Queries<T>().DeleteList(connection, whereCondition, param, transaction, commandTimeout);
@@ -346,18 +318,11 @@ namespace Dapper
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The number of deleted rows.</returns>
-		public static int DeleteList<T>(this IDbConnection connection, IDbTransaction transaction, int commandTimeout = 30)
+		public static int DeleteList<T>(this IDbConnection connection, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
 			int count = ExtraCrud.Queries<T>().DeleteList(connection, "", null, transaction, commandTimeout);
 			return count;
-		}
-
-		[Obsolete("Use BulkInsert or a loop", true)]
-		public static void Insert<T>(this IDbConnection connection, List<T> obj, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -386,13 +351,6 @@ namespace Dapper
 			where T : class
 		{
 			ExtraCrud.Queries<T>().BulkInsert(connection, objs, transaction, commandTimeout);
-		}
-
-		[Obsolete("Use BulkInsertIfNotExists or a loop", true)]
-		public static bool InsertIfNotExists<T>(this IDbConnection connection, List<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -425,13 +383,6 @@ namespace Dapper
 			return ExtraCrud.Queries<T>().BulkInsertIfNotExists(connection, objs, transaction, commandTimeout);
 		}
 
-		[Obsolete("Use BulkUpdate or a loop", true)]
-		public static bool Update<T>(this IDbConnection connection, List<object> objs, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
-		}
-
 		/// <summary>
 		/// Updates a row.
 		/// </summary>
@@ -446,13 +397,6 @@ namespace Dapper
 		{
 			bool success = ExtraCrud.Queries<T>().UpdateObj(connection, obj, transaction, commandTimeout);
 			return success;
-		}
-
-		[Obsolete("Use BulkUpdate or a loop", true)]
-		public static bool Update<T>(this IDbConnection connection, List<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -487,13 +431,6 @@ namespace Dapper
 			return count;
 		}
 
-		[Obsolete("Use BulkUpsert or a loop", true)]
-		public static bool Upsert<T>(this IDbConnection connection, List<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
-		}
-
 		/// <summary>
 		/// Upserts a row.
 		/// </summary>
@@ -524,13 +461,6 @@ namespace Dapper
 		{
 			int count = ExtraCrud.Queries<T>().BulkUpsert(connection, objs, transaction, commandTimeout);
 			return count;
-		}
-
-		[Obsolete("Use BulkGet or a loop", true)]
-		public static T Get<T>(this IDbConnection connection, List<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -576,7 +506,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		public static IEnumerable<T> GetList<T>(this IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+		public static IEnumerable<T> GetList<T>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			IEnumerable<T> list = ExtraCrud.Queries<T>().GetList(connection, whereCondition, param, transaction, buffered, commandTimeout);
@@ -592,7 +522,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>All rows.</returns>
-		public static IEnumerable<T> GetList<T>(this IDbConnection connection, IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
+		public static IEnumerable<T> GetList<T>(this IDbConnection connection, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			IEnumerable<T> list = ExtraCrud.Queries<T>().GetList(connection, "", null, transaction, buffered, commandTimeout);
@@ -611,7 +541,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		public static IEnumerable<T> GetLimit<T>(this IDbConnection connection, int limit, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+		public static IEnumerable<T> GetLimit<T>(this IDbConnection connection, int limit, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			IEnumerable<T> list = ExtraCrud.Queries<T>().GetLimit(connection, limit, whereCondition, param, transaction, buffered, commandTimeout);
@@ -628,7 +558,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>A limited number of rows.</returns>
-		public static IEnumerable<T> GetLimit<T>(this IDbConnection connection, int limit, IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
+		public static IEnumerable<T> GetLimit<T>(this IDbConnection connection, int limit, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			IEnumerable<T> list = ExtraCrud.Queries<T>().GetLimit(connection, limit, "", null, transaction, buffered, commandTimeout);
@@ -646,7 +576,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		public static IEnumerable<T> GetDistinct<T>(this IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+		public static IEnumerable<T> GetDistinct<T>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			IEnumerable<T> list = ExtraCrud.Queries<T>().GetDistinct(connection, whereCondition, param, transaction, buffered, commandTimeout);
@@ -662,7 +592,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>All distinct rows.</returns>
-		public static IEnumerable<T> GetDistinct<T>(this IDbConnection connection, IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
+		public static IEnumerable<T> GetDistinct<T>(this IDbConnection connection, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			IEnumerable<T> list = ExtraCrud.Queries<T>().GetDistinct(connection, "", null, transaction, buffered, commandTimeout);
@@ -681,7 +611,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		public static IEnumerable<T> GetDistinctLimit<T>(this IDbConnection connection, int limit, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+		public static IEnumerable<T> GetDistinctLimit<T>(this IDbConnection connection, int limit, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			IEnumerable<T> list = ExtraCrud.Queries<T>().GetDistinctLimit(connection, limit, whereCondition, param, transaction, buffered, commandTimeout);
@@ -698,7 +628,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>A limited number of distinct rows.</returns>
-		public static IEnumerable<T> GetDistinctLimit<T>(this IDbConnection connection, int limit, IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
+		public static IEnumerable<T> GetDistinctLimit<T>(this IDbConnection connection, int limit, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			IEnumerable<T> list = ExtraCrud.Queries<T>().GetDistinctLimit(connection, limit, "", null, transaction, buffered, commandTimeout);
@@ -715,7 +645,7 @@ namespace Dapper
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The number of rows that match the given condition.</returns>
-		public static int RecordCount<T>(this IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, int commandTimeout = 30)
+		public static int RecordCount<T>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
 			int count = ExtraCrud.Queries<T>().RecordCount(connection, whereCondition, param, transaction, commandTimeout);
@@ -730,11 +660,24 @@ namespace Dapper
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The number of rows.</returns>
-		public static int RecordCount<T>(this IDbConnection connection, IDbTransaction transaction, int commandTimeout = 30)
+		public static int RecordCount<T>(this IDbConnection connection, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
 			int count = ExtraCrud.Queries<T>().RecordCount(connection, "", null, transaction, commandTimeout);
 			return count;
+		}
+
+		/// <summary>
+		/// Deletes all rows.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <param name="connection">The connection to query on.</param>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		public static void DeleteAll<T>(this IDbConnection connection, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			ExtraCrud.Queries<T>().DeleteAll(connection, transaction, commandTimeout);
 		}
 		#endregion Delegates <T> Sync
 
@@ -750,7 +693,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The keys that match the given condition.</returns>
-		public static async Task<IEnumerable<T>> GetKeysAsync<T>(this IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+		public static async Task<IEnumerable<T>> GetKeysAsync<T>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => GetKeys<T>(connection, whereCondition, param, transaction, buffered, commandTimeout));
@@ -765,17 +708,10 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>All keys.</returns>
-		public static async Task<IEnumerable<T>> GetKeysAsync<T>(this IDbConnection connection, IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
+		public static async Task<IEnumerable<T>> GetKeysAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => GetKeys<T>(connection, "", null, transaction, buffered, commandTimeout));
-		}
-
-		[Obsolete("Use BulkDeleteAsync or a loop", true)]
-		public static Task<bool> DeleteAsync<T>(this IDbConnection connection, List<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -818,7 +754,7 @@ namespace Dapper
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The number of deleted rows.</returns>
-		public static async Task<int> DeleteAsync<T>(this IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, int commandTimeout = 30)
+		public static async Task<int> DeleteListAsync<T>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => DeleteList<T>(connection, whereCondition, param, transaction, commandTimeout));
@@ -832,17 +768,10 @@ namespace Dapper
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The number of deleted rows.</returns>
-		public static async Task<int> DeleteAsync<T>(this IDbConnection connection, IDbTransaction transaction, int commandTimeout = 30)
+		public static async Task<int> DeleteAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => DeleteList<T>(connection, "", null, transaction, commandTimeout));
-		}
-
-		[Obsolete("Use BulkInsertAsync or a loop", true)]
-		public static Task InsertAsync<T>(this IDbConnection connection, List<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -871,13 +800,6 @@ namespace Dapper
 			where T : class
 		{
 			await Task.Run(() => BulkInsert(connection, objs, transaction, commandTimeout));
-		}
-
-		[Obsolete("Use BulkInsertIfNotExists or a loop", true)]
-		public static bool InsertIfNotExistsAsync<T>(this IDbConnection connection, List<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -910,13 +832,6 @@ namespace Dapper
 			return await Task.Run(() => BulkInsertIfNotExists(connection, objs, transaction, commandTimeout));
 		}
 
-		[Obsolete("Use BulkUpdateAsync or a loop", true)]
-		public static Task<bool> UpdateAsync<T>(this IDbConnection connection, List<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
-		}
-
 		/// <summary>
 		/// Updates a row asynchronously.
 		/// </summary>
@@ -930,13 +845,6 @@ namespace Dapper
 			where T : class
 		{
 			return await Task.Run(() => Update<T>(connection, obj, transaction, commandTimeout));
-		}
-
-		[Obsolete("Use a loop", true)]
-		public static Task<bool> UpdateAsync<T>(this IDbConnection connection, List<object> objs, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
 		}
 
 		/// <summary>
@@ -969,13 +877,6 @@ namespace Dapper
 			return await Task.Run(() => BulkUpdate(connection, objs, transaction, commandTimeout));
 		}
 
-		[Obsolete("Use BulkUpsertAsync or a loop", true)]
-		public static Task<bool> UpsertAsync<T>(this IDbConnection connection, List<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
-		}
-
 		/// <summary>
 		/// Upserts a row asynchronously.
 		/// </summary>
@@ -1006,13 +907,6 @@ namespace Dapper
 			return await Task.Run(() => BulkUpsert(connection, objs, transaction, commandTimeout));
 		}
 
-		[Obsolete("Use BulkGetAsync or a loop", true)]
-		public static Task<T> GetAsync<T>(this IDbConnection connection, List<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			throw new InvalidOperationException();
-		}
-
 		/// <summary>
 		/// Selects a row asynchronously.
 		/// </summary>
@@ -1039,7 +933,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		public static async Task<IEnumerable<T>> GetListAsync<T>(this IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+		public static async Task<IEnumerable<T>> GetListAsync<T>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => GetList<T>(connection, whereCondition, param, transaction, buffered, commandTimeout));
@@ -1054,7 +948,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>All rows.</returns>
-		public static async Task<IEnumerable<T>> GetListAsync<T>(this IDbConnection connection, IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
+		public static async Task<IEnumerable<T>> GetListAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => GetList<T>(connection, "", null, transaction, buffered, commandTimeout));
@@ -1072,7 +966,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		public static async Task<IEnumerable<T>> GetLimitAsync<T>(this IDbConnection connection, int limit, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+		public static async Task<IEnumerable<T>> GetLimitAsync<T>(this IDbConnection connection, int limit, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => GetLimit<T>(connection, limit, whereCondition, param, transaction, buffered, commandTimeout));
@@ -1088,7 +982,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		public static async Task<IEnumerable<T>> GetLimitAsync<T>(this IDbConnection connection, int limit, IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
+		public static async Task<IEnumerable<T>> GetLimitAsync<T>(this IDbConnection connection, int limit, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => GetLimit<T>(connection, limit, "", null, transaction, buffered, commandTimeout));
@@ -1106,7 +1000,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		public static async Task<IEnumerable<T>> GetDistinctAsync<T>(this IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+		public static async Task<IEnumerable<T>> GetDistinctAsync<T>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => GetDistinct<T>(connection, whereCondition, param, transaction, buffered, commandTimeout));
@@ -1122,7 +1016,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>All distinct rows.</returns>
-		public static async Task<IEnumerable<T>> GetDistinctAsync<T>(this IDbConnection connection, IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
+		public static async Task<IEnumerable<T>> GetDistinctAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => GetDistinct<T>(connection, "", null, transaction, buffered, commandTimeout));
@@ -1140,7 +1034,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		public static async Task<IEnumerable<T>> GetDistinctLimitAsync<T>(this IDbConnection connection, int limit, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+		public static async Task<IEnumerable<T>> GetDistinctLimitAsync<T>(this IDbConnection connection, int limit, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => GetDistinctLimit<T>(connection, limit, whereCondition, param, transaction, buffered, commandTimeout));
@@ -1156,7 +1050,7 @@ namespace Dapper
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>A limited number of distinct rows.</returns>
-		public static async Task<IEnumerable<T>> GetDistinctLimitAsync<T>(this IDbConnection connection, int limit, IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
+		public static async Task<IEnumerable<T>> GetDistinctLimitAsync<T>(this IDbConnection connection, int limit, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => GetDistinctLimit<T>(connection, limit, "", null, transaction, buffered, commandTimeout));
@@ -1172,7 +1066,7 @@ namespace Dapper
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The number of rows that match the given condition.</returns>
-		public static async Task<int> RecordCountAsync<T>(this IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, int commandTimeout = 30)
+		public static async Task<int> RecordCountAsync<T>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => RecordCount<T>(connection, whereCondition, param, transaction, commandTimeout));
@@ -1186,10 +1080,23 @@ namespace Dapper
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The number of rows.</returns>
-		public static async Task<int> RecordCountAsync<T>(this IDbConnection connection, IDbTransaction transaction, int commandTimeout = 30)
+		public static async Task<int> RecordCountAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => RecordCount<T>(connection, "", null, transaction, commandTimeout));
+		}
+
+		/// <summary>
+		/// Deletes all rows asynchronously.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <param name="connection">The connection to query on.</param>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		public static async Task DeleteAllAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			await Task.Run(() => DeleteAll<T>(connection, transaction, commandTimeout));
 		}
 		#endregion Delegates <T> Async
 	}

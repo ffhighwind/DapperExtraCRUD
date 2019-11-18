@@ -23,11 +23,13 @@ namespace Dapper.Extra.Internal
 		public SqlBuilder(SqlTypeInfo info, LazyThreadSafetyMode threadSafety = LazyThreadSafetyMode.ExecutionAndPublication)
 		{
 			if (info.Type.IsGenericTypeDefinition && info.Type.GetGenericTypeDefinition() == typeof(List<>))
-				throw new InvalidOperationException("List<> is not a valid table type");
+				throw new InvalidOperationException("List<> is not a valid table type.");
 			if (info.Type.IsArray)
-				throw new InvalidOperationException("Array<> is not a valid table type");
+				throw new InvalidOperationException("Array<> is not a valid table type.");
+			if (info.Type == typeof(string))
+				throw new InvalidOperationException("String is not a valid table type.");
 			Info = info;
-			BulkStagingTable = Info.Adapter.QuoteIdentifier("_" + Info.Type.Name + (Info.Type.FullName.GetHashCode() % 1000));
+			BulkStagingTable = Info.Adapter.CreateTempTableName(Info.Type.Name + (Info.Type.FullName.GetHashCode() % 10000));
 			SqlQueries<T> queries = new SqlQueries<T>()
 			{
 				Delete = CreateDelete(),
@@ -57,61 +59,58 @@ namespace Dapper.Extra.Internal
 			if (info.EqualityColumns.Count == 1) {
 				EqualityComparer = new TableKeyEqualityComparer<T>(TableName, EqualityColumns[0]);
 				Type type = info.EqualityColumns[0].Type;
-				Type underlying = Nullable.GetUnderlyingType(type);
-				if (underlying == type) {
-					TypeCode typeCode = Type.GetTypeCode(type);
-					switch (typeCode) {
-						case TypeCode.Int16:
-							KeyBuilder = new SqlBuilder<T, short>(this);
-							break;
-						case TypeCode.Int32:
-							KeyBuilder = new SqlBuilder<T, int>(this);
-							break;
-						case TypeCode.Int64:
-							KeyBuilder = new SqlBuilder<T, long>(this);
-							break;
-						case TypeCode.SByte:
-							KeyBuilder = new SqlBuilder<T, sbyte>(this);
-							break;
-						case TypeCode.Single:
-							KeyBuilder = new SqlBuilder<T, float>(this);
-							break;
-						case TypeCode.String:
-							KeyBuilder = new SqlBuilder<T, string>(this);
-							break;
-						case TypeCode.UInt16:
-							KeyBuilder = new SqlBuilder<T, ushort>(this);
-							break;
-						case TypeCode.Double:
-							KeyBuilder = new SqlBuilder<T, double>(this);
-							break;
-						case TypeCode.UInt32:
-							KeyBuilder = new SqlBuilder<T, uint>(this);
-							break;
-						case TypeCode.UInt64:
-							KeyBuilder = new SqlBuilder<T, ulong>(this);
-							break;
-						case TypeCode.Byte:
-							KeyBuilder = new SqlBuilder<T, byte>(this);
-							break;
-						case TypeCode.Char:
-							KeyBuilder = new SqlBuilder<T, char>(this);
-							break;
-						case TypeCode.DateTime:
-							KeyBuilder = new SqlBuilder<T, DateTime>(this);
-							break;
-						case TypeCode.Decimal:
-							KeyBuilder = new SqlBuilder<T, decimal>(this);
-							break;
-						default:
-							if (type == typeof(Guid))
-								KeyBuilder = new SqlBuilder<T, Guid>(this);
-							else if (type == typeof(DateTimeOffset))
-								KeyBuilder = new SqlBuilder<T, DateTimeOffset>(this);
-							else if (type == typeof(TimeSpan))
-								KeyBuilder = new SqlBuilder<T, TimeSpan>(this);
-							break;
-					}
+				TypeCode typeCode = Type.GetTypeCode(type);
+				switch (typeCode) {
+					case TypeCode.Int16:
+						KeyBuilder = new SqlBuilder<T, short>(this);
+						break;
+					case TypeCode.Int32:
+						KeyBuilder = new SqlBuilder<T, int>(this);
+						break;
+					case TypeCode.Int64:
+						KeyBuilder = new SqlBuilder<T, long>(this);
+						break;
+					case TypeCode.SByte:
+						KeyBuilder = new SqlBuilder<T, sbyte>(this);
+						break;
+					case TypeCode.Single:
+						KeyBuilder = new SqlBuilder<T, float>(this);
+						break;
+					case TypeCode.String:
+						KeyBuilder = new SqlBuilder<T, string>(this);
+						break;
+					case TypeCode.UInt16:
+						KeyBuilder = new SqlBuilder<T, ushort>(this);
+						break;
+					case TypeCode.Double:
+						KeyBuilder = new SqlBuilder<T, double>(this);
+						break;
+					case TypeCode.UInt32:
+						KeyBuilder = new SqlBuilder<T, uint>(this);
+						break;
+					case TypeCode.UInt64:
+						KeyBuilder = new SqlBuilder<T, ulong>(this);
+						break;
+					case TypeCode.Byte:
+						KeyBuilder = new SqlBuilder<T, byte>(this);
+						break;
+					case TypeCode.Char:
+						KeyBuilder = new SqlBuilder<T, char>(this);
+						break;
+					case TypeCode.DateTime:
+						KeyBuilder = new SqlBuilder<T, DateTime>(this);
+						break;
+					case TypeCode.Decimal:
+						KeyBuilder = new SqlBuilder<T, decimal>(this);
+						break;
+					default:
+						if (type == typeof(Guid))
+							KeyBuilder = new SqlBuilder<T, Guid>(this);
+						else if (type == typeof(DateTimeOffset))
+							KeyBuilder = new SqlBuilder<T, DateTimeOffset>(this);
+						else if (type == typeof(TimeSpan))
+							KeyBuilder = new SqlBuilder<T, TimeSpan>(this);
+						break;
 				}
 			}
 			else
@@ -205,7 +204,7 @@ namespace Dapper.Extra.Internal
 
 		internal string DropBulkTableCmd()
 		{
-			return Store(Info.Adapter.DropTableIfExists(BulkStagingTable));
+			return Store(Info.Adapter.DropTempTableIfExists(BulkStagingTable));
 		}
 
 		internal string ParamsSelect()
@@ -223,6 +222,11 @@ namespace Dapper.Extra.Internal
 			return Store(SqlBuilderHelper.SelectedColumns(Info.SelectColumns) + "\nFROM " + TableName + "\n");
 		}
 
+		internal string ParamsSelectFromTableBulk()
+		{
+			return Store(SqlBuilderHelper.SelectedColumns(Info.SelectColumns, TableName) + "\nFROM " + TableName + "\n");
+		}
+
 		internal string SelectIntoStagingTable(IEnumerable<SqlColumn> columns)
 		{
 			return Store(SqlBuilderHelper.SelectIntoTableQuery(TableName, BulkStagingTable, columns));
@@ -238,9 +242,14 @@ namespace Dapper.Extra.Internal
 			return Store(SqlBuilderHelper.InsertedValues(columns));
 		}
 
-		internal string InsertCmd()
+		internal string InsertIntoCmd()
 		{
-			return Store($"INSERT {TableName} ({string.Join(",", Info.InsertColumns.Select(c => c.ColumnName))})\n{InsertedValues(Info.InsertColumns)}");
+			return Store($"INSERT INTO {TableName} ({ColumnNames(Info.InsertColumns)})\n");
+		}
+
+		internal string ColumnNames(IEnumerable<SqlColumn> columns)
+		{
+			return Store(string.Join(",", columns.Select(c => c.ColumnName)));
 		}
 
 		internal string UpdateSetTables()
@@ -353,12 +362,16 @@ namespace Dapper.Extra.Internal
 		private DbLimitList<T> CreateGetLimit()
 		{
 			string paramsSelectFromTable = ParamsSelectFromTable();
+			string limitStartQuery = Info.Adapter.SelectLimitStart;
+			string limitEndQuery = Info.Adapter.SelectLimitEnd;
 			return (connection, limit, whereCondition, param, transaction, buffered, commandTimeout) =>
 			{
-				string query = $"SELECT {paramsSelectFromTable}{whereCondition}";
-				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout).Take(limit);
-				if (buffered)
-					result = result.ToList();
+				string queryStart = string.Format(limitStartQuery, limit);
+				string queryEnd = string.Format(limitEndQuery, limit);
+				string query = $"SELECT {queryStart}{paramsSelectFromTable}{whereCondition}{queryEnd}";
+				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout); //.Take(limit);
+				//if (buffered)
+				//	result = result.ToList();
 				return result;
 			};
 		}
@@ -366,12 +379,16 @@ namespace Dapper.Extra.Internal
 		private DbLimitList<T> CreateGetDistinctLimit()
 		{
 			string paramsSelectFromTable = ParamsSelectFromTable();
+			string limitStartQuery = Info.Adapter.SelectLimitStart;
+			string limitEndQuery = Info.Adapter.SelectLimitEnd;
 			return (connection, limit, whereCondition, param, transaction, buffered, commandTimeout) =>
 			{
-				string query = $"SELECT DISTINCT {paramsSelectFromTable}{whereCondition}";
-				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout).Take(limit);
-				if (buffered)
-					result = result.ToList();
+				string queryStart = string.Format(limitStartQuery, limit);
+				string queryEnd = string.Format(limitEndQuery, limit);
+				string query = $"SELECT DISTINCT {queryStart}{paramsSelectFromTable}{whereCondition}{queryEnd}";
+				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout); //.Take(limit);
+				//if (buffered)
+				//	result = result.ToList();
 				return result;
 			};
 		}
@@ -380,7 +397,7 @@ namespace Dapper.Extra.Internal
 		{
 			string dropBulkTableCmd = DropBulkTableCmd();
 			string selectEqualityIntoStagingCmd = SelectIntoStagingTable(EqualityColumns);
-			string paramsSelectFromTable = ParamsSelectFromTable();
+			string paramsSelectFromTableBulk = ParamsSelectFromTableBulk();
 			string equalsTables = WhereEqualsTables(EqualityColumns);
 			return (connection, objs, transaction, commandTimeout) =>
 			{
@@ -388,7 +405,7 @@ namespace Dapper.Extra.Internal
 				connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
 				SqlInternal.BulkInsert(connection, objs, transaction, BulkStagingTable, EqualityColumns, commandTimeout,
 					SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
-				string bulkGetQuery = $"SELECT {paramsSelectFromTable}\tINNER JOIN {BulkStagingTable} ON {equalsTables}";
+				string bulkGetQuery = $"SELECT {paramsSelectFromTableBulk}\tINNER JOIN {BulkStagingTable} ON {equalsTables}";
 				IEnumerable<T> result = connection.Query<T>(bulkGetQuery, null, transaction, true, commandTimeout);
 				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 				return result;
@@ -409,9 +426,6 @@ namespace Dapper.Extra.Internal
 				return (connection, obj, transaction, commandTimeout) =>
 				{
 					string cmd = deleteCmd + "WHERE \t" + deleteEquals;
-#if DEBUG
-					Console.WriteLine(cmd);
-#endif
 					int count = connection.Execute(cmd, obj, transaction, commandTimeout);
 					return count > 0;
 				};
@@ -429,9 +443,6 @@ namespace Dapper.Extra.Internal
 				return (connection, whereCondition, param, transaction, commandTimeout) =>
 				{
 					string cmd = deleteCmd + whereCondition;
-#if DEBUG
-					Console.WriteLine(cmd);
-#endif
 					int count = connection.Execute(cmd, param, transaction, commandTimeout);
 					return count;
 				};
@@ -448,9 +459,6 @@ namespace Dapper.Extra.Internal
 				string truncateCmd = Store(Info.Adapter.TruncateTable(TableName));
 				return (connection, transaction, commandTimeout) =>
 				{
-#if DEBUG
-					Console.WriteLine(truncateCmd);
-#endif
 					int count = connection.Execute(truncateCmd, null, transaction, commandTimeout);
 				};
 			}
@@ -468,13 +476,7 @@ namespace Dapper.Extra.Internal
 				string equalsTables = WhereEqualsTables(EqualityColumns);
 				return (connection, objs, transaction, commandTimeout) =>
 				{
-#if DEBUG
-					Console.WriteLine(dropBulkTableCmd);
-#endif
 					connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
-#if DEBUG
-					Console.WriteLine(selectEqualityIntoStagingCmd);
-#endif
 					connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
 					SqlInternal.BulkInsert(connection, objs, transaction, BulkStagingTable, EqualityColumns, commandTimeout,
 						SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
@@ -495,11 +497,13 @@ namespace Dapper.Extra.Internal
 				return DoNothingVoid;
 			}
 			else {
-				string insertCmd = InsertCmd();
+				string insertIntoCmd = InsertIntoCmd();
+				string insertedValues = InsertedValues(Info.InsertColumns);
 				if (Info.AutoKeyColumn == null) {
 					return (connection, obj, transaction, commandTimeout) =>
 					{
-						connection.Execute(insertCmd, obj, transaction, commandTimeout);
+						string cmd = insertIntoCmd + insertedValues;
+						connection.Execute(cmd, obj, transaction, commandTimeout);
 					};
 				}
 				else {
@@ -507,8 +511,8 @@ namespace Dapper.Extra.Internal
 					PropertyInfo autoKeyProperty = Info.AutoKeyColumn.Property;
 					return (connection, obj, transaction, commandTimeout) =>
 					{
-						string cmd = insertCmd + ";\n" + selectAutoKey;
-						IDictionary<string, object> key = connection.QueryFirstOrDefault(cmd, obj, transaction, commandTimeout);
+						string cmd = insertIntoCmd + insertedValues + ";\n" + selectAutoKey;
+						IDictionary<string, object> key = connection.QueryFirst(cmd, obj, transaction, commandTimeout);
 						autoKeyProperty.SetValue(obj, key.Values.First());
 					};
 				}
@@ -521,12 +525,13 @@ namespace Dapper.Extra.Internal
 				return DoNothing;
 			}
 			else {
-				string insertCmd = InsertCmd();
+				string insertIntoCmd = InsertIntoCmd();
+				string insertedValues = InsertedValues(Info.InsertColumns);
 				string whereEquals = WhereEquals(EqualityColumns);
 				if (Info.AutoKeyColumn == null) {
 					return (connection, obj, transaction, commandTimeout) =>
 					{
-						string cmd = $"IF NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{whereEquals})\n{insertCmd}";
+						string cmd = $"IF NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{whereEquals})\n{insertIntoCmd}{insertedValues}";
 						int count = connection.Execute(cmd, obj, transaction, commandTimeout);
 						return count > 0;
 					};
@@ -536,10 +541,10 @@ namespace Dapper.Extra.Internal
 					PropertyInfo autoKeyProperty = Info.AutoKeyColumn.Property;
 					return (connection, obj, transaction, commandTimeout) =>
 					{
-						string cmd = $"IF NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{whereEquals})\n{insertCmd};\n{selectAutoKey}";
-						IDictionary<string, object> key = connection.QueryFirstOrDefault(cmd, obj, transaction, commandTimeout);
+						string cmd = $"IF NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{whereEquals})\n{insertIntoCmd}{insertedValues};\n{selectAutoKey}";
+						object key = connection.QueryFirst<dynamic>(cmd, obj, transaction, commandTimeout).Id;
 						if (key != null) {
-							autoKeyProperty.SetValue(obj, key.Values.First());
+							autoKeyProperty.SetValue(obj, key);
 							return true;
 						}
 						return false;
@@ -568,17 +573,19 @@ namespace Dapper.Extra.Internal
 				return DoNothing;
 			}
 			else {
-				string selectEqualityIntoStagingCmd = SelectIntoStagingTable(EqualityColumns);
+				string selectInsertIntoStagingCmd = SelectIntoStagingTable(Info.BulkInsertIfNotExistsColumns);
 				string dropBulkTableCmd = DropBulkTableCmd();
 				string equalsTables = WhereEqualsTables(EqualityColumns);
-				string paramsInsert = ParamsSelect(Info.InsertColumns);
+				string insertColumns = ColumnNames(Info.InsertColumns);
+				string insertIntoCmd = InsertIntoCmd();
+				string insertedValues = InsertedValues(Info.InsertColumns);
 				return (connection, objs, transaction, commandTimeout) =>
 				{
 					connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
-					connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
-					SqlInternal.BulkInsert(connection, objs, transaction, BulkStagingTable, Info.InsertColumns, commandTimeout,
+					connection.Execute(selectInsertIntoStagingCmd, null, transaction, commandTimeout);
+					SqlInternal.BulkInsert(connection, objs, transaction, BulkStagingTable, Info.BulkInsertIfNotExistsColumns, commandTimeout,
 						SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
-					string bulkInsertIfNotExistsCmd = $"INSERT INTO {TableName} {paramsInsert}\nSELECT {paramsInsert}\nFROM {BulkStagingTable}\nWHERE NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{equalsTables})";
+					string bulkInsertIfNotExistsCmd = $"{insertIntoCmd}\nSELECT {insertColumns}\nFROM {BulkStagingTable}\nWHERE NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{equalsTables})";
 					int count = connection.Execute(bulkInsertIfNotExistsCmd, null, transaction, commandTimeout);
 					connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 					return count;
@@ -611,7 +618,7 @@ namespace Dapper.Extra.Internal
 					string updateCmd = $"UPDATE {TableName}{updateSet}\nWHERE \t{whereUpdateEquals}";
 					int count = connection.Execute(updateCmd, obj, transaction, commandTimeout);
 					if (count > 0) {
-						string selectUpdateCmd = $"SELECT {updateKeys}\nFROM {TableName}";
+						string selectUpdateCmd = $"SELECT {updateKeys}\nFROM {TableName}\nWHERE \t{whereUpdateEquals}";
 						IDictionary<string, object> result = (IDictionary<string, object>) connection.QuerySingleOrDefault<dynamic>(selectUpdateCmd, obj, transaction, commandTimeout);
 						if (result != null) {
 							foreach (SqlColumn column in Info.UpdateKeyColumns) {
@@ -738,18 +745,19 @@ namespace Dapper.Extra.Internal
 					// Insert or Update
 					string bulkUpdateSetParams = UpdateSetTables();
 					string updateEquals = WhereEqualsTables(Info.UpdateKeyColumns);
-					string selectEqualityIntoStagingCmd = SelectIntoStagingTable(EqualityColumns);
+					string selectUpsertIntoStagingCmd = SelectIntoStagingTable(Info.UpsertColumns);
 					string equalsTables = WhereEqualsTables(EqualityColumns);
-					string paramsInsert = ParamsSelect(Info.InsertColumns);
+					string insertIntoCmd = InsertIntoCmd();
+					string insertColumns = ColumnNames(Info.InsertColumns);
 					return (connection, objs, transaction, commandTimeout) =>
 					{
 						connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
-						connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
-						SqlInternal.BulkInsert(connection, objs, transaction, BulkStagingTable, EqualityColumns, commandTimeout,
+						connection.Execute(selectUpsertIntoStagingCmd, null, transaction, commandTimeout);
+						SqlInternal.BulkInsert(connection, objs, transaction, BulkStagingTable, Info.UpsertColumns, commandTimeout,
 							SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
 						string bulkUpdateCmd = $"UPDATE {TableName}{bulkUpdateSetParams}\nFROM {BulkStagingTable}\nWHERE \t{updateEquals}";
 						int countUpdate = connection.Execute(bulkUpdateCmd, null, transaction, commandTimeout);
-						string bulkInsertIfNotExistsCmd = $"INSERT INTO {TableName} {paramsInsert}\nSELECT {paramsInsert}\nFROM {BulkStagingTable}\nWHERE NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{equalsTables})";
+						string bulkInsertIfNotExistsCmd = $"{insertIntoCmd}\nSELECT {insertColumns}\nFROM {BulkStagingTable}\nWHERE NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{equalsTables})";
 						int countInsert = connection.Execute(bulkInsertIfNotExistsCmd, null, transaction, commandTimeout);
 						connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 						return countInsert;
@@ -770,9 +778,6 @@ namespace Dapper.Extra.Internal
 	{
 		internal SqlBuilder(SqlBuilder<T> parent)
 		{
-#if DEBUG
-			Console.WriteLine("Constructing " + typeof(SqlBuilder<T>).Name);
-#endif
 			Parent = parent;
 			SqlQueries<T, KeyType> queries = new SqlQueries<T, KeyType>()
 			{
@@ -883,9 +888,12 @@ namespace Dapper.Extra.Internal
 			else {
 				string deleteCmd = Parent.DeleteCmd();
 				string deleteEquals = Parent.WhereEquals(Info.DeleteKeyColumns);
-				return (connection, obj, transaction, commandTimeout) =>
+				string keyName = EqualityColumn.Property.Name;
+				return (connection, key, transaction, commandTimeout) =>
 				{
 					string cmd = $"{deleteCmd}WHERE \t{deleteEquals}";
+					IDictionary<string, object> obj = new ExpandoObject();
+					obj.Add(keyName, key);
 					int count = connection.Execute(cmd, obj, transaction, commandTimeout);
 					return count > 0;
 				};
@@ -894,12 +902,12 @@ namespace Dapper.Extra.Internal
 
 		private DbKeysList<T, KeyType> CreateBulkGet()
 		{
-			string paramsSelectFromTable = Parent.ParamsSelectFromTable();
+			string paramsSelectFromTableBulk = Parent.ParamsSelectFromTableBulk();
 			string keyName = EqualityColumn.ColumnName;
 			return (connection, keys, transaction, commandTimeout) =>
 			{
 				List<T> result = new List<T>();
-				string bulkGetKeysQuery = $"SELECT {paramsSelectFromTable}WHERE \t{keyName} in @Keys";
+				string bulkGetKeysQuery = $"SELECT {paramsSelectFromTableBulk}WHERE \t{keyName} in @Keys";
 				foreach (IEnumerable<KeyType> Keys in Extensions.UtilExtensions.Partition<KeyType>(keys.AsList(), 2000)) {
 					IEnumerable<T> list = connection.Query<T>(bulkGetKeysQuery, new { Keys }, transaction, true, commandTimeout);
 					result.AddRange(list);

@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Released under MIT License 
+// Copyright(c) 2018 Wesley Hamilton
+// License: https://www.mit.edu/~amini/LICENSE.md
+// Home page: https://github.com/ffhighwind/DapperExtraCRUD
+
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
@@ -54,6 +59,13 @@ namespace Dapper.Extra.Utilities
 			}
 		}
 
+		public override int BulkInsertIfNotExists(IEnumerable<T> objs, int commandTimeout = 30)
+		{
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				return ExtraCrud.Queries<T>().BulkInsertIfNotExists(conn, objs, null, commandTimeout);
+			}
+		}
+
 		public override bool Delete(T obj, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
@@ -67,20 +79,6 @@ namespace Dapper.Extra.Utilities
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
 				int count = ExtraCrud.Queries<T>().DeleteList(conn, whereCondition, param, null, commandTimeout);
 				return count;
-			}
-		}
-
-		public override IEnumerable<T> DeleteList(string whereCondition = "", object param = null, int commandTimeout = 30)
-		{
-			SqlQueries<T> queries = ExtraCrud.Queries<T>();
-			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				conn.Open();
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					IEnumerable<T> keys = queries.GetKeys(conn, whereCondition, param, null, true, commandTimeout);
-					int count = queries.DeleteList(conn, whereCondition, param, null, commandTimeout);
-					trans.Commit();
-					return keys;
-				}
 			}
 		}
 
@@ -159,6 +157,14 @@ namespace Dapper.Extra.Utilities
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
 				bool updated = ExtraCrud.Queries<T>().Upsert(conn, obj, null, commandTimeout);
+				return updated;
+			}
+		}
+
+		public override bool InsertIfNotExists(T obj, int commandTimeout = 30)
+		{
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				bool updated = ExtraCrud.Queries<T>().InsertIfNotExists(conn, obj, null, commandTimeout);
 				return updated;
 			}
 		}

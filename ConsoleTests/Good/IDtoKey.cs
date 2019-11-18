@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace UnitTests
 {
-	public interface IDto<T>
+	public interface IDtoKey<T, KeyType> : IDto<T>
+		where T : IDtoKey<T, KeyType> 
 	{
-		bool IsKeyEqual(T other);
-		bool IsInserted();
+		KeyType GetKey();
 	}
 }

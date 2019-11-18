@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Released under MIT License 
+// Copyright(c) 2018 Wesley Hamilton
+// License: https://www.mit.edu/~amini/LICENSE.md
+// Home page: https://github.com/ffhighwind/DapperExtraCRUD
+
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -6,6 +11,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Dapper.Extra.Annotations;
+using static Dapper.SqlMapper;
 
 namespace Dapper.Extra.Internal
 {
@@ -60,15 +67,21 @@ namespace Dapper.Extra.Internal
 		/// <returns>True if there is a <see cref="DbType"/> representing the given <see cref="Type"/>.</returns>
 		public static bool TryGetDbType(Type type, out DbType dbType)
 		{
-			return DbTypeMap.TryGetValue(type, out dbType);
+			if (DbTypeMap.TryGetValue(type, out dbType))
+				return true;
+			if (type.IsEnum) {
+				dbType = DbType.Int32;
+				return true;
+			}
+			return false;
 		}
 
 		private static readonly IReadOnlyCollection<Type> ValidAutoKeyTypes = new List<Type>()
 		{
 			typeof(int),
+			typeof(long),
 			typeof(short),
 			typeof(byte),
-			typeof(long),
 			typeof(uint),
 			typeof(ulong),
 			typeof(ushort),
@@ -76,13 +89,137 @@ namespace Dapper.Extra.Internal
 		};
 
 		/// <summary>
-		/// Returns the name of the column. This is determined by the <see cref="ColumnAttribute"/> or the name of the property.
+		/// Returns whether the ToString() value of an object with the given type should be quoted in an SQL command.
 		/// </summary>
-		/// <param name="property">The <see cref="PropertyInfo"/> representing the column.</param>
-		/// <returns>The name of the column.</returns>
-		public static string GetColumnName(PropertyInfo property)
+		/// <param name="type">The type of object.</param>
+		/// <returns>True if the type should be quoted; false otherwise.</returns>
+		public static bool IsQuotedSqlType(Type type)
 		{
-			return property.GetCustomAttribute<ColumnAttribute>(true)?.Name ?? property.Name;
+			TypeCode typeCode = Type.GetTypeCode(type);
+			switch (typeCode) {
+				case TypeCode.Char:
+				case TypeCode.DateTime:
+				case TypeCode.String:
+					return true;
+				case TypeCode.Object:
+					return type == typeof(TimeSpan) || type == typeof(DateTimeOffset) || type == typeof(Guid);
+				//case TypeCode.Boolean:
+				//case TypeCode.SByte:
+				//case TypeCode.Byte:
+				//case TypeCode.Int16:
+				//case TypeCode.UInt16:
+				//case TypeCode.Int32:
+				//case TypeCode.UInt32:
+				//case TypeCode.Int64:
+				//case TypeCode.UInt64:
+				//case TypeCode.Single:
+				//case TypeCode.Double:
+				//case TypeCode.Decimal:
+				//case TypeCode.DBNull:
+				default:
+					return false;
+			}
+		}
+
+		public static bool SqlValue(object value, out string str)
+		{
+			if (value == null) {
+				str = "NULL";
+				return true;
+			}
+			Type type = value.GetType();
+			type = Nullable.GetUnderlyingType(type) ?? type;
+			TypeCode typeCode = Type.GetTypeCode(type);
+			switch (typeCode) {
+				case TypeCode.Object:
+					if (type == typeof(TimeSpan) || type == typeof(DateTimeOffset) || type == typeof(Guid)) {
+						str = null;
+						return false;
+					}
+					break;
+				case TypeCode.Single:
+				case TypeCode.Double:
+				case TypeCode.DateTime:
+					str = null;
+					return false;
+				case TypeCode.Boolean:
+					str = ((bool) value) ? "TRUE" : "FALSE";
+					return true;
+				case TypeCode.String:
+					str = "'" + value.ToString().Replace("'", "''") + "'";
+					return true;
+				case TypeCode.Char:
+					str = (char)value == '\'' ? "''''" : "'" + value.ToString() + "'";
+					return true;
+				case TypeCode.Decimal:
+				case TypeCode.SByte:
+				case TypeCode.Byte:
+				case TypeCode.Int16:
+				case TypeCode.UInt16:
+				case TypeCode.Int32:
+				case TypeCode.UInt32:
+				case TypeCode.Int64:
+				case TypeCode.UInt64:
+					str = value.ToString();
+					return true;
+				//case TypeCode.DBNull:
+				case TypeCode.Empty:
+					str = "NULL";
+					return true;
+			}
+			throw new InvalidOperationException("Invalid SQL type " + type.Name.ToString());
+		}
+
+		public static bool SqlDefaultValue(Type type, out object value)
+		{
+			if (!type.IsValueType) {
+				value = "NULL";
+				return true;
+			}
+			TypeCode typeCode = Type.GetTypeCode(type);
+			switch (typeCode) {
+				case TypeCode.Object:
+					if (type == typeof(TimeSpan))
+						value = default(TimeSpan);
+					else if(type == typeof(DateTimeOffset))
+						value = default(DateTimeOffset);
+					else if(type == typeof(Guid))
+						value = default(Guid);
+					else
+						break;
+					return false;
+				case TypeCode.Boolean:
+					value = "FALSE";
+					return true;
+				case TypeCode.Char:
+					value = "'\0'";
+					return true;
+				case TypeCode.SByte:
+				case TypeCode.Byte:
+				case TypeCode.Int16:
+				case TypeCode.UInt16:
+				case TypeCode.Int32:
+				case TypeCode.UInt32:
+				case TypeCode.Int64:
+				case TypeCode.UInt64:
+				case TypeCode.Single:
+				case TypeCode.Double:
+				case TypeCode.Decimal:
+					value = "0";
+					return true;
+				case TypeCode.DateTime:
+					value = default(DateTime);
+					return false;
+				//case TypeCode.String:
+				//	value = "NULL";
+				//	return true;
+				case TypeCode.Empty:
+				case TypeCode.DBNull:
+				default:
+					break;
+			}
+			value = null;
+			return false;
 		}
 
 		/// <summary>
@@ -94,14 +231,6 @@ namespace Dapper.Extra.Internal
 		{
 			if (!property.CanWrite || !property.CanRead)
 				return false;
-			if (property.GetCustomAttribute<KeyAttribute>(false) == null) {
-				if (property.GetCustomAttribute<IgnoreAttribute>(false) != null
-					|| (property.GetCustomAttribute<IgnoreSelectAttribute>(false) != null
-						&& property.GetCustomAttribute<IgnoreInsertAttribute>(false) != null
-						&& property.GetCustomAttribute<IgnoreUpdateAttribute>(false) != null)) {
-					return false;
-				}
-			}
 			bool success = IsValidType(property.PropertyType);
 			return success;
 		}
@@ -153,7 +282,7 @@ namespace Dapper.Extra.Internal
 			string[] columnNames, int? commandTimeout, SqlBulkCopyOptions options)
 			where T : class
 		{
-			FastMember.ObjectReader dataReader = FastMember.ObjectReader.Create<T>(objs, columnNames);
+			FastMember.ObjectReader dataReader = FastMember.ObjectReader.Create<T>(objs, columnProperties.Select(p => p.Name).ToArray());
 			using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connection, options, transaction)) {
 				bulkCopy.DestinationTableName = tableName;
 				bulkCopy.BulkCopyTimeout = commandTimeout ?? 0;

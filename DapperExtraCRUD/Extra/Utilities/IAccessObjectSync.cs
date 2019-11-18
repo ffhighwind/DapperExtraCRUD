@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Released under MIT License 
+// Copyright(c) 2018 Wesley Hamilton
+// License: https://www.mit.edu/~amini/LICENSE.md
+// Home page: https://github.com/ffhighwind/DapperExtraCRUD
+
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -18,12 +23,12 @@ namespace Dapper.Extra.Utilities
 		bool Delete(T obj, int commandTimeout = 30);
 		bool Delete<KeyType>(KeyType key, int commandTimeout = 30);
 		int Delete(string whereCondition = "", object param = null, int commandTimeout = 30);
-		IEnumerable<T> DeleteList(string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		void Insert(T obj, int commandTimeout = 30);
 		bool Update(object obj, int commandTimeout = 30);
 		bool Update(T obj, int commandTimeout = 30);
 		bool Upsert(T obj, int commandTimeout = 30);
+		bool InsertIfNotExists(T obj, int commandTimeout = 30);
 
 		T Get(T obj, int commandTimeout = 30);
 		T Get<KeyType>(KeyType key, int commandTimeout = 30);
@@ -41,5 +46,6 @@ namespace Dapper.Extra.Utilities
 		int BulkDelete(IEnumerable<T> objs, int commandTimeout = 30);
 		int BulkDelete<KeyType>(IEnumerable<KeyType> keys, int commandTimeout = 30);
 		int BulkUpsert(IEnumerable<T> objs, int commandTimeout = 30);
+		int BulkInsertIfNotExists(IEnumerable<T> objs, int commandTimeout = 30);
 	}
 }
