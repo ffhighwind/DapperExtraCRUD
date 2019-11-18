@@ -7,11 +7,15 @@ metadata to allow customization and improved performance.
 
 # TODO
 
-* AutoSync, ITypeHandler tests, SqlSyntax or other RDBMS tests
+* AutoSync
+* ITypeHandler tests
+* Other RDBMS tests (SqlSyntax)
+* Thread-safe bulk operations? These operations are thread safe for SQL Server, but not others.
 
 # Future Plans:
 
-* IL Getters/Setters, Multi-Mapping/Joins
+* IL Getters/Setters
+* Multi-Mapping/Joins
 
 # Installation:
 
@@ -25,7 +29,7 @@ prompt you to install the missing packages.
 * [Dapper](https://github.com/StackExchange/Dapper)
    For querying SQL Databases in a type-safe way.
 * [FastMember](https://github.com/mgravell/fast-member)
-   For the DataReader used in Bulk operations. This may be replaced by a custom IL generator (or Fasterflect) in the future.
+   For the DataReader used in Bulk operations. This may be replaced by a custom IL generator (or a custom Fasterflect) in the future.
 
 # Example:
 
@@ -210,16 +214,16 @@ or need to map a predicate to SQL command. Specifically, I have used this to rem
 This extension is used internally by the KeyType queries in order to get around Dapper's limitation of 2100 parameters. You should not need to use this with any DapperExtraCRUD methods, but you may 
 need it for Dapper queries.
 
-# Tips:
+# Tip:
 
 Use a view if you need joins. If this is not sufficient then you can use Dapper's multi-mapping queries or manually map the results.
 
 # Performance:
 
 The extension methods in Dapper.DapperExtraExtensions perform a lookup on a ConcurrentDictionary and a cast the results every time they are called. You can prevent this 
-by using the AutoAccessObject/DataAccessObject utilities or storing the results of Dapper.Extra.ExtraCrud and accessing the delegates directly. 
-Less-commonly used delegates such as bulk operations have lazy initialization. These delegates will have a very small performance hit every time they are accessed due 
-to synchronization. If you want to prevent this you will need to store a reference to each delegate outside of the ISqlQueries object.
+by using a AutoAccessObject/DataAccessObject or by storing the ISqlQueries object and accessing the delegates directly. 
+Less frequently used delegates such as bulk operations have lazy initialization. These have a very small performance hit every time 
+they are accessed due to synchronization. You can prevent this cost by storing a reference to each delegate outside of the ISqlQueries object.
 
 # License:
 
