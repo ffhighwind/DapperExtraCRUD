@@ -11,6 +11,8 @@ metadata to allow customization and improved performance.
 * ITypeHandler tests
 * Other RDBMS tests (SqlSyntax)
 * Thread-safe bulk operations? These operations are thread safe for SQL Server, but not others.
+* Paged results?
+* GetList(object) / GetDistinct(object) / GetDistinctList(object)
 
 # Future Plans:
 
