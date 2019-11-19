@@ -7,7 +7,6 @@ metadata to allow customization and improved performance.
 
 # TODO
 
-* AutoSync
 * ITypeHandler tests
 * Other RDBMS tests (SqlSyntax)
 * Thread-safe bulk operations? These operations are thread safe for SQL Server, but not others.
