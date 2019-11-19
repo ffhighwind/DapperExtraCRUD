@@ -30,7 +30,7 @@ namespace Dapper.Extra.Internal
 				throw new InvalidOperationException("String is not a valid table type.");
 			Info = info;
 			BulkStagingTable = Info.Adapter.CreateTempTableName(Info.Type.Name + (Info.Type.FullName.GetHashCode() % 10000));
-			SqlQueries<T> queries = new SqlQueries<T>()
+			Queries = new SqlQueries<T>()
 			{
 				Delete = CreateDelete(),
 				Get = CreateGet(),
@@ -53,8 +53,9 @@ namespace Dapper.Extra.Internal
 				LazyInsertIfNotExists = new Lazy<DbTBool<T>>(() => CreateInsertIfNotExists(), threadSafety),
 				LazyRecordCount = new Lazy<DbWhereInt<T>>(() => CreateRecordCount(), threadSafety),
 				LazyUpsert = new Lazy<DbTBool<T>>(() => CreateUpsert(), threadSafety),
+				InsertAutoSync = CreateAutoSync(Info.InsertAutoSyncColumns),
+				UpdateAutoSync = CreateAutoSync(info.UpdateAutoSyncColumns),
 			};
-			Queries = queries;
 
 			if (info.EqualityColumns.Count == 1) {
 				EqualityComparer = new TableKeyEqualityComparer<T>(TableName, EqualityColumns[0]);
@@ -319,6 +320,25 @@ namespace Dapper.Extra.Internal
 			};
 		}
 
+		public DbTVoid<T> CreateAutoSync(IEnumerable<SqlColumn> columns)
+		{
+			if (!columns.Any())
+				return null;
+			string paramsSelect = ParamsSelect(columns);
+			string whereEquals = WhereEquals(EqualityColumns);
+			PropertyInfo[] properties = columns.Select(c => c.Property).ToArray();
+			return (connection, obj, transaction, commandTimeout) =>
+			{
+				string cmd = $"SELECT {paramsSelect}\nFROM {TableName}\nWHERE \t{whereEquals}";
+				IDictionary<string, object> value = connection.QueryFirstOrDefault(cmd, obj, transaction, commandTimeout);
+				if (value != null) {
+					foreach (PropertyInfo property in properties) {
+						property.SetValue(obj, value[property.Name]);
+					}
+				}
+			};
+		}
+
 		private DbTT<T> CreateGet()
 		{
 			string paramsSelectFromTable = ParamsSelectFromTable();
@@ -375,8 +395,8 @@ namespace Dapper.Extra.Internal
 				string queryEnd = string.Format(limitEndQuery, limit);
 				string query = $"SELECT {queryStart}{paramsSelectFromTable}{whereCondition}{queryEnd}";
 				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout); //.Take(limit);
-				//if (buffered)
-				//	result = result.ToList();
+																											   //if (buffered)
+																											   //	result = result.ToList();
 				return result;
 			};
 		}
@@ -392,8 +412,8 @@ namespace Dapper.Extra.Internal
 				string queryEnd = string.Format(limitEndQuery, limit);
 				string query = $"SELECT DISTINCT {queryStart}{paramsSelectFromTable}{whereCondition}{queryEnd}";
 				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout); //.Take(limit);
-				//if (buffered)
-				//	result = result.ToList();
+																											   //if (buffered)
+																											   //	result = result.ToList();
 				return result;
 			};
 		}
@@ -505,21 +525,44 @@ namespace Dapper.Extra.Internal
 				string insertIntoCmd = InsertIntoCmd();
 				string insertedValues = InsertedValues(Info.InsertColumns);
 				if (Info.AutoKeyColumn == null) {
-					return (connection, obj, transaction, commandTimeout) =>
-					{
-						string cmd = insertIntoCmd + insertedValues;
-						connection.Execute(cmd, obj, transaction, commandTimeout);
-					};
+					if (!Info.InsertAutoSyncColumns.Any()) {
+						return (connection, obj, transaction, commandTimeout) =>
+						{
+							string cmd = insertIntoCmd + insertedValues;
+							connection.Execute(cmd, obj, transaction, commandTimeout);
+						};
+					}
+					else {
+						DbTVoid<T> insertAutoSync = Queries.InsertAutoSync;
+						return (connection, obj, transaction, commandTimeout) =>
+						{
+							string cmd = insertIntoCmd + insertedValues;
+							connection.Execute(cmd, obj, transaction, commandTimeout);
+							insertAutoSync(connection, obj, transaction, commandTimeout);
+						};
+					}
 				}
 				else {
 					string selectAutoKey = SelectAutoKey();
 					PropertyInfo autoKeyProperty = Info.AutoKeyColumn.Property;
-					return (connection, obj, transaction, commandTimeout) =>
-					{
-						string cmd = insertIntoCmd + insertedValues + ";\n" + selectAutoKey;
-						IDictionary<string, object> key = connection.QueryFirst(cmd, obj, transaction, commandTimeout);
-						autoKeyProperty.SetValue(obj, key.Values.First());
-					};
+					if (!Info.InsertAutoSyncColumns.Any()) {
+						return (connection, obj, transaction, commandTimeout) =>
+						{
+							string cmd = insertIntoCmd + insertedValues + ";\n" + selectAutoKey;
+							IDictionary<string, object> key = connection.QueryFirst(cmd, obj, transaction, commandTimeout);
+							autoKeyProperty.SetValue(obj, key.Values.First());
+						};
+					}
+					else {
+						DbTVoid<T> insertAutoSync = Queries.InsertAutoSync;
+						return (connection, obj, transaction, commandTimeout) =>
+						{
+							string cmd = insertIntoCmd + insertedValues + ";\n" + selectAutoKey;
+							IDictionary<string, object> key = connection.QueryFirst(cmd, obj, transaction, commandTimeout);
+							autoKeyProperty.SetValue(obj, key.Values.First());
+							insertAutoSync(connection, obj, transaction, commandTimeout);
+						};
+					}
 				}
 			}
 		}
@@ -534,26 +577,54 @@ namespace Dapper.Extra.Internal
 				string insertedValues = InsertedValues(Info.InsertColumns);
 				string whereEquals = WhereEquals(EqualityColumns);
 				if (Info.AutoKeyColumn == null) {
-					return (connection, obj, transaction, commandTimeout) =>
-					{
-						string cmd = $"IF NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{whereEquals})\n{insertIntoCmd}{insertedValues}";
-						int count = connection.Execute(cmd, obj, transaction, commandTimeout);
-						return count > 0;
-					};
+					if (!Info.InsertAutoSyncColumns.Any()) {
+						return (connection, obj, transaction, commandTimeout) =>
+						{
+							string cmd = $"IF NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{whereEquals})\n{insertIntoCmd}{insertedValues}";
+							int count = connection.Execute(cmd, obj, transaction, commandTimeout);
+							return count > 0;
+						};
+					}
+					else {
+						DbTVoid<T> insertAutoSync = Queries.InsertAutoSync;
+						return (connection, obj, transaction, commandTimeout) =>
+						{
+							string cmd = $"IF NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{whereEquals})\n{insertIntoCmd}{insertedValues}";
+							int count = connection.Execute(cmd, obj, transaction, commandTimeout);
+							insertAutoSync(connection, obj, transaction, commandTimeout);
+							return count > 0;
+						};
+					}
 				}
 				else {
 					string selectAutoKey = SelectAutoKey();
 					PropertyInfo autoKeyProperty = Info.AutoKeyColumn.Property;
-					return (connection, obj, transaction, commandTimeout) =>
-					{
-						string cmd = $"IF NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{whereEquals})\n{insertIntoCmd}{insertedValues};\n{selectAutoKey}";
-						object key = connection.QueryFirst<dynamic>(cmd, obj, transaction, commandTimeout).Id;
-						if (key != null) {
-							autoKeyProperty.SetValue(obj, key);
-							return true;
-						}
-						return false;
-					};
+					if (!Info.InsertAutoSyncColumns.Any()) {
+						return (connection, obj, transaction, commandTimeout) =>
+						{
+							string cmd = $"IF NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{whereEquals})\n{insertIntoCmd}{insertedValues};\n{selectAutoKey}";
+							object key = connection.QueryFirst<dynamic>(cmd, obj, transaction, commandTimeout).Id;
+							if (key != null) {
+								autoKeyProperty.SetValue(obj, key);
+								return true;
+							}
+							return false;
+						};
+					}
+					else {
+						DbTVoid<T> insertAutoSync = Queries.InsertAutoSync;
+						return (connection, obj, transaction, commandTimeout) =>
+						{
+							string cmd = $"IF NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{whereEquals})\n{insertIntoCmd}{insertedValues};\n{selectAutoKey}";
+							object key = connection.QueryFirst<dynamic>(cmd, obj, transaction, commandTimeout).Id;
+							if (key != null) {
+								insertAutoSync(connection, obj, transaction, commandTimeout);
+								autoKeyProperty.SetValue(obj, key);
+								return true;
+							}
+							return false;
+						};
+					}
 				}
 			}
 		}
@@ -609,7 +680,7 @@ namespace Dapper.Extra.Internal
 			else {
 				string whereUpdateEquals = WhereEquals(Info.UpdateKeyColumns);
 				string updateSet = UpdateSet(Info.UpdateColumns);
-				if (!Info.UpdateKeyColumns.Any(c => c.MatchUpdate)) {
+				if (!Info.UpdateAutoSyncColumns.Any()) {
 					return (connection, obj, transaction, commandTimeout) =>
 					{
 						string updateCmd = $"UPDATE {TableName}{updateSet}\nWHERE \t{whereUpdateEquals}";
@@ -617,22 +688,19 @@ namespace Dapper.Extra.Internal
 						return count > 0;
 					};
 				}
-				string updateKeys = ParamsSelect(Info.UpdateKeyColumns);
-				return (connection, obj, transaction, commandTimeout) =>
-				{
-					string updateCmd = $"UPDATE {TableName}{updateSet}\nWHERE \t{whereUpdateEquals}";
-					int count = connection.Execute(updateCmd, obj, transaction, commandTimeout);
-					if (count > 0) {
-						string selectUpdateCmd = $"SELECT {updateKeys}\nFROM {TableName}\nWHERE \t{whereUpdateEquals}";
-						IDictionary<string, object> result = (IDictionary<string, object>) connection.QuerySingleOrDefault<dynamic>(selectUpdateCmd, obj, transaction, commandTimeout);
-						if (result != null) {
-							foreach (SqlColumn column in Info.UpdateKeyColumns) {
-								column.Property.SetValue(obj, result[column.Property.Name]);
-							}
+				else {
+					DbTVoid<T> updateAutoSync = Queries.UpdateAutoSync;
+					return (connection, obj, transaction, commandTimeout) =>
+					{
+						string updateCmd = $"UPDATE {TableName}{updateSet}\nWHERE \t{whereUpdateEquals}";
+						int count = connection.Execute(updateCmd, obj, transaction, commandTimeout);
+						bool success = count > 0;
+						if (success) {
+							updateAutoSync(connection, obj, transaction, commandTimeout);
 						}
-					}
-					return count > 0;
-				};
+						return success;
+					};
+				}
 			}
 		}
 

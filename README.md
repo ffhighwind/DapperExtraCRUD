@@ -132,8 +132,19 @@ what is in the database.
 * [NotMapped] means that the property should be ignored completely. This should be used on properties that do not represent a column
 in the table.
 * The following columns are ignored for various reasons: _Friends, Friends, NotUsed, BestFriendID, Points, and IsDirty. 
-Properties are accepted only if they have public get/set methods and their type is a standard SQL type, 
+Properties are accepted if they have public set methods and their type is a standard SQL type, 
 enums, or a type that implements Dapper.SqlMapper.ITypeHandler.
+* If a property does not have a get method it is equivalent to [IgnoreInsert][IgnoreUpdate].
+* If a key property does not have a get method then the whole class is treated as if it has [IgnoreInsert][IgnoreUpdate][IgnoreDelete].
+
+# Alternate Annotations
+
+* System.ComponentModel.DataAnnotations.KeyAttribute is equivalent to [Key(true)]
+* System.ComponentModel.DataAnnotations.RequiredAttribute is equivalent to [Key(false)]
+* System.ComponentModel.DataAnnotations.EditableAttribute with AllowInitialValue = false is equivalent to [IgnoreInsert]
+* System.ComponentModel.DataAnnotations.EditableAttribute with AllowEdit = false is equivalent to [IgnoreUpdate]
+* System.ComponentModel.ReadOnlyAttribute is equivalent to [IgnoreInsert][IgnoreInsert] at the property level
+* System.ComponentModel.ReadOnlyAttribute is equivalent to [IgnoreInsert][IgnoreInsert][IgnoreDelete] at the class level
 
 # Accessing Metadata:
 

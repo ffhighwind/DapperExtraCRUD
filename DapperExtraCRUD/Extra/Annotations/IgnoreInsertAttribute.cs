@@ -21,12 +21,22 @@ namespace Dapper.Extra.Annotations
 		/// <summary>
 		/// Ignores the <see cref="PropertyInfo"/> for inserts.
 		/// </summary>
+		public IgnoreInsertAttribute()
+		{
+		}
+
+		/// <summary>
+		/// Ignores the <see cref="PropertyInfo"/> for inserts.
+		/// </summary>
 		/// <param name="value">A string that is injected into the insert statement as the column's value.
 		/// If this is <see langword="null"/> then the default value will be inserted instead.</param>
-		public IgnoreInsertAttribute(string value = null, bool autoSync = false) 
+		/// <param name="autoSync">Determines if the property should be selected to match the database after an insert.</param>
+		public IgnoreInsertAttribute(string value, bool autoSync = false)
 		{
 			AutoSync = autoSync;
-			Value = string.IsNullOrWhiteSpace(value) ? null : "(" + value.Trim() + ")";
+			if (!string.IsNullOrWhiteSpace(value)) {
+				Value = "(" + value.Trim() + ")";
+			}
 		}
 
 		/// <summary>

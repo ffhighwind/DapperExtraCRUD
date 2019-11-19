@@ -67,6 +67,8 @@ namespace Dapper.Extra.Internal
 		public bool NotMapped => (Attributes & SqlColumnAttributes.NotMapped) == SqlColumnAttributes.NotMapped;
 		public bool MatchUpdate => (Attributes & SqlColumnAttributes.MatchUpdate) != 0;
 		public bool MatchDelete => (Attributes & SqlColumnAttributes.MatchDelete) != 0;
+		public bool InsertAutoSync => (Attributes & SqlColumnAttributes.InsertAutoSync) != 0;
+		public bool UpdateAutoSync => (Attributes & SqlColumnAttributes.UpdateAutoSync) != 0;
 		public SqlColumnAttributes Attributes { get; internal set; }
 
 		// Getter

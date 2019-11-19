@@ -52,6 +52,8 @@ namespace Dapper.Extra.Internal
 		public DbObjBool<T> UpdateObj => LazyUpdateObj.Value;
 		public DbTBool<T> Upsert => LazyUpsert.Value;
 		public DbTBool<T> InsertIfNotExists => LazyInsertIfNotExists.Value;
+		public DbTVoid<T> InsertAutoSync { get; internal set; }
+		public DbTVoid<T> UpdateAutoSync { get; internal set; }
 
 		#region Lazy Internal
 		internal Lazy<SqlListList<T>> LazyBulkGet { get; set; }

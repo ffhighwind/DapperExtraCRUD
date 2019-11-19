@@ -24,8 +24,8 @@ namespace UnitTests
 
 		[Column("FirstName")]
 		public string Name { get; set; }
-		[IgnoreInsert("getdate()")]
-		[IgnoreUpdate("getdate()")]
+		[IgnoreInsert("getdate()", false)]
+		[IgnoreUpdate("getdate()", false)]
 		public DateTime? CreatedDt { get; set; }
 
 		public TestDTO Test { get; set; }

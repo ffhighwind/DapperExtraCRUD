@@ -223,13 +223,13 @@ namespace Dapper.Extra.Internal
 		}
 
 		/// <summary>
-		/// Returns whether a property will be mapped.
+		/// Returns whether a property will be mapped. These must be writable and be of a valid Dapper/SQL type.
 		/// </summary>
 		/// <param name="property">The <see cref="PropertyInfo"/> representing the column.</param>
 		/// <returns>True if the given property will be mapped; otherwise false.</returns>
 		public static bool IsValidProperty(PropertyInfo property)
 		{
-			if (!property.CanWrite || !property.CanRead)
+			if (!property.CanWrite)
 				return false;
 			bool success = IsValidType(property.PropertyType);
 			return success;

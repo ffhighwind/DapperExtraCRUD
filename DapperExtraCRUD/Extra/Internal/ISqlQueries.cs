@@ -47,6 +47,8 @@ namespace Dapper.Extra.Internal
 		DbObjBool<T> UpdateObj { get; }
 		DbTBool<T> Upsert { get; }
 		DbTBool<T> InsertIfNotExists { get; }
+		DbTVoid<T> InsertAutoSync { get; }
+		DbTVoid<T> UpdateAutoSync { get; }
 
 		//public override int RemoveDuplicates(IDbConnection connection, IDbTransaction transaction, int commandTimeout = 30)
 	}

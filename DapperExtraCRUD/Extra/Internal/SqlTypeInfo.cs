@@ -27,7 +27,7 @@ namespace Dapper.Extra.Internal
 		{
 			Type = type;
 			TableAttribute tableAttr = type.GetCustomAttribute<TableAttribute>(false);
-			BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.SetProperty;
+			BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty;
 			bool inherit = false;
 			if (tableAttr == null) {
 				var tableAttr2 = type.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.TableAttribute>(false);
@@ -46,32 +46,44 @@ namespace Dapper.Extra.Internal
 					Attributes |= SqlTableAttributes.InheritAttributes;
 				}
 			}
-			int ordinal;
 			PropertyInfo[] properties = type.GetProperties(flags);
 			PropertyInfo[] validProperties = properties.Where(SqlInternal.IsValidProperty).ToArray();
 			if (!validProperties.Any())
 				throw new InvalidOperationException(type.FullName + " does not have any valid properties.");
+			ReadOnlyAttribute readOnlyAttr = type.GetCustomAttribute<ReadOnlyAttribute>(false);
+			if (readOnlyAttr != null)
+				Attributes |= SqlTableAttributes.IgnoreInsert | SqlTableAttributes.IgnoreUpdate | SqlTableAttributes.IgnoreDelete;
+			else {
+				var editableAttr = type.GetCustomAttribute<System.ComponentModel.DataAnnotations.EditableAttribute>(false);
+				if (editableAttr != null) {
+					if (!editableAttr.AllowEdit)
+						Attributes |= SqlTableAttributes.IgnoreUpdate;
+					if (editableAttr.AllowInitialValue)
+						Attributes |= SqlTableAttributes.IgnoreInsert;
+				}
+				else {
+					IgnoreInsertAttribute noInserts = type.GetCustomAttribute<IgnoreInsertAttribute>(false);
+					if (noInserts != null)
+						Attributes |= SqlTableAttributes.IgnoreInsert;
+					IgnoreUpdateAttribute noUpdates = type.GetCustomAttribute<IgnoreUpdateAttribute>(false);
+					if (noUpdates != null)
+						Attributes |= SqlTableAttributes.IgnoreUpdate;
+				}
+				IgnoreDeleteAttribute noDeletes = type.GetCustomAttribute<IgnoreDeleteAttribute>(false);
+				if (noDeletes != null)
+					Attributes |= SqlTableAttributes.IgnoreDelete;
+			}
 
-			IgnoreDeleteAttribute noDeletes = type.GetCustomAttribute<IgnoreDeleteAttribute>(inherit);
-			if (noDeletes != null)
-				Attributes |= SqlTableAttributes.IgnoreDelete;
-			IgnoreInsertAttribute noInserts = type.GetCustomAttribute<IgnoreInsertAttribute>(inherit);
-			if (noInserts != null)
-				Attributes |= SqlTableAttributes.IgnoreInsert;
-			IgnoreUpdateAttribute noUpdates = type.GetCustomAttribute<IgnoreUpdateAttribute>(inherit);
-			if (noUpdates != null)
-				Attributes |= SqlTableAttributes.IgnoreUpdate;
-
+			int ordinal = 0;
 			List<SqlColumn> keys = new List<SqlColumn>();
 			List<SqlColumn> columns = new List<SqlColumn>();
 			int autoKeyCount = 0;
-			HashSet<int> ordinals = new HashSet<int>();
 			for (int i = 0; i < validProperties.Length; i++) {
+				// Check for unreadable keys before assigning columns
 				PropertyInfo prop = validProperties[i];
 				if (prop.GetCustomAttribute<NotMappedAttribute>(inherit) != null || prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute>(inherit) != null)
 					continue;
 				string columnName = null;
-				ordinal = 0;
 				ColumnAttribute columnAttr = prop.GetCustomAttribute<ColumnAttribute>(inherit);
 				if (columnAttr != null) {
 					columnName = columnAttr.Name;
@@ -84,17 +96,14 @@ namespace Dapper.Extra.Internal
 						ordinal = columnAttr2.Order;
 					}
 				}
-				if (ordinal != 0 && ordinals.Contains(ordinal))
-					throw new InvalidOperationException(type.FullName + "." + prop.Name + " ordinal " + ordinal + " already exists.");
-				ordinals.Add(ordinal);
 				SqlColumn column = new SqlColumn(prop, string.IsNullOrWhiteSpace(columnName) ? prop.Name : Adapter.QuoteIdentifier(columnName), ordinal);
+				columns.Add(column);
 				KeyAttribute keyAttr = prop.GetCustomAttribute<KeyAttribute>(inherit);
 				if (keyAttr != null) {
 					if (keyAttr.AutoIncrement) {
 						autoKeyCount++;
 					}
 					column.Attributes = keyAttr.AutoIncrement ? SqlColumnAttributes.AutoKey : SqlColumnAttributes.Key;
-					keys.Add(column);
 				}
 				else {
 					var keyAttr2 = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.KeyAttribute>(inherit);
@@ -107,85 +116,96 @@ namespace Dapper.Extra.Internal
 						column.Attributes |= SqlColumnAttributes.Key;
 						continue;
 					}
-					var readOnlyAttr = prop.GetCustomAttribute<ReadOnlyAttribute>(inherit);
-					if (readOnlyAttr != null) {
-						column.Attributes |= SqlColumnAttributes.IgnoreInsert | SqlColumnAttributes.IgnoreUpdate;
+				}
+				if (column.IsKey) {
+					keys.Add(column);
+					if (!prop.CanRead) {
+						Attributes |= SqlTableAttributes.IgnoreInsert | SqlTableAttributes.IgnoreUpdate | SqlTableAttributes.IgnoreDelete;
 					}
-					else {
-						var editableAttr = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.EditableAttribute>(inherit);
-						if (editableAttr != null) {
-							if (!editableAttr.AllowInitialValue)
-								column.Attributes |= SqlColumnAttributes.IgnoreUpdate;
-							if (!editableAttr.AllowEdit)
-								column.Attributes |= SqlColumnAttributes.IgnoreUpdate;
-						}
-					}
+				}
+			}
 
-					// Inserts
-					IgnoreInsertAttribute insertAttr = prop.GetCustomAttribute<IgnoreInsertAttribute>(inherit);
-					if (insertAttr != null || IgnoreInsert) {
-						column.Attributes |= SqlColumnAttributes.IgnoreInsert;
-						column.InsertValue = insertAttr.Value;
+			if (keys.Count == 0) {
+				KeyColumns = Array.Empty<SqlColumn>();
+			}
+			else {
+				KeyColumns = keys.ToArray();
+				if (KeyColumns.Count == 1 && KeyColumns[0].IsAutoKey && SqlInternal.IsValidAutoIncrementType(keys[0].Type)) {
+					AutoKeyColumn = keys[0];
+				}
+				else if (autoKeyCount != 0 && KeyColumns.Count != autoKeyCount) {
+					throw new InvalidOperationException(Type.FullName + " cannot have a both a composite key and an autoincrement key.");
+				}
+				else {
+					// remove SqlColumnAttributes.AutoKey from all columns
+					foreach (SqlColumn key in keys) {
+						key.Attributes = SqlColumnAttributes.Key;
 					}
-					// Updates
+				}
+			}
+
+			foreach (SqlColumn column in columns.Where(c => !c.IsKey)) {
+				PropertyInfo prop = column.Property;
+
+				// Deletes
+				MatchDeleteAttribute deleteAttr = prop.GetCustomAttribute<MatchDeleteAttribute>(inherit);
+				if (deleteAttr != null || IgnoreDelete)
+					column.Attributes |= SqlColumnAttributes.IgnoreDelete;
+
+				readOnlyAttr = prop.GetCustomAttribute<ReadOnlyAttribute>(inherit);
+				if (readOnlyAttr != null) {
+					column.Attributes |= SqlColumnAttributes.IgnoreInsert | SqlColumnAttributes.IgnoreUpdate;
+					continue;
+				}
+				var editableAttr = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.EditableAttribute>(inherit);
+				if (editableAttr != null) {
+					if (!editableAttr.AllowInitialValue)
+						column.Attributes |= SqlColumnAttributes.IgnoreUpdate;
+					if (!editableAttr.AllowEdit)
+						column.Attributes |= SqlColumnAttributes.IgnoreUpdate;
+				}
+
+				// Inserts
+				if (IgnoreInsert)
+					column.Attributes |= SqlColumnAttributes.IgnoreInsert;
+				else {
+					IgnoreInsertAttribute insertAttr = prop.GetCustomAttribute<IgnoreInsertAttribute>(inherit);
+					if (insertAttr != null) {
+						column.InsertValue = insertAttr.Value;
+						if (insertAttr.AutoSync)
+							column.Attributes |= SqlColumnAttributes.InsertAutoSync;
+					}
+				}
+
+				// Updates
+				if (IgnoreUpdate)
+					column.Attributes = SqlColumnAttributes.IgnoreUpdate;
+				else {
 					IDefaultAttribute updateAttr = prop.GetCustomAttribute<IgnoreUpdateAttribute>(inherit);
 					if (updateAttr != null) {
 						column.Attributes |= SqlColumnAttributes.IgnoreUpdate;
 						column.UpdateValue = updateAttr.Value;
-					}
-					else if (IgnoreUpdate || column.IgnoreUpdate) {
-						column.Attributes |= SqlColumnAttributes.IgnoreUpdate;
+						if (updateAttr.AutoSync)
+							column.Attributes |= SqlColumnAttributes.UpdateAutoSync;
 					}
 					else {
-						updateAttr = prop.GetCustomAttribute<MatchUpdateAttribute>(inherit);
+						updateAttr = prop.GetCustomAttribute<MatchUpdateAttribute>(inherit); //NOTE: MatchUpdate != IgnoreUpdate
 						if (updateAttr != null) {
 							column.Attributes |= SqlColumnAttributes.MatchUpdate;
 							column.UpdateValue = updateAttr.Value;
+							if (updateAttr.AutoSync)
+								column.Attributes |= SqlColumnAttributes.UpdateAutoSync;
 						}
 					}
-					// Deletes
-					MatchDeleteAttribute deleteAttr = prop.GetCustomAttribute<MatchDeleteAttribute>(inherit);
-					if (deleteAttr != null || IgnoreDelete) {
-						column.Attributes |= SqlColumnAttributes.IgnoreDelete;
-						if (column.Attributes == SqlColumnAttributes.NotMapped)
-							continue;
-					}
-				}
-				columns.Add(column);
-			}
-			Columns = columns.ToArray();
-			KeyColumns = keys.Count == 0 ? Array.Empty<SqlColumn>() : keys.ToArray();
-			if (KeyColumns.Count == 1 && KeyColumns[0].IsAutoKey && SqlInternal.IsValidAutoIncrementType(keys[0].Type)) {
-				AutoKeyColumn = keys[0];
-			}
-			else if (KeyColumns.Count != 0) {
-				if (autoKeyCount != 0 && KeyColumns.Count != autoKeyCount) {
-					throw new InvalidOperationException(Type.FullName + " cannot have a both a composite key and an autoincrement key.");
-				}
-				// remove SqlColumnAttributes.AutoKey from all columns
-				foreach (SqlColumn key in keys) {
-					key.Attributes = SqlColumnAttributes.Key;
 				}
 			}
+
+			Columns = columns.Where(c => !c.NotMapped).ToArray();
 			EqualityColumns = KeyColumns.Count == 0 || KeyColumns.Count == Columns.Count ? Columns : KeyColumns;
 			UpdateKeyColumns = Columns == EqualityColumns ? Array.Empty<SqlColumn>() : Columns.Where(c => c.IsKey || c.MatchUpdate).ToArray();
 			DeleteKeyColumns = Columns == EqualityColumns ? Columns : Columns.Where(c => c.IsKey || c.MatchDelete).ToArray();
-			// common case -- reduce memory footprint
-			if (UpdateKeyColumns.Count == 0)
-				UpdateKeyColumns = Array.Empty<SqlColumn>();
-			if (DeleteKeyColumns.Count == 0)
-				DeleteKeyColumns = Array.Empty<SqlColumn>();
-			// fix ordinals
-			ordinal = 0;
-			foreach (SqlColumn column in Columns) {
-				if (column.Ordinal == 0) {
-					column.Ordinal = ordinal;
-					for (; ordinals.Contains(ordinal); ordinal++) {
-						// skip to next unused ordinal
-					}
-				}
-			}
 		}
+
 		/// <summary>
 		/// The class type that represents the table.
 		/// </summary>
@@ -238,23 +258,19 @@ namespace Dapper.Extra.Internal
 		/// <summary>
 		/// The columns that are modified on update commands. If this is an empty list then no updates are allowed.
 		/// </summary>
-		public IEnumerable<SqlColumn> UpdateColumns {
-			get {
-				//if (IgnoreUpdate || EqualityColumns == Columns)
-				//	return Array.Empty<SqlColumn>();
-				return Columns.Where(c => !c.IsKey && (!c.IgnoreUpdate || c.UpdateValue != null));
-			}
-		}
+		public IEnumerable<SqlColumn> UpdateColumns => Columns.Where(c => !c.IsKey && (!c.IgnoreUpdate || c.UpdateValue != null));
+		/// <summary>
+		/// The columns that need to be synchronized after inserts.
+		/// </summary>
+		public IEnumerable<SqlColumn> InsertAutoSyncColumns => Columns.Where(c => c.InsertAutoSync);
+		/// <summary>
+		/// The columns that need to be synchronized after updates.
+		/// </summary>
+		public IEnumerable<SqlColumn> UpdateAutoSyncColumns => Columns.Where(c => c.UpdateAutoSync);
 		/// <summary>
 		/// The columns that are inserted on insert commands. If this is an empty list then no inserts are allowed.
 		/// </summary>
-		public IEnumerable<SqlColumn> InsertColumns {
-			get {
-				//if (IgnoreInsert)
-				//	return Array.Empty<SqlColumn>();
-				return Columns.Where(c => !c.IsAutoKey && (!c.IgnoreInsert || c.InsertValue != null));
-			}
-		}
+		public IEnumerable<SqlColumn> InsertColumns => Columns.Where(c => !c.IsAutoKey && (!c.IgnoreInsert || c.InsertValue != null));
 		/// <summary>
 		/// The columns that are inserted on insert commands. If this is an empty list then no inserts are allowed.
 		/// </summary>
@@ -270,22 +286,10 @@ namespace Dapper.Extra.Internal
 		/// <summary>
 		/// The columns that should be copied to a temporary staging table when performing bulk updates.
 		/// </summary>
-		public IEnumerable<SqlColumn> BulkUpdateColumns {
-			get {
-				//if (IgnoreUpdate || EqualityColumns == Columns)
-				//	return Array.Empty<SqlColumn>();
-				return Columns.Where(c => !c.IgnoreUpdate || c.UpdateValue != null);
-			}
-		}
+		public IEnumerable<SqlColumn> BulkUpdateColumns => Columns.Where(c => !c.IgnoreUpdate || c.UpdateValue != null);
 		/// <summary>
 		/// The columns that are inserted on insert-if-not-exists commands. If this is an empty list then no inserts are allowed.
 		/// </summary>
-		public IEnumerable<SqlColumn> BulkInsertIfNotExistsColumns {
-			get {
-				//if (IgnoreInsert)
-				//	return Array.Empty<SqlColumn>();
-				return Columns.Where(c => !c.IgnoreInsert || c.InsertValue != null);
-			}
-		}
+		public IEnumerable<SqlColumn> BulkInsertIfNotExistsColumns => Columns.Where(c => !c.IgnoreInsert || c.InsertValue != null);
 	}
 }

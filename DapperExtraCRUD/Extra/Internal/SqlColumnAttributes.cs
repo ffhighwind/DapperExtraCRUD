@@ -26,5 +26,7 @@ namespace Dapper.Extra.Internal
 		MatchDelete = 1 << 6,
 		MatchUpdate = 1 << 7,
 		NotMapped = IgnoreSelect | IgnoreInsert | IgnoreUpdate | IgnoreDelete, 
+		InsertAutoSync = 1 << 8,
+		UpdateAutoSync = 1 << 9,
 	}
 }

@@ -22,13 +22,22 @@ namespace Dapper.Extra.Annotations
 		/// <summary>
 		/// Turns the <see cref="PropertyInfo"/> into a pseudo key for updates and sets the value to the string input if specified.
 		/// </summary>
+		public MatchUpdateAttribute()
+		{
+		}
+
+		/// <summary>
+		/// Turns the <see cref="PropertyInfo"/> into a pseudo key for updates and sets the value to the string input if specified.
+		/// </summary>
 		/// <param name="value">A string that is injected into the update statement as the column's value.
 		/// If this is <see langword="null"/> then the column is not modified.</param>
-		/// <param name="autoSync"></param>
-		public MatchUpdateAttribute(string value = null, bool autoSync = false)
+		/// <param name="autoSync">Determines if the property should be selected to match the database after an update.</param>
+		public MatchUpdateAttribute(string value, bool autoSync = false)
 		{
 			AutoSync = autoSync;
-			Value = string.IsNullOrWhiteSpace(value) ? null : "(" + value.Trim() + ")";
+			if (!string.IsNullOrWhiteSpace(value)) {
+				Value = "(" + value.Trim() + ")";
+			}
 		}
 		/// <summary>
 		/// A string that is injected into the update statement as the column's new value for updates.
