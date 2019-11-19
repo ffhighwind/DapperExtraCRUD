@@ -136,14 +136,24 @@ enums, or a type that implements Dapper.SqlMapper.ITypeHandler.
 * If a property does not have a get method it is equivalent to [IgnoreInsert][IgnoreUpdate].
 * If a key property does not have a get method then the whole class is treated as if it has [IgnoreInsert][IgnoreUpdate][IgnoreDelete].
 
-# Alternate Annotations
+# Alternative Annotations
 
-* System.ComponentModel.DataAnnotations.KeyAttribute is equivalent to [Key(true)]
-* System.ComponentModel.DataAnnotations.RequiredAttribute is equivalent to [Key(false)]
-* System.ComponentModel.DataAnnotations.EditableAttribute with AllowInitialValue = false is equivalent to [IgnoreInsert]
-* System.ComponentModel.DataAnnotations.EditableAttribute with AllowEdit = false is equivalent to [IgnoreUpdate]
-* System.ComponentModel.ReadOnlyAttribute is equivalent to [IgnoreInsert][IgnoreInsert] at the property level
-* System.ComponentModel.ReadOnlyAttribute is equivalent to [IgnoreInsert][IgnoreInsert][IgnoreDelete] at the class level
+| Dapper.Extra.Annotations | System.ComponentModel |
+| --- | --- |
+| [Table("name")] | [Table("name")] |
+| [Key(false)] | [Required] |
+| [Key(true)] | [Key] |
+| [Column("name")] | [Column("name")]
+| \[IgnoreInsert][IgnoreUpdate] | [Editable(false)] |
+| \[IgnoreInsert]\[IgnoreUpdate] (property) | [ReadOnly(true)] |
+| \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] (property) | { set; private get; } |
+| \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] (class) | [ReadOnly(true)] |
+| [NotMapped] | [NotMapped] |
+| \[IgnoreInsert] (class) | - |
+| \[IgnoreUpdate] (class) | - |
+| \[IgnoreDelete] (class) | - |
+| [MatchInsert] | - |
+| [MatchUpdate] | - |
 
 # Accessing Metadata:
 

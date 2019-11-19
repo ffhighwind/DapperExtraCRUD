@@ -100,21 +100,20 @@ namespace Dapper.Extra.Internal
 				columns.Add(column);
 				KeyAttribute keyAttr = prop.GetCustomAttribute<KeyAttribute>(inherit);
 				if (keyAttr != null) {
-					if (keyAttr.AutoIncrement) {
+					if (keyAttr.AutoIncrement)
 						autoKeyCount++;
-					}
 					column.Attributes = keyAttr.AutoIncrement ? SqlColumnAttributes.AutoKey : SqlColumnAttributes.Key;
 				}
 				else {
-					var keyAttr2 = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.KeyAttribute>(inherit);
-					if (keyAttr2 != null) {
-						column.Attributes |= SqlColumnAttributes.AutoKey;
-						continue;
-					}
 					var requiredAttr = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.RequiredAttribute>(inherit);
-					if (requiredAttr != null) {
+					if (requiredAttr != null)
 						column.Attributes |= SqlColumnAttributes.Key;
-						continue;
+					else {
+						var keyAttr2 = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.KeyAttribute>(inherit);
+						if (keyAttr2 != null) {
+							column.Attributes |= SqlColumnAttributes.AutoKey;
+							autoKeyCount++;
+						}
 					}
 				}
 				if (column.IsKey) {
