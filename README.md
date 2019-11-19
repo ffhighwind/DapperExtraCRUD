@@ -149,8 +149,8 @@ A valid property must have a public set method and its type must be a standard S
 
 # Annotation Priority:
 
-[NotMapped] > [Required] > [Key] > ...
-[IgnoreInsert] > [MatchInsert]
+[NotMapped] > [Required] > [Key] > ... \
+[IgnoreInsert] > [MatchInsert] \
 [IgnoreUpdate] > [MatchUpdate]
 
 # Accessing Metadata:
