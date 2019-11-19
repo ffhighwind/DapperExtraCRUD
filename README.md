@@ -21,15 +21,10 @@ metadata to allow customization and improved performance.
 # Installation:
 
 This project requires [Visual Studio](https://visualstudio.microsoft.com/) to compile.
-Once installed to install the required NuGet packages. Right click on the project in the
-Solution Explorer and select "Manage NuGet Packages...". From here Visual Studio will
-prompt you to install the missing packages.
-
-# NuGet Packages:
-
-* [Dapper](https://github.com/StackExchange/Dapper)
+Once installed to install the required NuGet packages.
+* [Dapper](https://github.com/StackExchange/Dapper) \
    For querying SQL Databases in a type-safe way.
-* [FastMember](https://github.com/mgravell/fast-member)
+* [FastMember](https://github.com/mgravell/fast-member) \
    For the DataReader used in Bulk operations. This may be replaced by a custom IL generator (or a custom Fasterflect) in the future.
 
 # Example:
@@ -131,29 +126,27 @@ what is in the database.
 * [NotMapped] means that the property should be ignored completely. This should be used on properties that do not represent a column
 in the table.
 * The following columns are ignored for various reasons: _Friends, Friends, NotUsed, BestFriendID, Points, and IsDirty. 
-Properties are accepted if they have public set methods and their type is a standard SQL type, 
-enums, or a type that implements Dapper.SqlMapper.ITypeHandler.
-* If a property does not have a get method it is equivalent to [IgnoreInsert][IgnoreUpdate].
-* If a key property does not have a get method then the whole class is treated as if it has [IgnoreInsert][IgnoreUpdate][IgnoreDelete].
+A valid property must have a public set method and its type must be a standard SQL type, enum, or implement Dapper.SqlMapper.ITypeHandler.
+* A key property without a get method is equivalent to adding \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] to the class.
 
 # Alternative Annotations
 
 | System.ComponentModel | Dapper.Extra.Annotations |
 | --- | --- |
-| [Table("name")] | [Table("name")] |
-| [Required] | [Key(false)] |
-| [Key] | [Key(true)] |
-| [Column("name")] | [Column("name")]
-| [Editable(false)] | \[IgnoreInsert][IgnoreUpdate] |
+| \[Table("name")] | \[Table("name")] |
+| \[Required] | \[Key(false)] |
+| \[Key] | \[Key(true)] |
+| \[Column("name")] | \[Column("name")]
+| \[Editable(false)] | \[IgnoreInsert][IgnoreUpdate] |
 | \[ReadOnly(true)] (property) | \[IgnoreInsert]\[IgnoreUpdate] |
+| \[ReadOnly(true)] (class) | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
 | public int Property { set; private get; } | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
-| [ReadOnly(true)] (class) | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
-| [NotMapped] | [NotMapped] |
+| \[NotMapped] | \[NotMapped] |
 | - | \[IgnoreInsert] (class) |
 | - | \[IgnoreUpdate] (class) |
 | - | \[IgnoreDelete] (class) |
-| - | [MatchInsert] |
-| - | [MatchUpdate] |
+| - | \[MatchInsert] |
+| - | \[MatchUpdate] |
 
 # Accessing Metadata:
 
