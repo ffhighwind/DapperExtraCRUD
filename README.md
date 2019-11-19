@@ -29,10 +29,9 @@ Once installed to install the required NuGet packages.
 
 # Example:
 
-### Note: 
-The example is not a recommendation on how to implement a table. It is often better 
-to use triggers, default values, and stored procedures when faced with certain database
-constraints.
+#### Note: 
+This example is not a recommendation on how to design a database table. It is usually better 
+to use triggers, default values, and stored procedures when faced with certain constraints.
 
 ```sql
 CREATE TABLE [dbo].[Users](
@@ -127,7 +126,7 @@ what is in the database.
 in the table.
 * The following columns are ignored for various reasons: _Friends, Friends, NotUsed, BestFriendID, Points, and IsDirty. 
 A valid property must have a public set method and its type must be a standard SQL type, enum, or implement Dapper.SqlMapper.ITypeHandler.
-* A key property without a get method is equivalent to adding \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] to the class.
+* A [Key] property without a get method is equivalent to adding \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] to the class.
 
 # Alternative Annotations
 
@@ -147,6 +146,12 @@ A valid property must have a public set method and its type must be a standard S
 | - | \[IgnoreDelete] (class) |
 | - | \[MatchInsert] |
 | - | \[MatchUpdate] |
+
+# Annotation Priority:
+
+[NotMapped] > [Required] > [Key] > ...
+[IgnoreInsert] > [MatchInsert]
+[IgnoreUpdate] > [MatchUpdate]
 
 # Accessing Metadata:
 
@@ -222,7 +227,7 @@ They also perform a slightly better than the extension methods because they stor
 
 This generates SQL WHERE conditions from a Linq.Expression<Predicate<T>>. It can be somewhat expensive to generate, so I recommend caching the results when possible.
 The main reason to use this utility is if you need a type-safe query or need to map a predicate to SQL command. Specifically, I have used this to remove items 
-from a dictionary after deleting rows from a database. It is not well tested, so I do not recommend using it without proper testing.
+from a dictionary after deleting rows from a database. It is not well tested, so I do not recommend using it in a production environment.
 
 #### Partition<T>(this IEnumerable<T> source, int size)
 
@@ -235,10 +240,10 @@ Use a view if you need joins. If this is not sufficient then you can use Dapper'
 
 # Performance:
 
-The extension methods in Dapper.DapperExtraExtensions perform a lookup on a ConcurrentDictionary and a cast the results every time they are called. You can prevent this 
-by using a AutoAccessObject/DataAccessObject or by storing the ISqlQueries object and accessing the delegates directly. 
-Less frequently used delegates such as bulk operations have lazy initialization. These have a small synchronization cost every time 
-they are accessed. You can prevent this by storing a reference to each delegate outside of the ISqlQueries object.
+The Dapper.DapperExtraExtensions methods perform lookups on a ConcurrentDictionary and a cast the results every time they are called. You can prevent this 
+by storing the ISqlQueries object and accessing the delegates directly (e.g. AutoAccessObject/DataAccessObject). Also, 
+less frequently used delegates such as bulk operations have lazy initialization. There is a small synchronization cost every time 
+these are accessed. This can be prevented by storing a reference to each delegate outside of the ISqlQueries object.
 
 # License:
 
