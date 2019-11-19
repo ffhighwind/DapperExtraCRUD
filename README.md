@@ -138,22 +138,22 @@ enums, or a type that implements Dapper.SqlMapper.ITypeHandler.
 
 # Alternative Annotations
 
-| Dapper.Extra.Annotations | System.ComponentModel |
+| System.ComponentModel | Dapper.Extra.Annotations |
 | --- | --- |
 | [Table("name")] | [Table("name")] |
-| [Key(false)] | [Required] |
-| [Key(true)] | [Key] |
+| [Required] | [Key(false)] |
+| [Key] | [Key(true)] |
 | [Column("name")] | [Column("name")]
-| \[IgnoreInsert][IgnoreUpdate] | [Editable(false)] |
-| \[IgnoreInsert]\[IgnoreUpdate] (property) | [ReadOnly(true)] |
-| \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] (property) | { set; private get; } |
-| \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] (class) | [ReadOnly(true)] |
+| [Editable(false)] | \[IgnoreInsert][IgnoreUpdate] |
+| \[ReadOnly(true)] (property) | \[IgnoreInsert]\[IgnoreUpdate] |
+| public int Property { set; private get; } | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
+| [ReadOnly(true)] (class) | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
 | [NotMapped] | [NotMapped] |
-| \[IgnoreInsert] (class) | - |
-| \[IgnoreUpdate] (class) | - |
-| \[IgnoreDelete] (class) | - |
-| [MatchInsert] | - |
-| [MatchUpdate] | - |
+| - | \[IgnoreInsert] (class) |
+| - | \[IgnoreUpdate] (class) |
+| - | \[IgnoreDelete] (class) |
+| - | [MatchInsert] |
+| - | [MatchUpdate] |
 
 # Accessing Metadata:
 
