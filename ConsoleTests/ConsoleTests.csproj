@@ -50,10 +50,15 @@
     <Compile Include="Bad\Bad2.cs" />
     <Compile Include="Good\IDto.cs" />
     <Compile Include="Good\IDtoKey.cs" />
+    <Compile Include="Good\IFilter.cs" />
     <Compile Include="Good\Test3.cs" />
+    <Compile Include="Good\Test3filter.cs" />
     <Compile Include="Good\TestDTO.cs" />
     <Compile Include="Good\TestDTO2.cs" />
+    <Compile Include="Good\TestDTO2filter.cs" />
     <Compile Include="Good\TestDTO4.cs" />
+    <Compile Include="Good\TestDTO4filter.cs" />
+    <Compile Include="Good\TestDTOfilter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

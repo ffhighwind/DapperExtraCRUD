@@ -204,19 +204,28 @@ namespace Dapper.Extra.Internal
 			throw new InvalidOperationException(typeof(KeyType).Name + " is an unsupported key type.");
 		}
 
+		#region Filtered Selects
 		private ConcurrentDictionary<Type, string> SelectMap = new ConcurrentDictionary<Type, string>();
 
 		private IEnumerable<SqlColumn> GetSharedColumns(Type type, IEnumerable<SqlColumn> columns)
 		{
 			if (type == typeof(T))
 				return columns;
-			IEnumerable<string> propNames = type.GetProperties(BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.DeclaredOnly).Select(p => p.Name);
+			IEnumerable<string> propNames = type.GetProperties(BindingFlags.Public | BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.DeclaredOnly).Select(p => p.Name);
 			HashSet<string> columnNames = new HashSet<string>(propNames);
 			List<SqlColumn> list = columns.Where(c => propNames.Contains(c.Property.Name)).ToList();
 			if (list.Count == 0)
 				throw new InvalidOperationException(type.FullName + " does not have any matching columns with " + typeof(T).FullName);
 			return list;
 		}
+
+		private string CreateParamsSelect(Type type)
+		{
+			IEnumerable<SqlColumn> columns = GetSharedColumns(type, Info.SelectColumns);
+			string paramsSelect = ParamsSelect(columns);
+			return SelectMap.GetOrAdd(type, paramsSelect);
+		}
+		#endregion Filtered Selects
 
 		#region StringCache
 		/// <summary>
@@ -350,13 +359,6 @@ namespace Dapper.Extra.Internal
 		{
 		}
 		#endregion DoNothing
-
-		private string CreateParamsSelect(Type type)
-		{
-			IEnumerable<SqlColumn> columns = GetSharedColumns(type, Info.SelectColumns);
-			string paramsSelect = ParamsSelect(columns);
-			return SelectMap.GetOrAdd(type, paramsSelect);
-		}
 
 		#region Selects
 		private DbWhereInt<T> CreateRecordCount()

@@ -49,10 +49,10 @@ namespace UnitTests
 				Recreate<Test3>(conn, null);
 				Recreate<TestDTO4>(conn, null);
 
-				DoTests<TestDTO>(() => new TestDTO(random), (t) => t.UpdateRandomize(random));
-				DoTests<TestDTO2>(() => new TestDTO2(random), (t) => t.UpdateRandomize(random));
-				DoTests<Test3>(() => new Test3(random), (t) => t.UpdateRandomize(random));
-				DoTests<TestDTO4>(() => new TestDTO4(random), (t) => t.UpdateRandomize(random));
+				DoTests<TestDTO>(() => new TestDTO(random), (t) => t.UpdateRandomize(random), new TestDTOfilter());
+				DoTests<TestDTO2>(() => new TestDTO2(random), (t) => t.UpdateRandomize(random), new TestDTO2filter());
+				DoTests<Test3>(() => new Test3(random), (t) => t.UpdateRandomize(random), new Test3filter());
+				DoTests<TestDTO4>(() => new TestDTO4(random), (t) => t.UpdateRandomize(random), new TestDTO4filter());
 
 				DoTests<TestDTO, int>(conn);
 				DoTests<TestDTO4, int>(conn);
@@ -85,7 +85,7 @@ namespace UnitTests
 			return list;
 		}
 
-		public static void DoTests<T>(Func<T> constructor, Func<T, T> randomize) where T : class, IDto<T>, new()
+		public static void DoTests<T>(Func<T> constructor, Func<T, T> randomize, IFilter<T> filter) where T : class, IDto<T>, new()
 		{
 			Random random = new Random(512851);
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
@@ -133,6 +133,9 @@ namespace UnitTests
 				using (SqlTransaction trans = conn.BeginTransaction()) {
 					GetDistinctLimit(conn, trans, list);
 				}
+				//
+				// Bulk
+				//
 				using (SqlTransaction trans = conn.BeginTransaction()) {
 					BulkGet(conn, trans, list);
 				}
@@ -153,6 +156,18 @@ namespace UnitTests
 				}
 				using (SqlTransaction trans = conn.BeginTransaction()) {
 					BulkInsertIfNotExists<T>(conn, trans, list);
+				}
+				//
+				// Filters
+				//
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					GetFilter(conn, trans, list, filter);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					GetFilterLimit(conn, trans, list, filter);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					GetFilterDistinctLimit(conn, trans, list, filter);
 				}
 			}
 		}
@@ -275,6 +290,17 @@ DROP TABLE dbo.{tableName};";
 			}
 		}
 
+		public static void GetFilter<T>(SqlConnection conn, SqlTransaction trans, List<T> list, IFilter<T> filter) where T : class, IDto<T>
+		{
+			var list2 = conn.GetList<T>(filter.GetType(), "", null, trans).AsList();
+			if (list.Count != list2.Count)
+				throw new InvalidOperationException();
+			foreach (T item in list2) {
+				if (!filter.IsFiltered(item))
+					throw new InvalidOperationException();
+			}
+		}
+
 		public static void Get_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
 		{
 			foreach (T item in list) {
@@ -359,6 +385,16 @@ DROP TABLE dbo.{tableName};";
 			}
 		}
 
+		public static void GetFilterLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list, IFilter<T> filter) where T : class, IDto<T>
+		{
+			int max = Math.Min(list.Count, 10);
+			for (int i = 0; i < max; i++) {
+				List<T> items = conn.GetLimit<T>(filter.GetType(), i, "", null, trans).AsList();
+				if (items.Count != i)
+					throw new InvalidOperationException();
+			}
+		}
+
 		public static void DeleteAll<T>(SqlConnection conn, SqlTransaction trans) where T : class, IDto<T>
 		{
 			int count = conn.RecordCount<T>(trans);
@@ -428,7 +464,6 @@ DROP TABLE dbo.{tableName};";
 
 		public static void GetDistinctLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
-			//requires IgnoreSelect to be useful
 			int max = Math.Min(list.Count, 10);
 			for (int i = 2; i < max; i++) {
 				Dictionary<T, T> map = CreateMap<T>(conn, trans, list);
@@ -440,6 +475,17 @@ DROP TABLE dbo.{tableName};";
 						throw new InvalidOperationException();
 					}
 				}
+			}
+		}
+
+		public static void GetFilterDistinctLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list, IFilter<T> filter) where T : class, IDto<T>
+		{
+			int max = Math.Min(list.Count, 10);
+			for (int i = 2; i < max; i++) {
+				Dictionary<T, T> map = CreateMap<T>(conn, trans, list);
+				List<T> list2 = conn.GetDistinctLimit<T>(filter.GetType(), i, "", null, trans).AsList();
+				if (list2.Count == 0)
+					throw new InvalidOperationException();
 			}
 		}
 		#endregion Tested
