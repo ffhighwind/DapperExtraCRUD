@@ -255,7 +255,7 @@ DROP TABLE dbo.{tableName};";
 
 		public static void WhereConditionGen<T>(SqlConnection conn, SqlTransaction trans, List<T> list, Expression<Predicate<T>> predicateExpr) where T : class, IDto<T>
 		{
-			string condition = new WhereConditionGenerator<T>().Create(predicateExpr, out IDictionary<string, object> param);
+			string condition = WhereConditionGenerator<T>.Create(predicateExpr, out IDictionary<string, object> param);
 			Predicate<T> predicate = predicateExpr.Compile();
 			List<T> filtered = list.Where(d => predicate(d)).ToList();
 			int count = conn.RecordCount<T>("WHERE " + condition, param, trans);

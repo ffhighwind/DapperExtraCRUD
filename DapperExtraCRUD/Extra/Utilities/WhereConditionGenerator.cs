@@ -43,37 +43,38 @@ namespace Dapper.Extra.Utilities
 	/// Converts a <see cref="Predicate{T}"/> to a WHERE expression in SQL.
 	/// </summary>
 	/// <typeparam name="T">The input type.</typeparam>
-	public class WhereConditionGenerator<T> : ExpressionVisitor
+	public sealed class WhereConditionGenerator<T> : ExpressionVisitor
 		where T : class
 	{
 		protected readonly string TableName;
-		protected StringBuilder Results;
-		//protected SqlAdapter Adapter;
+		protected StringBuilder Results = new StringBuilder(150);
 		protected ParameterExpression InputParam;
-		protected IDictionary<string, object> OutputParam;
+		protected IDictionary<string, object> OutputParam = new ExpandoObject();
 
-		public WhereConditionGenerator() : base()
+		private WhereConditionGenerator() : base()
 		{
 			SqlTypeInfo typeInfo = ExtraCrud.TypeInfo<T>();
-			//Adapter = typeInfo.Adapter;
 			TableName = typeInfo.TableName;
 		}
 
-		/// <summary>
-		/// Dispatches the <see cref="System.Linq.Expressions.Expression"/> to one of the more specialized visit methods in this class.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		public string Create(Expression<Predicate<T>> node, out IDictionary<string, object> param)
+		private void Visit(Expression<Predicate<T>> predicate, out IDictionary<string, object> param)
 		{
-			Results = new StringBuilder(150);
-			OutputParam = new ExpandoObject();
-			InputParam = node.Parameters[0];
-			base.Visit(node.Body);
-			string str = Results.ToString();
-			Results.Clear();
+			InputParam = predicate.Parameters[0];
+			base.Visit(predicate.Body);
 			param = OutputParam;
-			return str;
+		}
+
+		/// <summary>
+		/// Converts a <see cref="Predicate{T}"/> to a WHERE expression in SQL.
+		/// </summary>
+		/// <param name="node">The predicate.</param>
+		/// <param name="param">The Dapper parameters for the WHERE condition.</param>
+		/// <returns>The WHERE expression in SQL that the predicate represents.</returns>
+		public static string Create(Expression<Predicate<T>> predicate, out IDictionary<string, object> param)
+		{
+			WhereConditionGenerator<T> obj = new WhereConditionGenerator<T>();
+			obj.Visit(predicate, out param);
+			return obj.Results.ToString();
 		}
 
 		/// <summary>
