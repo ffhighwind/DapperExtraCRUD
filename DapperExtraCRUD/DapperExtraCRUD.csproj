@@ -1,93 +1,44 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{4DBE71C1-2ECD-4192-BC66-E4D1C8DCEC08}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Dapper</RootNamespace>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <AssemblyName>Dapper.ExtraCRUD</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
-    <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
+    <Version>1.0.1</Version>
+    <Authors>Wesley Hamilton</Authors>
+    <Description></Description>
+    <NeutralLanguage>en-us</NeutralLanguage>
+    <PackageReleaseNotes></PackageReleaseNotes>
+    <PackageTags>dapper orm .net35 .net40 .net45 .netstandard2</PackageTags>
+    <PackageLicense>Apache-2.0</PackageLicense>
+    <PackageProjectUrl>https://github.com/ffhighwind/DapperExtraCRUD</PackageProjectUrl>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <Copyright>Copyright (c) 2018 Wesley Hamilton</Copyright>
+    <RepositoryUrl>https://github.com/ffhighwind/fasterflect</RepositoryUrl>
+    <RepositoryType>GIT</RepositoryType>
+    <DelaySign>false</DelaySign>
+    <ProjectGuid>{4DBE71C1-2ECD-4192-BC66-E4D1C8DCEC08}</ProjectGuid>
+    <RootNamespace>Dapper</RootNamespace>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
+    <DefineConstants>NETSTANDARD2_0</DefineConstants>
+    <OutputPath>bin\lib\</OutputPath>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>nuget\lib\net461\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
+    <DefineConstants>NETSTANDARD2_0</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net461|AnyCPU'">
+    <DefineConstants>NET461</DefineConstants>
+    <OutputPath>bin\lib\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net461|AnyCPU'">
+    <DefineConstants>NET461</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dapper, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Dapper.2.0.30\lib\net461\Dapper.dll</HintPath>
-    </Reference>
-    <Reference Include="FastMember, Version=1.5.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\FastMember.1.5.0\lib\net461\FastMember.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Dapper" Version="2.0.30" />
+    <PackageReference Include="FastMember" Version="1.5.0" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="4.6.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.7.0" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System" />
-    <Reference Include="System.ComponentModel.DataAnnotations" />
-    <Reference Include="System.Data" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Extra\Annotations\ColumnAttribute.cs" />
-    <Compile Include="DapperExtraExtensions.cs" />
-    <Compile Include="Extra\ExtraCrud.cs" />
-    <Compile Include="Extra\Internal\ISqlBuilder.cs" />
-    <Compile Include="Extra\Internal\SqlBuilder.cs" />
-    <Compile Include="Extra\Internal\SqlBuilderHelper.cs" />
-    <Compile Include="Extra\Internal\SqlColumnAttributes.cs" />
-    <Compile Include="Extra\Internal\SqlColumn.cs" />
-    <Compile Include="Extra\Internal\SqlQueries.cs" />
-    <Compile Include="Extra\Internal\SqlTypeInfo.cs" />
-    <Compile Include="Extra\Internal\SqlAdapter.cs" />
-    <Compile Include="Extra\Internal\SqlTableAttributes.cs" />
-    <Compile Include="Extra\Internal\SqlInternal.cs" />
-    <Compile Include="Extra\Internal\Extensions\UtilExtensions.cs" />
-    <Compile Include="Extra\Internal\TableEqualityComparer.cs" />
-    <Compile Include="Extra\Utilities\AutoAccessObject.cs" />
-    <Compile Include="Extra\Utilities\DataAccessObject.cs" />
-    <Compile Include="Extra\Utilities\IDataAccessConnection.cs" />
-    <Compile Include="Extra\SqlSyntax.cs" />
-    <Compile Include="Extra\Utilities\ConnectedEnumerable.cs" />
-    <Compile Include="Extra\Utilities\IAccessObject.cs" />
-    <Compile Include="Extra\Utilities\IAccessObjectAsync.cs" />
-    <Compile Include="Extra\Utilities\IAccessObjectSync.cs" />
-    <Compile Include="Extra\Annotations\IDefaultAttribute.cs" />
-    <Compile Include="Extra\Utilities\ReferenceComparer.cs" />
-    <Compile Include="Extra\Internal\ISqlQueries.cs" />
-    <Compile Include="Extra\Internal\Delegates.cs" />
-    <Compile Include="Extra\Utilities\WhereConditionGenerator.cs" />
-    <Compile Include="Extra\Annotations\NotMappedAttribute.cs" />
-    <Compile Include="Extra\Annotations\IgnoreDeleteAttribute.cs" />
-    <Compile Include="Extra\Annotations\IgnoreInsertAttribute.cs" />
-    <Compile Include="Extra\Annotations\IgnoreUpdateAttribute.cs" />
-    <Compile Include="Extra\Annotations\KeyAttribute.cs" />
-    <Compile Include="Extra\Annotations\MatchDeleteAttribute.cs" />
-    <Compile Include="Extra\Annotations\MatchUpdateAttribute.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Extra\Annotations\TableAttribute.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

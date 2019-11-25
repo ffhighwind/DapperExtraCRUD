@@ -1,4 +1,30 @@
-﻿using System;
+﻿#region License
+// Released under MIT License 
+// License: https://www.mit.edu/~amini/LICENSE.md
+// Home page: https://github.com/ffhighwind/DapperExtraCRUD
+
+// Copyright(c) 2018 Wesley Hamilton
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+#endregion
+
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
@@ -46,8 +72,8 @@ namespace Dapper.Extra.Internal
 				LazyBulkUpsert = new Lazy<SqlListInt<T>>(() => CreateBulkUpsert(), threadSafety),
 				LazyDeleteAll = new Lazy<DbVoid>(() => CreateDeleteAll(), threadSafety),
 				LazyDeleteList = new Lazy<DbWhereInt<T>>(() => CreateDeleteList(), threadSafety),
-				LazyGetDistinct = new Lazy<DbWhereList<T>>(() => CreateGetDistinct(), threadSafety),
-				LazyGetDistinctLimit = new Lazy<DbLimitList<T>>(() => CreateGetDistinctLimit(), threadSafety),
+				LazyGetDistinct = new Lazy<DbTypeWhereList<T>>(() => CreateGetDistinct(), threadSafety),
+				LazyGetDistinctLimit = new Lazy<DbTypeLimitList<T>>(() => CreateGetDistinctLimit(), threadSafety),
 				LazyGetKeys = new Lazy<DbWhereList<T>>(() => CreateGetKeys(), threadSafety),
 				LazyGetLimit = new Lazy<DbLimitList<T>>(() => CreateGetLimit(), threadSafety),
 				LazyInsertIfNotExists = new Lazy<DbTBool<T>>(() => CreateInsertIfNotExists(), threadSafety),
@@ -55,6 +81,8 @@ namespace Dapper.Extra.Internal
 				LazyUpsert = new Lazy<DbTBool<T>>(() => CreateUpsert(), threadSafety),
 				InsertAutoSync = CreateAutoSync(Info.InsertAutoSyncColumns),
 				UpdateAutoSync = CreateAutoSync(info.UpdateAutoSyncColumns),
+				LazyGetFilter = new Lazy<DbTypeWhereList<T>>(() => CreateGetFilterList(), threadSafety),
+				LazyGetFilterLimit = new Lazy<DbTypeLimitList<T>>(() => CreateGetFilterLimit(), threadSafety),
 			};
 
 			if (info.EqualityColumns.Count == 1) {
@@ -174,6 +202,20 @@ namespace Dapper.Extra.Internal
 				throw new InvalidOperationException(expected.Name + " is not the correct key type for " + typeof(T).Name + ". Expected " + expected.Name + ".");
 			}
 			throw new InvalidOperationException(typeof(KeyType).Name + " is an unsupported key type.");
+		}
+
+		private ConcurrentDictionary<Type, string> SelectMap = new ConcurrentDictionary<Type, string>();
+
+		private IEnumerable<SqlColumn> GetSharedColumns(Type type, IEnumerable<SqlColumn> columns)
+		{
+			if (type == typeof(T))
+				return columns;
+			IEnumerable<string> propNames = type.GetProperties(BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.DeclaredOnly).Select(p => p.Name);
+			HashSet<string> columnNames = new HashSet<string>(propNames);
+			List<SqlColumn> list = columns.Where(c => propNames.Contains(c.Property.Name)).ToList();
+			if (list.Count == 0)
+				throw new InvalidOperationException(type.FullName + " does not have any matching columns with " + typeof(T).FullName);
+			return list;
 		}
 
 		#region StringCache
@@ -309,6 +351,13 @@ namespace Dapper.Extra.Internal
 		}
 		#endregion DoNothing
 
+		private string CreateParamsSelect(Type type)
+		{
+			IEnumerable<SqlColumn> columns = GetSharedColumns(type, Info.SelectColumns);
+			string paramsSelect = ParamsSelect(columns);
+			return SelectMap.GetOrAdd(type, paramsSelect);
+		}
+
 		#region Selects
 		private DbWhereInt<T> CreateRecordCount()
 		{
@@ -336,6 +385,19 @@ namespace Dapper.Extra.Internal
 						property.SetValue(obj, value[property.Name]);
 					}
 				}
+			};
+		}
+
+		private DbTypeWhereList<T> CreateGetFilterList()
+		{
+			return (connection, type, whereCondition, param, transaction, buffered, commandTimeout) =>
+			{
+				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
+					paramsSelect = CreateParamsSelect(type);
+				}
+				string query = $"SELECT {paramsSelect}\nFROM {TableName}\n{whereCondition}";
+				IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
+				return result;
 			};
 		}
 
@@ -373,12 +435,15 @@ namespace Dapper.Extra.Internal
 			};
 		}
 
-		private DbWhereList<T> CreateGetDistinct()
+		private DbTypeWhereList<T> CreateGetDistinct()
 		{
-			string paramsSelectFromTable = ParamsSelectFromTable();
-			return (connection, whereCondition, param, transaction, buffered, commandTimeout) =>
+			//string paramsSelectFromTable = ParamsSelectFromTable();
+			return (connection, type, whereCondition, param, transaction, buffered, commandTimeout) =>
 			{
-				string query = $"SELECT DISTINCT {paramsSelectFromTable}{whereCondition}";
+				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
+					paramsSelect = CreateParamsSelect(type);
+				}
+				string query = $"SELECT DISTINCT {paramsSelect}\nFROM {TableName}\n{whereCondition}";
 				IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
 				return result;
 			};
@@ -394,26 +459,44 @@ namespace Dapper.Extra.Internal
 				string queryStart = string.Format(limitStartQuery, limit);
 				string queryEnd = string.Format(limitEndQuery, limit);
 				string query = $"SELECT {queryStart}{paramsSelectFromTable}{whereCondition}{queryEnd}";
-				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout); //.Take(limit);
-																											   //if (buffered)
-																											   //	result = result.ToList();
+				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout);
 				return result;
 			};
 		}
 
-		private DbLimitList<T> CreateGetDistinctLimit()
+
+
+		private DbTypeLimitList<T> CreateGetFilterLimit()
 		{
-			string paramsSelectFromTable = ParamsSelectFromTable();
 			string limitStartQuery = Info.Adapter.SelectLimitStart;
 			string limitEndQuery = Info.Adapter.SelectLimitEnd;
-			return (connection, limit, whereCondition, param, transaction, buffered, commandTimeout) =>
+			return (connection, type, limit, whereCondition, param, transaction, buffered, commandTimeout) =>
 			{
 				string queryStart = string.Format(limitStartQuery, limit);
 				string queryEnd = string.Format(limitEndQuery, limit);
-				string query = $"SELECT DISTINCT {queryStart}{paramsSelectFromTable}{whereCondition}{queryEnd}";
-				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout); //.Take(limit);
-																											   //if (buffered)
-																											   //	result = result.ToList();
+				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
+					paramsSelect = CreateParamsSelect(type);
+				}
+				string query = $"SELECT {queryStart}{paramsSelect}\nFROM {TableName}\n{whereCondition}{queryEnd}";
+				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout);
+				return result;
+			};
+		}
+
+		private DbTypeLimitList<T> CreateGetDistinctLimit()
+		{
+			//string paramsSelectFromTable = ParamsSelectFromTable();
+			string limitStartQuery = Info.Adapter.SelectLimitStart;
+			string limitEndQuery = Info.Adapter.SelectLimitEnd;
+			return (connection, type, limit, whereCondition, param, transaction, buffered, commandTimeout) =>
+			{
+				string queryStart = string.Format(limitStartQuery, limit);
+				string queryEnd = string.Format(limitEndQuery, limit);
+				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
+					paramsSelect = CreateParamsSelect(type);
+				}
+				string query = $"SELECT DISTINCT {queryStart}{paramsSelect}\nFROM {TableName}\n{whereCondition}{queryEnd}";
+				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout);
 				return result;
 			};
 		}
@@ -717,9 +800,7 @@ namespace Dapper.Extra.Internal
 				{
 					Type type = obj.GetType();
 					if (UpdateSetMap.TryGetValue(type, out string updateSet)) {
-						IEnumerable<string> propNames = type.GetProperties(BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.DeclaredOnly).Select(p => p.Name);
-						HashSet<string> columnNames = new HashSet<string>(propNames);
-						IEnumerable<SqlColumn> columns = Info.UpdateColumns.Where(c => propNames.Contains(c.Property.Name));
+						IEnumerable<SqlColumn> columns = GetSharedColumns(type, Info.UpdateColumns);
 						HashSet<string> keyColumnNames = new HashSet<string>(Info.UpdateKeyColumns.Select(c => c.Property.Name));
 						updateSet = UpdateSet(columns);
 						UpdateSetMap.GetOrAdd(type, updateSet);

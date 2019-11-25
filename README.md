@@ -5,28 +5,6 @@ Unique additions include new attributes (Versioning keys: MatchUpdate, MatchDele
 Top/Limit, Upsert, Insert If Not Exists, and Bulk operations. It also exposes most of the underlying
 metadata to allow customization and improved performance.
 
-# TODO
-
-* ITypeHandler tests
-* Other RDBMS tests (SqlSyntax)
-* Thread-safe bulk operations? These operations are thread safe for SQL Server, but not others.
-* Paged results?
-* GetList(object) / GetDistinct(object) / GetDistinctList(object)
-
-# Future Plans:
-
-* IL Getters/Setters
-* Multi-Mapping/Joins
-
-# Installation:
-
-This project requires [Visual Studio](https://visualstudio.microsoft.com/) to compile.
-Once installed to install the required NuGet packages.
-* [Dapper](https://github.com/StackExchange/Dapper) \
-   For querying SQL Databases in a type-safe way.
-* [FastMember](https://github.com/mgravell/fast-member) \
-   For the DataReader used in Bulk operations. This may be replaced by a custom IL generator (or a custom Fasterflect) in the future.
-
 # Example:
 
 #### Note: 
@@ -244,6 +222,16 @@ The Dapper.DapperExtraExtensions methods perform lookups on a ConcurrentDictiona
 by storing the ISqlQueries object and accessing the delegates directly (e.g. AutoAccessObject/DataAccessObject). Also, 
 less frequently used delegates such as bulk operations have lazy initialization. There is a small synchronization cost every time 
 these are accessed. This can be prevented by storing a reference to each delegate outside of the ISqlQueries object.
+
+# Future Plans
+
+* ITypeHandler tests
+* Other RDBMS tests (SqlSyntax)
+* Thread-safe bulk operations. These are thread safe for SQL Server, but not others.
+* Paged results
+* GetList(object) / GetDistinct(object) / GetDistinctList(object)
+* IL Getters/Setters
+* Multi-Mapping/Joins
 
 # License:
 
