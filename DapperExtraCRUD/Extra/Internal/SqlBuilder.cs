@@ -36,6 +36,9 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Dapper.Extra.Utilities;
+using System.Data.Common;
+using Fasterflect;
 
 namespace Dapper.Extra.Internal
 {
@@ -84,6 +87,7 @@ namespace Dapper.Extra.Internal
 				LazyGetFilter = new Lazy<DbTypeWhereList<T>>(() => CreateGetFilterList(), threadSafety),
 				LazyGetFilterLimit = new Lazy<DbTypeLimitList<T>>(() => CreateGetFilterLimit(), threadSafety),
 			};
+			DataReaderFactory = new DataReaderFactory(typeof(T), info.Columns.Select(c => c.Property));
 
 			if (info.EqualityColumns.Count == 1) {
 				EqualityComparer = new TableKeyEqualityComparer<T>(TableName, EqualityColumns[0]);
@@ -186,6 +190,10 @@ namespace Dapper.Extra.Internal
 		/// The same value as <see cref="Queries"/>.
 		/// </summary>
 		public object QueriesObject => Queries;
+		/// <summary>
+		/// Generates <see cref="DbDataReader"/>
+		/// </summary>
+		public DataReaderFactory DataReaderFactory { get; private set; }
 
 		/// <summary>
 		/// Casts <see cref="KeyBuilder"/> to the given <see cref="SqlBuilder{T, KeyType}"/>.
@@ -377,14 +385,15 @@ namespace Dapper.Extra.Internal
 				return null;
 			string paramsSelect = ParamsSelect(columns);
 			string whereEquals = WhereEquals(EqualityColumns);
-			PropertyInfo[] properties = columns.Select(c => c.Property).ToArray();
+			MemberSetter[] setters = columns.Select(c => c.Setter).ToArray();
+			string[] names = columns.Select(c => c.Property.Name).ToArray();
 			return (connection, obj, transaction, commandTimeout) =>
 			{
 				string cmd = $"SELECT {paramsSelect}\nFROM {TableName}\nWHERE \t{whereEquals}";
 				IDictionary<string, object> value = connection.QueryFirstOrDefault(cmd, obj, transaction, commandTimeout);
 				if (value != null) {
-					foreach (PropertyInfo property in properties) {
-						property.SetValue(obj, value[property.Name]);
+					for (int i = 0; i < setters.Length; i++) {
+						setters[i](obj, value[names[i]]);
 					}
 				}
 			};
@@ -466,8 +475,6 @@ namespace Dapper.Extra.Internal
 			};
 		}
 
-
-
 		private DbTypeLimitList<T> CreateGetFilterLimit()
 		{
 			string limitStartQuery = Info.Adapter.SelectLimitStart;
@@ -513,7 +520,7 @@ namespace Dapper.Extra.Internal
 			{
 				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 				connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
-				SqlInternal.BulkInsert(connection, objs, transaction, BulkStagingTable, EqualityColumns, commandTimeout,
+				ExtraUtil.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, EqualityColumns, commandTimeout,
 					SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
 				string bulkGetQuery = $"SELECT {paramsSelectFromTableBulk}\tINNER JOIN {BulkStagingTable} ON {equalsTables}";
 				IEnumerable<T> result = connection.Query<T>(bulkGetQuery, null, transaction, true, commandTimeout);
@@ -588,7 +595,7 @@ namespace Dapper.Extra.Internal
 				{
 					connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 					connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
-					SqlInternal.BulkInsert(connection, objs, transaction, BulkStagingTable, EqualityColumns, commandTimeout,
+					ExtraUtil.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, EqualityColumns, commandTimeout,
 						SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
 					string bulkDeleteCmd = $"DELETE FROM {TableName} FROM {TableName} INNER JOIN {BulkStagingTable} ON {equalsTables}";
 					int count = connection.Execute(bulkDeleteCmd, null, transaction, commandTimeout);
@@ -629,13 +636,13 @@ namespace Dapper.Extra.Internal
 				}
 				else {
 					string selectAutoKey = SelectAutoKey();
-					PropertyInfo autoKeyProperty = Info.AutoKeyColumn.Property;
+					MemberSetter autoKeySetter = Info.AutoKeyColumn.Setter;
 					if (!Info.InsertAutoSyncColumns.Any()) {
 						return (connection, obj, transaction, commandTimeout) =>
 						{
 							string cmd = insertIntoCmd + insertedValues + ";\n" + selectAutoKey;
 							IDictionary<string, object> key = connection.QueryFirst(cmd, obj, transaction, commandTimeout);
-							autoKeyProperty.SetValue(obj, key.Values.First());
+							autoKeySetter(obj, key.Values.First());
 						};
 					}
 					else {
@@ -644,7 +651,7 @@ namespace Dapper.Extra.Internal
 						{
 							string cmd = insertIntoCmd + insertedValues + ";\n" + selectAutoKey;
 							IDictionary<string, object> key = connection.QueryFirst(cmd, obj, transaction, commandTimeout);
-							autoKeyProperty.SetValue(obj, key.Values.First());
+							autoKeySetter(obj, key.Values.First());
 							insertAutoSync(connection, obj, transaction, commandTimeout);
 						};
 					}
@@ -683,14 +690,14 @@ namespace Dapper.Extra.Internal
 				}
 				else {
 					string selectAutoKey = SelectAutoKey();
-					PropertyInfo autoKeyProperty = Info.AutoKeyColumn.Property;
+					MemberSetter autoKeySetter = Info.AutoKeyColumn.Setter;
 					if (!Info.InsertAutoSyncColumns.Any()) {
 						return (connection, obj, transaction, commandTimeout) =>
 						{
 							string cmd = $"IF NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{whereEquals})\n{insertIntoCmd}{insertedValues};\n{selectAutoKey}";
 							object key = connection.QueryFirst<dynamic>(cmd, obj, transaction, commandTimeout).Id;
 							if (key != null) {
-								autoKeyProperty.SetValue(obj, key);
+								autoKeySetter(obj, key);
 								return true;
 							}
 							return false;
@@ -704,7 +711,7 @@ namespace Dapper.Extra.Internal
 							object key = connection.QueryFirst<dynamic>(cmd, obj, transaction, commandTimeout).Id;
 							if (key != null) {
 								insertAutoSync(connection, obj, transaction, commandTimeout);
-								autoKeyProperty.SetValue(obj, key);
+								autoKeySetter(obj, key);
 								return true;
 							}
 							return false;
@@ -722,7 +729,7 @@ namespace Dapper.Extra.Internal
 			else {
 				return (connection, objs, transaction, commandTimeout) =>
 				{
-					SqlInternal.BulkInsert(connection, objs, transaction, TableName, Info.InsertColumns, commandTimeout,
+					ExtraUtil.BulkInsert(connection, objs, transaction, TableName, DataReaderFactory, Info.InsertColumns, commandTimeout,
 						SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.CheckConstraints | SqlBulkCopyOptions.FireTriggers | SqlBulkCopyOptions.TableLock);
 				};
 			}
@@ -744,7 +751,7 @@ namespace Dapper.Extra.Internal
 				{
 					connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 					connection.Execute(selectInsertIntoStagingCmd, null, transaction, commandTimeout);
-					SqlInternal.BulkInsert(connection, objs, transaction, BulkStagingTable, Info.BulkInsertIfNotExistsColumns, commandTimeout,
+					ExtraUtil.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.BulkInsertIfNotExistsColumns, commandTimeout,
 						SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
 					string bulkInsertIfNotExistsCmd = $"{insertIntoCmd}\nSELECT {insertColumns}\nFROM {BulkStagingTable}\nWHERE NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{equalsTables})";
 					int count = connection.Execute(bulkInsertIfNotExistsCmd, null, transaction, commandTimeout);
@@ -828,7 +835,7 @@ namespace Dapper.Extra.Internal
 				{
 					connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 					connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
-					SqlInternal.BulkInsert(connection, objs, transaction, BulkStagingTable, Info.BulkUpdateColumns, commandTimeout,
+					ExtraUtil.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.BulkUpdateColumns, commandTimeout,
 						SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
 					string bulkUpdateCmd = $"UPDATE {TableName}{bulkUpdateSetParams}\nFROM {BulkStagingTable}\nWHERE \t{updateEquals}";
 					int count = connection.Execute(bulkUpdateCmd, null, transaction, commandTimeout);
@@ -909,7 +916,7 @@ namespace Dapper.Extra.Internal
 					{
 						connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 						connection.Execute(selectUpsertIntoStagingCmd, null, transaction, commandTimeout);
-						SqlInternal.BulkInsert(connection, objs, transaction, BulkStagingTable, Info.UpsertColumns, commandTimeout,
+						ExtraUtil.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.UpsertColumns, commandTimeout,
 							SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
 						string bulkUpdateCmd = $"UPDATE {TableName}{bulkUpdateSetParams}\nFROM {BulkStagingTable}\nWHERE \t{updateEquals}";
 						int countUpdate = connection.Execute(bulkUpdateCmd, null, transaction, commandTimeout);

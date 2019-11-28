@@ -68,7 +68,7 @@ namespace Dapper.Extra.Internal
 				}
 			}
 			PropertyInfo[] properties = type.GetProperties(flags);
-			PropertyInfo[] validProperties = properties.Where(SqlInternal.IsValidProperty).ToArray();
+			PropertyInfo[] validProperties = properties.Where(ExtraCrud.IsValidProperty).ToArray();
 			if (!validProperties.Any())
 				throw new InvalidOperationException(type.FullName + " does not have any valid properties.");
 			ReadOnlyAttribute readOnlyAttr = type.GetCustomAttribute<ReadOnlyAttribute>(false);
@@ -150,7 +150,7 @@ namespace Dapper.Extra.Internal
 			}
 			else {
 				KeyColumns = keys.ToArray();
-				if (KeyColumns.Count == 1 && KeyColumns[0].IsAutoKey && SqlInternal.IsValidAutoIncrementType(keys[0].Type)) {
+				if (KeyColumns.Count == 1 && KeyColumns[0].IsAutoKey && ExtraCrud.IsValidAutoIncrementType(keys[0].Type)) {
 					AutoKeyColumn = keys[0];
 				}
 				else if (autoKeyCount != 0 && KeyColumns.Count != autoKeyCount) {

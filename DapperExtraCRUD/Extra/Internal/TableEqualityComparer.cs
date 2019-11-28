@@ -30,6 +30,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Fasterflect;
 
 namespace Dapper.Extra.Internal
 {
@@ -37,11 +38,12 @@ namespace Dapper.Extra.Internal
 	{
 		public TableKeyEqualityComparer(string tableName, SqlColumn equalityColumn)
 		{
-			EqualityColumn = equalityColumn;
+			Getter = equalityColumn.Getter;
 			InitialHash = tableName.GetHashCode() * 31619117;
 		}
 
-		private SqlColumn EqualityColumn { get; set; }
+		//private SqlColumn EqualityColumn { get; set; }
+		private MemberGetter Getter { get; set; }
 		private int InitialHash { get; set; }
 
 		/// <summary>
@@ -52,8 +54,7 @@ namespace Dapper.Extra.Internal
 		/// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
 		public bool Equals(T x, T y)
 		{
-			PropertyInfo property = EqualityColumn.Property;
-			bool success = object.Equals(property.GetValue(x), property.GetValue(y));
+			bool success = object.Equals(Getter(x), Getter(y));
 			return success;
 		}
 
@@ -65,7 +66,7 @@ namespace Dapper.Extra.Internal
 		public int GetHashCode(T obj)
 		{
 			int hashCode = InitialHash;
-			object value = EqualityColumn.Property.GetValue(obj);
+			object value = Getter(obj);
 			if (value != null) {
 				hashCode ^= value.GetHashCode();
 			}
@@ -78,11 +79,12 @@ namespace Dapper.Extra.Internal
 	{
 		public TableEqualityComparer(string tableName, IReadOnlyList<SqlColumn> equalityColumns)
 		{
-			EqualityColumns = equalityColumns;
+			Getters = equalityColumns.Select(c => c.Getter).ToArray();
 			InitialHash = tableName.GetHashCode();
 		}
 
-		private IReadOnlyList<SqlColumn> EqualityColumns { get; set; }
+		//private IReadOnlyList<SqlColumn> EqualityColumns { get; set; }
+		private IReadOnlyList<MemberGetter> Getters { get; set; }
 		private int InitialHash { get; set; }
 
 		/// <summary>
@@ -93,9 +95,8 @@ namespace Dapper.Extra.Internal
 		/// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
 		public bool Equals(T x, T y)
 		{
-			foreach (SqlColumn column in EqualityColumns) {
-				PropertyInfo property = column.Property;
-				if (!object.Equals(property.GetValue(x), property.GetValue(y)))
+			foreach (MemberGetter getter in Getters) {
+				if (!object.Equals(getter(x), getter(y)))
 					return false;
 			}
 			return true;
@@ -109,8 +110,8 @@ namespace Dapper.Extra.Internal
 		public int GetHashCode(T obj)
 		{
 			int hashCode = InitialHash;
-			foreach (SqlColumn column in EqualityColumns) {
-				object value = column.Property.GetValue(obj);
+			foreach (MemberGetter getter in Getters) {
+				object value = getter(obj);
 				hashCode = hashCode * 31619117;
 				if (value != null) {
 					hashCode ^= value.GetHashCode();

@@ -27,10 +27,13 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper.Extra.Internal;
+using static Dapper.SqlMapper;
 
 namespace Dapper.Extra
 {
@@ -42,6 +45,11 @@ namespace Dapper.Extra
 		private static ConcurrentDictionary<Type, object> QueriesCache = new ConcurrentDictionary<Type, object>();
 		private static ConcurrentDictionary<Type, object> KeyQueriesCache = new ConcurrentDictionary<Type, object>();
 
+		/// <summary>
+		/// Creates or gets a cached <see cref="SqlTypeInfo"/>.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <returns>The <see cref="SqlTypeInfo"/>.</returns>
 		public static SqlTypeInfo TypeInfo<T>() where T : class
 		{
 			Type type = typeof(T);
@@ -134,7 +142,7 @@ namespace Dapper.Extra
 		/// <summary>
 		/// Clears the cache of queries and builders for the given type.
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="T">The table type.</typeparam>
 		public static void Purge<T>() where T : class
 		{
 			Type type = typeof(T);
@@ -142,6 +150,129 @@ namespace Dapper.Extra
 			BuilderCache.TryRemove(type, out obj);
 			QueriesCache.TryRemove(type, out obj);
 			KeyQueriesCache.TryRemove(type, out obj);
+		}
+		
+		/// <summary>
+		/// Returns the syntax of the connected database.
+		/// </summary>
+		/// <param name="conn">The connection to use.</param>
+		/// <returns>The syntax of the connected database.</returns>
+		public static SqlSyntax DetectSyntax(IDbConnection conn)
+		{
+			bool notOpen = conn.State != ConnectionState.Open;
+			if (notOpen)
+				conn.Open();
+			SqlSyntax syntax = _DetectSyntax(conn);
+			if (notOpen)
+				conn.Close();
+			return syntax;
+		}
+
+		/// <summary>
+		/// Returns whether a property will be mapped. These must be writable and be of a valid Dapper/SQL type.
+		/// </summary>
+		/// <param name="property">The <see cref="PropertyInfo"/> representing the column.</param>
+		/// <returns>True if the given property will be mapped; otherwise false.</returns>
+		public static bool IsValidProperty(PropertyInfo property)
+		{
+			if (!property.CanWrite)
+				return false;
+			bool success = IsValidType(property.PropertyType);
+			return success;
+		}
+
+		/// <summary>
+		/// Returns whether a property with the given type will be mapped.
+		/// </summary>
+		/// <param name="type">The type to check.</param>
+		/// <returns>True if a property with the given type will be mapped; false otherwise.</returns>
+		public static bool IsValidType(Type type)
+		{
+			if (type == typeof(object))
+				return false;
+			//type = Nullable.GetUnderlyingType(type) ?? type;
+			if (ExtraUtil.DbTypeMap.ContainsKey(type) || type.IsEnum)
+				return true;
+			if (type.IsGenericType && typeof(IEnumerable<>).IsAssignableFrom(type)) {
+				Type genericArgType = type.GetGenericArguments()[0];
+				return genericArgType == typeof(byte);
+			}
+			bool success = type.GetInterfaces().Any(ty => ty == typeof(ITypeHandler));
+			return success;
+		}
+
+		internal static readonly IReadOnlyCollection<Type> ValidAutoKeyTypes = new List<Type>()
+		{
+			typeof(int),
+			typeof(long),
+			typeof(short),
+			typeof(byte),
+			typeof(uint),
+			typeof(ulong),
+			typeof(ushort),
+			typeof(sbyte),
+		};
+
+		/// <summary>
+		/// Returns whether the given type is valid for an autoincrement key.
+		/// </summary>
+		/// <param name="type">The type to check.</param>
+		/// <returns>True if the type is valid for an autoincrement key; false otherwise.</returns>
+		public static bool IsValidAutoIncrementType(Type type)
+		{
+			bool success = ValidAutoKeyTypes.Contains(type) || type.IsEnum;
+			return success;
+		}
+
+		private static SqlSyntax _DetectSyntax(IDbConnection conn)
+		{
+			// SQLServer
+			try {
+				//int c = conn.QuerySingle<int>("SELECT 1 as [x]");
+				//int? b = conn.QueryFirstOrDefault<int?>("SELECT CAST(SCOPE_IDENTITY() as INT) as [Id]");
+				string s = conn.QuerySingle<string>("SELECT 'a' + 'b'");
+				int a = conn.QuerySingle<int>("SELECT TOP(1) * FROM (SELECT 1) as X(Id)");
+				//int a = conn.QuerySingle<int>("SELECT SQUARE(1)");
+				//DateTime date = conn.QuerySingle<DateTime>("SELECT GETDATE()");
+				//string s = conn.QuerySingle<string>("SELECT RTRIM(LTRIM(' a '))");
+				return SqlSyntax.SQLServer;
+			}
+			catch { }
+
+			// MySQL
+			try {
+				int z = conn.QuerySingle<int>("SELECT 1 as `x`");
+				int? c = conn.QueryFirstOrDefault<int?>("SELECT LAST_INSERT_ID() as Id");
+				//decimal b = conn.QuerySingle<decimal>("SELECT POW(1,1)"); // MySQL
+				//string s = conn.QuerySingle<string>("SELECT @@version"); // SQLServer + MySQL
+				//int a = conn.QuerySingle<int>("SELECT 1 LIMIT 1");
+				return SqlSyntax.MySQL;
+			}
+			catch { }
+
+			try {
+				int? a = conn.QueryFirstOrDefault<int?>("SELECT LAST_INSERT_ROWID() as Id");
+				return SqlSyntax.SQLite;
+			}
+			catch { }
+
+			// PostgreSQL
+			try {
+				string s = conn.QuerySingle<string>("'a' || 'b'"); // Oracle + PostgreSQL
+																   //DateTime now = conn.QuerySingle<DateTime>("NOW()"); // PostgreSQL + MySQL
+				int? a = conn.QueryFirstOrDefault<int?>("SELECT LASTVAL() as Id");
+				return SqlSyntax.PostgreSQL;
+			}
+			catch { }
+
+			// Oracle
+			//try {
+			//	int a = conn.QuerySingle<int>("SELECT BITAND(1,1)");
+			//	decimal b = conn.QuerySingle<decimal>("POWER(1,1)");
+			//	return SqlSyntax.Oracle;
+			//}
+			//catch { }
+			throw new InvalidOperationException("Unknown RDBMS");
 		}
 	}
 }

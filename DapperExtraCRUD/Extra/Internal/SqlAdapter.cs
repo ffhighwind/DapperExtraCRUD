@@ -117,7 +117,7 @@ namespace Dapper.Extra.Internal
 					SelectLimitStart = "";
 					SelectLimitEnd = "\nLIMIT {0}";
 					break;
-				/*case SqlSyntax.Oracle:
+				/** case SqlSyntax.Oracle:
 					QuoteLeft = '\'';
 					QuoteRight = '\'';
 					EscapeQuoteRight = "''";
@@ -140,13 +140,7 @@ END;";
 					SelectIntIdentityQuery = "SELECT CAST(SCOPE_IDENTITY() as INT) as [Id];";
 					SelectIdentityLongQuery = "SELECT CAST(SCOPE_IDENTITY() as BIGINT) as [Id];";
 					DropTempTableIfExistsQuery = @"
-IF OBJECT_ID('tempdb..{0}') IS NOT NULL DROP TABLE {0}";/*@"
-IF EXISTS (
-	SELECT * from INFORMATION_SCHEMA.TABLES 
-WHERE TABLE_NAME = '{0}' 
-	AND TABLE_SCHEMA = '{1}'
-)
-DROP TABLE {1}.{0};";*/
+IF OBJECT_ID('tempdb..{0}') IS NOT NULL DROP TABLE {0}";
 					TruncateTableQuery = "TRUNCATE TABLE {0};";
 					TempTableName = "#{0}";
 					CreateTempTable = "";

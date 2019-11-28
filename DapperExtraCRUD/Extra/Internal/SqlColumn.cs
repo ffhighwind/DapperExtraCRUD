@@ -32,6 +32,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper.Extra.Annotations;
+using Fasterflect;
 
 namespace Dapper.Extra.Internal
 {
@@ -47,22 +48,32 @@ namespace Dapper.Extra.Internal
 		{
 			Property = property;
 			ColumnName = columnName;
+			if(property.CanRead)
+				Getter = Fasterflect.PropertyExtensions.DelegateForGetPropertyValue(property.DeclaringType, property.Name);
+			if(property.CanWrite)
+				Setter = Fasterflect.PropertyExtensions.DelegateForSetPropertyValue(property.DeclaringType, property.Name);
 		}
 
 		/// <summary>
 		/// The <see cref="PropertyInfo"/> that this column represents.
 		/// </summary>
 		public PropertyInfo Property { get; private set; }
-
 		/// <summary>
 		/// The <see cref="PropertyInfo"/> type.
 		/// </summary>
 		public Type Type => Property.PropertyType;
-
+		/// <summary>
+		/// Gets the value of the property for an object.
+		/// </summary>
+		public MemberGetter Getter { get; private set; }
+		/// <summary>
+		/// Sets the value of athe property for an object.
+		/// </summary>
+		public MemberSetter Setter { get; private set; }
 		/// <summary>
 		/// The <see cref="DbType"/> that represents this column's type.
 		/// </summary>
-		public DbType DbType => SqlInternal.TryGetDbType(Property.PropertyType, out DbType dbType) ? dbType : DbType.Object;
+		public DbType DbType => ExtraUtil.TryGetDbType(Property.PropertyType, out DbType dbType) ? dbType : DbType.Object;
 		/// <summary>
 		/// The name of the column. This is quoted using the <see cref="SqlAdapter"/> if necessary.
 		/// </summary>

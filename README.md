@@ -225,7 +225,6 @@ these are accessed. This can be prevented by storing a reference to each delegat
 
 # Future Plans
 
-* IL Getters/Setters
 * ITypeHandler tests
 * Other RDBMS tests (SqlSyntax)
 * Thread-safe bulk operations. These are thread safe for SQL Server, but not others.

@@ -1413,6 +1413,23 @@ namespace Dapper
 		{
 			await Task.Run(() => DeleteAll<T>(connection, transaction, commandTimeout));
 		}
+
+		/// <summary>
+		/// Selects the rows with the given keys asynchronously.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <param name="connection">The connection to query on.</param>
+		/// <param name="obj">The objects to select.</param>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given keys.</returns>
+		public static async Task<IEnumerable<T>> BulkGetAsync<T>(this SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			return await Task.Run(() => BulkGet<T>(connection, objs, transaction, commandTimeout));
+		}
 		#endregion Delegates <T> Async
 	}
+	//getdistinctlimitasync
+	//deletelist
 }

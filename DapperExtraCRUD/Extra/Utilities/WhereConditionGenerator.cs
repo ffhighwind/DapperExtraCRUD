@@ -46,10 +46,10 @@ namespace Dapper.Extra.Utilities
 	public sealed class WhereConditionGenerator<T> : ExpressionVisitor
 		where T : class
 	{
-		protected readonly string TableName;
-		protected StringBuilder Results = new StringBuilder(150);
-		protected ParameterExpression InputParam;
-		protected IDictionary<string, object> OutputParam = new ExpandoObject();
+		private readonly string TableName;
+		private StringBuilder Results = new StringBuilder(150);
+		private ParameterExpression InputParam;
+		private IDictionary<string, object> OutputParam = new ExpandoObject();
 
 		private WhereConditionGenerator() : base()
 		{
@@ -202,7 +202,7 @@ namespace Dapper.Extra.Utilities
 		protected override Expression VisitDefault(DefaultExpression node)
 		{
 			// default(a)
-			if (!SqlInternal.SqlDefaultValue(node.Type, out object value)) {
+			if (!ExtraUtil.SqlDefaultValue(node.Type, out object value)) {
 				if (value == null)
 					throw new InvalidOperationException("Invalid default type: " + node.Type.FullName);
 				AddParam(value);
@@ -314,7 +314,7 @@ namespace Dapper.Extra.Utilities
 			return null;
 		}
 
-		protected void CompileListExpression(Type type, Expression node, IEnumerable<Expression> exprs)
+		private void CompileListExpression(Type type, Expression node, IEnumerable<Expression> exprs)
 		{
 			// new a[] { b, c, d }
 			Type underlying = Nullable.GetUnderlyingType(type) ?? type;
@@ -350,12 +350,12 @@ namespace Dapper.Extra.Utilities
 			AddParam(list);
 		}
 
-		protected object CompileValueExpression(Expression expr)
+		private object CompileValueExpression(Expression expr)
 		{
 			return expr is ConstantExpression c ? c.Value : Expression.Lambda(expr).Compile().DynamicInvoke();
 		}
 
-		protected void CompileExpression(Expression expr)
+		private void CompileExpression(Expression expr)
 		{
 			object obj;
 			Type type;
@@ -370,7 +370,7 @@ namespace Dapper.Extra.Utilities
 			CompileValueExpression(expr, type, obj);
 		}
 
-		protected void CompileValueExpression(Expression expr, Type type, object obj)
+		private void CompileValueExpression(Expression expr, Type type, object obj)
 		{
 			TypeCode typeCode = Type.GetTypeCode(type);
 			string value;
