@@ -1,15 +1,14 @@
 # Description:
 
-A thread-safe Dapper extension that includes the functionality of Dapper-Plus, Dapper.SimpleCRUD, and more. 
-Unique additions include new attributes (Versioning keys: MatchUpdate, MatchDelete), AutoSync, Distinct, 
-Top/Limit, Upsert, Insert If Not Exists, and Bulk operations. It also exposes most of the underlying
-metadata to allow customization and improved performance.
+A thread-safe Dapper extension that was inspired by Dapper.SimpleCRUD. Unique additions include 
+Bulk operations, AutoSync, new attributes (Versioning keys: MatchUpdate, MatchDelete), Distinct, 
+Top/Limit, Upsert, and Insert If Not Exists. It also exposes most of the underlying metadata to 
+allow customization and improved performance.
 
 # Example:
 
 #### Note: 
-This example is not a recommendation on how to design a database table. It is usually better 
-to use triggers, default values, and stored procedures when faced with certain constraints.
+This example is not a recommendation on how to design a database table.
 
 ```sql
 CREATE TABLE [dbo].[Users](
@@ -237,20 +236,6 @@ these are accessed. This can be prevented by storing a reference to each delegat
 
 Copyright (c) 2018 Wesley Hamilton
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
