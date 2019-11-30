@@ -24,15 +24,13 @@
 // SOFTWARE.
 #endregion
 
+using Dapper.Extra.Internal;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using Dapper.Extra.Internal;
 using static Dapper.SqlMapper;
 
 namespace Dapper.Extra
@@ -40,10 +38,8 @@ namespace Dapper.Extra
 	public static class ExtraCrud
 	{
 		public static SqlSyntax Syntax { get; set; } = SqlSyntax.SQLServer;
-		private static ConcurrentDictionary<Type, object> TypeInfoCache = new ConcurrentDictionary<Type, object>();
-		private static ConcurrentDictionary<Type, object> BuilderCache = new ConcurrentDictionary<Type, object>();
-		private static ConcurrentDictionary<Type, object> QueriesCache = new ConcurrentDictionary<Type, object>();
-		private static ConcurrentDictionary<Type, object> KeyQueriesCache = new ConcurrentDictionary<Type, object>();
+		private static readonly ConcurrentDictionary<Type, object> BuilderCache = new ConcurrentDictionary<Type, object>();
+		private static readonly ConcurrentDictionary<Type, object> QueriesCache = new ConcurrentDictionary<Type, object>();
 
 		/// <summary>
 		/// Creates or gets a cached <see cref="SqlTypeInfo"/>.
@@ -52,12 +48,7 @@ namespace Dapper.Extra
 		/// <returns>The <see cref="SqlTypeInfo"/>.</returns>
 		public static SqlTypeInfo TypeInfo<T>() where T : class
 		{
-			Type type = typeof(T);
-			if (TypeInfoCache.TryGetValue(type, out object obj)) {
-				return (SqlTypeInfo) obj;
-			}
-			SqlTypeInfo typeInfo = new SqlTypeInfo(type);
-			return (SqlTypeInfo) TypeInfoCache.GetOrAdd(type, typeInfo);
+			return Builder<T>().Info;
 		}
 
 		/// <summary>
@@ -69,23 +60,11 @@ namespace Dapper.Extra
 		{
 			Type type = typeof(T);
 			if (BuilderCache.TryGetValue(type, out object obj)) {
-				return (SqlBuilder<T>) obj;
+				return (SqlBuilder<T>)obj;
 			}
-			SqlTypeInfo typeInfo = TypeInfo<T>();
+			SqlTypeInfo typeInfo = new SqlTypeInfo(type);
 			SqlBuilder<T> builder = new SqlBuilder<T>(typeInfo);
-			return (SqlBuilder<T>) BuilderCache.GetOrAdd(type, builder);
-		}
-
-		/// <summary>
-		/// Creates or gets a cached <see cref="SqlBuilder{T, KeyType}"/>.
-		/// </summary>
-		/// <typeparam name="T">The table type.</typeparam>
-		/// <typeparam name="KeyType">The key type.</typeparam>
-		/// <returns>The <see cref="SqlBuilder{T, KeyType}"/>.</returns>
-		public static SqlBuilder<T, KeyType> Builder<T, KeyType>() where T : class
-		{
-			SqlBuilder<T> builder = Builder<T>();
-			return builder.Create<KeyType>();
+			return (SqlBuilder<T>)BuilderCache.GetOrAdd(type, builder);
 		}
 
 		/// <summary>
@@ -97,26 +76,10 @@ namespace Dapper.Extra
 		{
 			Type type = typeof(T);
 			if (QueriesCache.TryGetValue(type, out object obj)) {
-				return (SqlQueries<T>) obj;
+				return (SqlQueries<T>)obj;
 			}
 			ISqlQueries<T> queries = Builder<T>().Queries;
-			return (SqlQueries<T>) QueriesCache.GetOrAdd(type, queries);
-		}
-
-		/// <summary>
-		/// Creates or gets the queries and commands for a given type.
-		/// </summary>
-		/// <typeparam name="T">The table type.</typeparam>
-		/// <typeparam name="KeyType">The key type.</typeparam>
-		/// <returns>The queries for the given type.</returns>
-		public static SqlQueries<T, KeyType> Queries<T, KeyType>() where T : class
-		{
-			Type type = typeof(T);
-			if (KeyQueriesCache.TryGetValue(type, out object obj)) {
-				return (SqlQueries<T, KeyType>) obj;
-			}
-			ISqlQueries<T, KeyType> queries = Builder<T, KeyType>().Queries;
-			return (SqlQueries<T, KeyType>) KeyQueriesCache.GetOrAdd(type, queries);
+			return (SqlQueries<T>)QueriesCache.GetOrAdd(type, queries);
 		}
 
 		/// <summary>
@@ -133,10 +96,8 @@ namespace Dapper.Extra
 		/// </summary>
 		public static void PurgeCache()
 		{
-			TypeInfoCache.Clear();
 			BuilderCache.Clear();
 			QueriesCache.Clear();
-			KeyQueriesCache.Clear();
 		}
 
 		/// <summary>
@@ -146,12 +107,10 @@ namespace Dapper.Extra
 		public static void Purge<T>() where T : class
 		{
 			Type type = typeof(T);
-			TypeInfoCache.TryRemove(type, out object obj);
-			BuilderCache.TryRemove(type, out obj);
+			BuilderCache.TryRemove(type, out object obj);
 			QueriesCache.TryRemove(type, out obj);
-			KeyQueriesCache.TryRemove(type, out obj);
 		}
-		
+
 		/// <summary>
 		/// Returns the syntax of the connected database.
 		/// </summary>

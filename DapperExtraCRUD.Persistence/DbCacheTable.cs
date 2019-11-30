@@ -41,26 +41,32 @@ using Dapper.Extra.Utilities;
 
 namespace Dapper.Extra.Persistence
 {
-	public sealed class DbCacheTable<T> : ICacheTable<T, CacheItem<T>>, ICacheTable, IReadOnlyDictionary<T, CacheItem<T>> // ICacheStorage<T, T>
+	public sealed class DbCacheTable<T> : ICacheTable<T, CacheItem<T>>, ICacheTable, IReadOnlyDictionary<T, CacheItem<T>>
 		where T : class
 	{
 		internal DbCacheTable(string connectionString)
 		{
-			if (TableData<T>.KeyProperties.Count == 0)
+			var info = ExtraCrud.TypeInfo<T>();
+			if (info.KeyColumns.Count == 0)
 				throw new InvalidOperationException(typeof(T).FullName + " is not usable with " + nameof(DbCache) + " without a valid key.");
+			Cache = new Dictionary<T, CacheItem<T>>(ExtraCrud.EqualityComparer<T>());
 			DAO = new DataAccessObject<T>(connectionString);
 			AAO = new AutoAccessObject<T>(connectionString);
 			Access = AAO;
 			AutoCache = new CacheAutoStorage<T>(Cache);
 			Storage = AutoCache;
+			CreateFromKey = Builder.CreateFromKey;
 		}
 
-		private readonly IDictionary<T, CacheItem<T>> Cache = new Dictionary<T, CacheItem<T>>(TableData<T>.EqualityComparer);
+		private readonly Func<object, T> CreateFromKey;
+
+		private readonly IDictionary<T, CacheItem<T>> Cache;
 		private ICacheStorage<T> Storage;
 		private readonly CacheAutoStorage<T> AutoCache;
 		private IAccessObjectSync<T> Access;
 		private readonly DataAccessObject<T> DAO;
 		private readonly AutoAccessObject<T> AAO;
+		private readonly SqlBuilder<T> Builder;
 
 		public CacheItem<T> Find(T key, int commandTimeout = 30)
 		{
@@ -73,23 +79,23 @@ namespace Dapper.Extra.Persistence
 			return value;
 		}
 
-		public CacheItem<T> Find<KeyType>(KeyType key, int commandTimeout = 30)
+		public CacheItem<T> Find(object key, int commandTimeout = 30)
 		{
-			T obj = TableData<T>.CreateObject<KeyType>(key);
+			T obj = CreateFromKey(key);
 			CacheItem<T> ret = Find(obj, commandTimeout);
 			return ret;
 		}
 
-		public CacheItem<T> RemoveKey<KeyType>(KeyType key)
+		public CacheItem<T> RemoveKey(object key)
 		{
-			T obj = TableData<T>.CreateObject<KeyType>(key);
+			T obj = CreateFromKey(key);
 			CacheItem<T> ret = Remove(obj);
 			return ret;
 		}
 
-		public void RemoveKeys<KeyType>(IEnumerable<KeyType> keys)
+		public void RemoveKeys(IEnumerable<object> keys)
 		{
-			IEnumerable<T> objs = keys.Select(key => TableData<T>.CreateObject<KeyType>(key));
+			IEnumerable<T> objs = keys.Select(key => CreateFromKey(key));
 			foreach (T obj in objs) {
 				Remove(obj);
 			}
@@ -209,7 +215,7 @@ namespace Dapper.Extra.Persistence
 			Storage.Remove(values);
 		}
 
-		public void RemoveKeys(IEnumerable<T> keys)
+		public void RemoveKeys(IEnumerable<object> keys)
 		{
 			Storage.RemoveKeys(keys);
 		}
@@ -303,9 +309,7 @@ namespace Dapper.Extra.Persistence
 		public int BulkUpdate(IEnumerable<T> objs, int commandTimeout = 30)
 		{
 			int count = Access.BulkUpdate(objs, commandTimeout);
-			if(TableData<T>.UpdateKeyProperties.Count == 0) {
-				Storage.AddOrUpdate(objs);
-			}
+			Storage.AddOrUpdate(objs);
 			return count;
 		}
 
@@ -330,9 +334,9 @@ namespace Dapper.Extra.Persistence
 			return result;
 		}
 
-		public IEnumerable<CacheItem<T>> GetDistinct(string whereCondition = "", object param = null, int commandTimeout = 30)
+		public IEnumerable<CacheItem<T>> GetDistinct(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			IEnumerable<T> list = Access.GetDistinct(whereCondition, param, commandTimeout);
+			IEnumerable<T> list = Access.GetDistinct(columnFilter, whereCondition, param, commandTimeout);
 			List<CacheItem<T>> result = Storage.AddOrUpdate(list);
 			return result;
 		}
@@ -359,7 +363,7 @@ namespace Dapper.Extra.Persistence
 		public bool Delete<KeyType>(KeyType key, int commandTimeout = 30)
 		{
 			bool success = Access.Delete<KeyType>(key, commandTimeout);
-			T obj = TableData<T>.CreateObject<KeyType>(key);
+			T obj = CreateFromKey(key);
 			CacheItem<T> ret = Storage.Remove(obj);
 			return success;
 		}
@@ -389,7 +393,7 @@ namespace Dapper.Extra.Persistence
 			else {
 				Access.BulkInsert(objs, commandTimeout);
 				list = TableData<T>.InsertKeyProperties.Count != 0
-					? Access.BulkGet(objs, commandTimeout) 
+					? Access.BulkGet(objs, commandTimeout)
 					: objs;
 			}
 			List<CacheItem<T>> result = Storage.Add(list);

@@ -24,14 +24,13 @@
 // SOFTWARE.
 #endregion
 
+using Dapper.Extra.Internal;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Dapper.Extra.Internal;
 
 namespace Dapper.Extra.Utilities
 {
@@ -47,11 +46,9 @@ namespace Dapper.Extra.Utilities
 			ConnectionString = connectionString;
 			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
 			Queries = builder.Queries;
-			KeyQueries = builder.KeyBuilder?.QueriesObject;
 		}
 
 		protected ISqlQueries<T> Queries { get; }
-		protected object KeyQueries { get; }
 
 		public string ConnectionString { get; set; }
 
@@ -191,28 +188,29 @@ namespace Dapper.Extra.Utilities
 			return list;
 		}
 
-		public bool Delete<KeyType>(IDbTransaction transaction, KeyType key, int commandTimeout = 30)
+		public bool Delete(IDbTransaction transaction, object key, int commandTimeout = 30)
 		{
-			bool success = ((ISqlQueries<T, KeyType>) KeyQueries).Delete(transaction.Connection, key, transaction, commandTimeout);
+			bool success = Queries.DeleteKey(transaction.Connection, key, transaction, commandTimeout);
 			return success;
 		}
 
-		public T Get<KeyType>(IDbTransaction transaction, KeyType key, int commandTimeout = 30)
+		public T Get(IDbTransaction transaction, object key, int commandTimeout = 30)
 		{
-			T obj = ((ISqlQueries<T, KeyType>) KeyQueries).Get(transaction.Connection, key, transaction, commandTimeout);
+			T obj = Queries.GetKey(transaction.Connection, key, transaction, commandTimeout);
 			return obj;
 		}
 
-		public int BulkDelete<KeyType>(SqlTransaction transaction, IEnumerable<KeyType> keys, int commandTimeout = 30)
+		public int BulkDelete(SqlTransaction transaction, IEnumerable<object> keys, int commandTimeout = 30)
 		{
-			int count = ((ISqlQueries<T, KeyType>) KeyQueries).BulkDelete(transaction.Connection, keys, transaction, commandTimeout);
+			int count = Queries.BulkDeleteKeys(transaction.Connection, keys, transaction, commandTimeout);
 			return count;
 		}
 
 		public IEnumerable<KeyType> GetKeys<KeyType>(IDbTransaction transaction, string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			IEnumerable<KeyType> keys = ((ISqlQueries<T, KeyType>) KeyQueries).GetKeys(transaction.Connection, whereCondition, param, transaction, true, commandTimeout);
-			return keys;
+			IEnumerable<object> keys = Queries.GetKeysKeys(transaction.Connection, whereCondition, param, transaction, true, commandTimeout);
+			IEnumerable<KeyType> castedKeys = keys.Select(k => (KeyType)k);
+			return castedKeys;
 		}
 
 		public List<T> BulkGet(SqlTransaction transaction, IEnumerable<T> keys, int commandTimeout = 30)
@@ -221,9 +219,9 @@ namespace Dapper.Extra.Utilities
 			return list;
 		}
 
-		public List<T> BulkGet<KeyType>(SqlTransaction transaction, IEnumerable<KeyType> keys, int commandTimeout = 30)
+		public List<T> BulkGet(SqlTransaction transaction, IEnumerable<object> keys, int commandTimeout = 30)
 		{
-			List<T> list = ((ISqlQueries<T, KeyType>) KeyQueries).BulkGet(transaction.Connection, keys, transaction, commandTimeout);
+			List<T> list = Queries.BulkGetKeys(transaction.Connection, keys, transaction, commandTimeout);
 			return list;
 		}
 		#endregion  ITransactionAccessObjectSync<T>
@@ -324,19 +322,19 @@ namespace Dapper.Extra.Utilities
 			return await Task.Run(() => GetDistinctLimit(transaction, limit, whereCondition, param, commandTimeout));
 		}
 
-		public async Task<bool> DeleteAsync<KeyType>(IDbTransaction transaction, KeyType key, int commandTimeout = 30)
+		public async Task<bool> DeleteAsync(IDbTransaction transaction, object key, int commandTimeout = 30)
 		{
-			return await Task.Run(() => Delete<KeyType>(transaction, key, commandTimeout));
+			return await Task.Run(() => Delete(transaction, key, commandTimeout));
 		}
 
-		public async Task<T> GetAsync<KeyType>(IDbTransaction transaction, KeyType key, int commandTimeout = 30)
+		public async Task<T> GetAsync(IDbTransaction transaction, object key, int commandTimeout = 30)
 		{
-			return await Task.Run(() => Get<KeyType>(transaction, key, commandTimeout));
+			return await Task.Run(() => Get(transaction, key, commandTimeout));
 		}
 
-		public async Task<int> BulkDeleteAsync<KeyType>(SqlTransaction transaction, IEnumerable<KeyType> keys, int commandTimeout = 30)
+		public async Task<int> BulkDeleteAsync<KeyType>(SqlTransaction transaction, IEnumerable<object> keys, int commandTimeout = 30)
 		{
-			return await Task.Run(() => BulkDelete<KeyType>(transaction, keys, commandTimeout));
+			return await Task.Run(() => BulkDelete(transaction, keys, commandTimeout));
 		}
 
 		public async Task<IEnumerable<KeyType>> GetKeysAsync<KeyType>(IDbTransaction transaction, string whereCondition = "", object param = null, int commandTimeout = 30)
@@ -349,9 +347,9 @@ namespace Dapper.Extra.Utilities
 			return await Task.Run(() => BulkGet(transaction, keys, commandTimeout));
 		}
 
-		public async Task<List<T>> BulkGetAsync<KeyType>(SqlTransaction transaction, IEnumerable<KeyType> keys, int commandTimeout = 30)
+		public async Task<List<T>> BulkGetAsync(SqlTransaction transaction, IEnumerable<object> keys, int commandTimeout = 30)
 		{
-			return await Task.Run(() => BulkGet<KeyType>(transaction, keys, commandTimeout));
+			return await Task.Run(() => BulkGet(transaction, keys, commandTimeout));
 		}
 		#endregion  ITransactionAccessObjectAsync<T>
 
@@ -531,26 +529,26 @@ namespace Dapper.Extra.Utilities
 			}
 		}
 
-		public override bool Delete<KeyType>(KeyType key, int commandTimeout = 30)
+		public override bool Delete(object key, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				bool success = ((ISqlQueries<T, KeyType>) KeyQueries).Delete(conn, key, null, commandTimeout);
+				bool success = Queries.DeleteKey(conn, key, null, commandTimeout);
 				return success;
 			}
 		}
 
-		public override T Get<KeyType>(KeyType key, int commandTimeout = 30)
+		public override T Get(object key, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				T obj = ((ISqlQueries<T, KeyType>) KeyQueries).Get(conn, key, null, commandTimeout);
+				T obj = Queries.GetKey(conn, key, null, commandTimeout);
 				return obj;
 			}
 		}
 
-		public override int BulkDelete<KeyType>(IEnumerable<KeyType> keys, int commandTimeout = 30)
+		public override int BulkDelete(IEnumerable<object> keys, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				int count = ((ISqlQueries<T, KeyType>) KeyQueries).BulkDelete(conn, keys, null, commandTimeout);
+				int count = Queries.BulkDeleteKeys(conn, keys, null, commandTimeout);
 				return count;
 			}
 		}
@@ -558,8 +556,9 @@ namespace Dapper.Extra.Utilities
 		public override IEnumerable<KeyType> GetKeys<KeyType>(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				IEnumerable<KeyType> keys = ((ISqlQueries<T, KeyType>) KeyQueries).GetKeys(conn, whereCondition, param, null, true, commandTimeout);
-				return keys;
+				IEnumerable<object> keys = Queries.GetKeysKeys(conn, whereCondition, param, null, true, commandTimeout);
+				IEnumerable<KeyType> castedKeys = keys.Select(k => (KeyType)k);
+				return castedKeys;
 			}
 		}
 
@@ -571,10 +570,10 @@ namespace Dapper.Extra.Utilities
 			}
 		}
 
-		public override List<T> BulkGet<KeyType>(IEnumerable<KeyType> keys, int commandTimeout = 30)
+		public override List<T> BulkGet(IEnumerable<object> keys, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				List<T> list = ((ISqlQueries<T, KeyType>) KeyQueries).BulkGet(conn, keys, null, commandTimeout);
+				List<T> list = Queries.BulkGetKeys(conn, keys, null, commandTimeout);
 				return list;
 			}
 		}

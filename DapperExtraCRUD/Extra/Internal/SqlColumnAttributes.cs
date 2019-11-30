@@ -24,11 +24,6 @@
 // SOFTWARE.
 #endregion
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Dapper.Extra.Internal
 {
@@ -46,7 +41,7 @@ namespace Dapper.Extra.Internal
 		IgnoreDelete = 1 << 5,
 		MatchDelete = 1 << 6,
 		MatchUpdate = 1 << 7,
-		NotMapped = IgnoreSelect | IgnoreInsert | IgnoreUpdate | IgnoreDelete, 
+		NotMapped = IgnoreSelect | IgnoreInsert | IgnoreUpdate | IgnoreDelete,
 		InsertAutoSync = 1 << 8,
 		UpdateAutoSync = 1 << 9,
 	}

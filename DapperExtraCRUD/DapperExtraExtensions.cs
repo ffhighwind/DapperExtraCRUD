@@ -24,17 +24,13 @@
 // SOFTWARE.
 #endregion
 
+using Dapper.Extra;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
 using System.Threading.Tasks;
-using Dapper.Extra;
-using Dapper.Extra.Utilities;
 
 namespace Dapper
 {
@@ -45,16 +41,15 @@ namespace Dapper
 		/// Deletes the rows with the given keys.
 		/// </summary>
 		/// <typeparam name="T">The table type.</typeparam>
-		/// <typeparam name="KeyType">The key type.</typeparam>
 		/// <param name="connection">The connection to query on.</param>
 		/// <param name="keys">The keys for the rows to delete.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The number of deleted rows.</returns>
-		public static int BulkDelete<T, KeyType>(this SqlConnection connection, IEnumerable<KeyType> keys, SqlTransaction transaction = null, int commandTimeout = 30)
+		public static int BulkDelete<T>(this SqlConnection connection, IEnumerable<object> keys, SqlTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			int count = ExtraCrud.Queries<T, KeyType>().BulkDelete(transaction.Connection, keys, transaction, commandTimeout);
+			int count = ExtraCrud.Queries<T>().BulkDeleteKeys(connection, keys, transaction, commandTimeout);
 			return count;
 		}
 
@@ -62,16 +57,15 @@ namespace Dapper
 		/// Deletes the row with the given key.
 		/// </summary>
 		/// <typeparam name="T">The table type.</typeparam>
-		/// <typeparam name="KeyType">The key type.</typeparam>
 		/// <param name="connection">The connection to query on.</param>
 		/// <param name="key">The key of the row to delete.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>True if the row was deleted; false otherwise.</returns>
-		public static bool Delete<T, KeyType>(this IDbConnection connection, KeyType key, IDbTransaction transaction = null, int commandTimeout = 30)
+		public static bool Delete<T>(this IDbConnection connection, object key, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			bool success = ExtraCrud.Queries<T, KeyType>().Delete(transaction.Connection, key, transaction, commandTimeout);
+			bool success = ExtraCrud.Queries<T>().DeleteKey(connection, key, transaction, commandTimeout);
 			return success;
 		}
 
@@ -79,16 +73,15 @@ namespace Dapper
 		/// Selects the rows with the given keys.
 		/// </summary>
 		/// <typeparam name="T">The table type.</typeparam>
-		/// <typeparam name="KeyType">The key type.</typeparam>
 		/// <param name="connection">The connection to query on.</param>
 		/// <param name="keys">The keys of the rows to select.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows with the given keys.</returns>
-		public static IEnumerable<T> BulkGet<T, KeyType>(this IDbConnection connection, IEnumerable<KeyType> keys, IDbTransaction transaction = null, int commandTimeout = 30)
+		public static IEnumerable<T> BulkGet<T>(this IDbConnection connection, IEnumerable<object> keys, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			IEnumerable<T> list = ExtraCrud.Queries<T, KeyType>().BulkGet(connection, keys, transaction, commandTimeout);
+			IEnumerable<T> list = ExtraCrud.Queries<T>().BulkGetKeys(connection, keys, transaction, commandTimeout);
 			return list;
 		}
 
@@ -102,10 +95,10 @@ namespace Dapper
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The row with the given key.</returns>
-		public static T Get<T, KeyType>(this IDbConnection connection, KeyType key, IDbTransaction transaction = null, int commandTimeout = 30)
+		public static T Get<T>(this IDbConnection connection, object key, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			T value = ExtraCrud.Queries<T, KeyType>().Get(transaction.Connection, key, transaction, commandTimeout);
+			T value = ExtraCrud.Queries<T>().GetKey(connection, key, transaction, commandTimeout);
 			return value;
 		}
 
@@ -124,8 +117,9 @@ namespace Dapper
 		public static IEnumerable<KeyType> GetKeys<T, KeyType>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			IEnumerable<KeyType> keys = ExtraCrud.Queries<T, KeyType>().GetKeys(transaction.Connection, whereCondition, param, transaction, buffered, commandTimeout);
-			return keys;
+			IEnumerable<object> keys = ExtraCrud.Queries<T>().GetKeysKeys(connection, whereCondition, param, transaction, buffered, commandTimeout);
+			IEnumerable<KeyType> castedKeys = keys.Select(k => (KeyType)k);
+			return castedKeys;
 		}
 
 		/// <summary>
@@ -141,113 +135,11 @@ namespace Dapper
 		public static IEnumerable<KeyType> GetKeys<T, KeyType>(this IDbConnection connection, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			IEnumerable<KeyType> keys = ExtraCrud.Queries<T, KeyType>().GetKeys(transaction.Connection, "", null, transaction, buffered, commandTimeout);
-			return keys;
-		}
-		#endregion Delegates <T, KeyType> Sync
-
-		#region Delegates <T, KeyType> Async
-		/// <summary>
-		/// Deletes the rows with the given keys asynchronously.
-		/// </summary>
-		/// <typeparam name="T">The table type.</typeparam>
-		/// <typeparam name="KeyType">The key type.</typeparam>
-		/// <param name="connection">The connection to query on.</param>
-		/// <param name="keys">The keys for the rows to delete.</param>
-		/// <param name="transaction">The transaction to use for this query.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The number of deleted rows.</returns>
-		public static async Task<int> BulkDeleteAsync<T, KeyType>(this SqlConnection connection, IEnumerable<KeyType> keys, SqlTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			return await Task.Run(() => BulkDelete<T, KeyType>(connection, keys, transaction, commandTimeout));
+			IEnumerable<object> keys = ExtraCrud.Queries<T>().GetKeysKeys(connection, "", null, transaction, buffered, commandTimeout);
+			IEnumerable<KeyType> castedKeys = keys.Select(k => (KeyType)k);
+			return castedKeys;
 		}
 
-		/// <summary>
-		/// Deletes the row with the given key asynchronously.
-		/// </summary>
-		/// <typeparam name="T">The table type.</typeparam>
-		/// <typeparam name="KeyType">The key type.</typeparam>
-		/// <param name="connection">The connection to query on.</param>
-		/// <param name="key">The key of the row to delete.</param>
-		/// <param name="transaction">The transaction to use for this query.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>True if the row was deleted; false otherwise.</returns>
-		public static async Task<bool> DeleteAsync<T, KeyType>(this IDbConnection connection, KeyType key, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			return await Task.Run(() => Delete<T, KeyType>(connection, key, transaction, commandTimeout));
-		}
-
-		/// <summary>
-		/// Selects the rows with the given keys asynchronously.
-		/// </summary>
-		/// <typeparam name="T">The table type.</typeparam>
-		/// <typeparam name="KeyType">The key type.</typeparam>
-		/// <param name="connection">The connection to query on.</param>
-		/// <param name="keys">The keys of the rows to select.</param>
-		/// <param name="transaction">The transaction to use for this query.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows with the given keys.</returns>
-		public static async Task<IEnumerable<T>> BulkGetAsync<T, KeyType>(this IDbConnection connection, IEnumerable<KeyType> keys, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			return await Task.Run(() => BulkGet<T, KeyType>(connection, keys, transaction, commandTimeout));
-		}
-
-		/// <summary>
-		/// Selects the row with the given key asynchronously.
-		/// </summary>
-		/// <typeparam name="T">The table type.</typeparam>
-		/// <typeparam name="KeyType">The key type.</typeparam>
-		/// <param name="connection">The connection to query on.</param>
-		/// <param name="key">The key of the row to select.</param>
-		/// <param name="transaction">The transaction to use for this query.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The row with the given key.</returns>
-		public static async Task<T> GetAsync<T, KeyType>(this IDbConnection connection, KeyType key, IDbTransaction transaction = null, int commandTimeout = 30)
-			where T : class
-		{
-			return await Task.Run(() => Get<T, KeyType>(connection, key, transaction, commandTimeout));
-		}
-
-
-		/// <summary>
-		/// Selects the rows with the given keys asynchronously.
-		/// </summary>
-		/// <typeparam name="T">The table type.</typeparam>
-		/// <typeparam name="KeyType">The key type.</typeparam>
-		/// <param name="connection">The connection to query on.</param>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="transaction">The transaction to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The keys that match the given condition.</returns>
-		public static async Task<IEnumerable<KeyType>> GetKeysAsync<T, KeyType>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
-			where T : class
-		{
-			return await Task.Run(() => GetKeys<T, KeyType>(connection, whereCondition, param, transaction, buffered, commandTimeout));
-		}
-
-		/// <summary>
-		/// Selects all keys asynchronously.
-		/// </summary>
-		/// <typeparam name="T">The table type.</typeparam>
-		/// <typeparam name="KeyType">The key type.</typeparam>
-		/// <param name="connection">The connection to query on.</param>
-		/// <param name="transaction">The transaction to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>All keys.</returns>
-		public static async Task<IEnumerable<KeyType>> GetKeysAsync<T, KeyType>(this IDbConnection connection, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
-			where T : class
-		{
-			return await Task.Run(() => GetKeys<T, KeyType>(connection, "", null, transaction, buffered, commandTimeout));
-		}
-		#endregion Delegates <T, KeyType> Async
-
-		#region Delegates <T> Sync
 		/// <summary>
 		/// Selects the keys that match the given condition.
 		/// </summary>
@@ -854,6 +746,101 @@ namespace Dapper
 
 		#region Delegates <T> Async
 		/// <summary>
+		/// Deletes the rows with the given keys asynchronously.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <param name="connection">The connection to query on.</param>
+		/// <param name="keys">The keys for the rows to delete.</param>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		public static async Task<int> BulkDeleteAsync<T>(this SqlConnection connection, IEnumerable<object> keys, SqlTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			return await Task.Run(() => BulkDelete<T>(connection, keys, transaction, commandTimeout));
+		}
+
+		/// <summary>
+		/// Deletes the row with the given key asynchronously.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <param name="connection">The connection to query on.</param>
+		/// <param name="key">The key of the row to delete.</param>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the row was deleted; false otherwise.</returns>
+		public static async Task<bool> DeleteAsync<T>(this IDbConnection connection, object key, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			return await Task.Run(() => Delete<T>(connection, key, transaction, commandTimeout));
+		}
+
+		/// <summary>
+		/// Selects the rows with the given keys asynchronously.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <param name="connection">The connection to query on.</param>
+		/// <param name="keys">The keys of the rows to select.</param>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows with the given keys.</returns>
+		public static async Task<IEnumerable<T>> BulkGetAsync<T>(this IDbConnection connection, IEnumerable<object> keys, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			return await Task.Run(() => BulkGet<T>(connection, keys, transaction, commandTimeout));
+		}
+
+		/// <summary>
+		/// Selects the row with the given key asynchronously.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <param name="connection">The connection to query on.</param>
+		/// <param name="key">The key of the row to select.</param>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The row with the given key.</returns>
+		public static async Task<T> GetAsync<T>(this IDbConnection connection, object key, IDbTransaction transaction = null, int commandTimeout = 30)
+			where T : class
+		{
+			return await Task.Run(() => Get<T>(connection, key, transaction, commandTimeout));
+		}
+
+
+		/// <summary>
+		/// Selects the rows with the given keys asynchronously.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <param name="connection">The connection to query on.</param>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		public static async Task<IEnumerable<KeyType>> GetKeysAsync<T, KeyType>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+			where T : class
+		{
+			return await Task.Run(() => GetKeys<T, KeyType>(connection, whereCondition, param, transaction, buffered, commandTimeout));
+		}
+
+		/// <summary>
+		/// Selects all keys asynchronously.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <param name="connection">The connection to query on.</param>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>All keys.</returns>
+		public static async Task<IEnumerable<KeyType>> GetKeysAsync<T, KeyType>(this IDbConnection connection, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+			where T : class
+		{
+			return await Task.Run(() => GetKeys<T, KeyType>(connection, "", null, transaction, buffered, commandTimeout));
+		}
+
+		/// <summary>
 		/// Selects the keys that match the given condition asynchronously.
 		/// </summary>
 		/// <typeparam name="T">The table type.</typeparam>
@@ -1428,6 +1415,7 @@ namespace Dapper
 		{
 			return await Task.Run(() => BulkGet<T>(connection, objs, transaction, commandTimeout));
 		}
+
 		#endregion Delegates <T> Async
 	}
 	//getdistinctlimitasync

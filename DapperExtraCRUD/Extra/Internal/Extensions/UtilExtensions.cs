@@ -24,11 +24,8 @@
 // SOFTWARE.
 #endregion
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Dapper.Extra.Internal.Extensions
 {
@@ -56,7 +53,7 @@ namespace Dapper.Extra.Internal.Extensions
 		/// <returns>Partitions of the list.</returns>
 		public static IEnumerable<IEnumerable<T>> Partition<T>(this IEnumerable<T> source, int size)
 		{
-			while(source.Any()) {
+			while (source.Any()) {
 				yield return source.Take(size);
 				source = source.Skip(size);
 			}

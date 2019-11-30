@@ -26,9 +26,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Dapper.Extra.Internal
 {
@@ -186,7 +183,7 @@ IF OBJECT_ID('tempdb..{0}') IS NOT NULL DROP TABLE {0}";
 		public string QuoteIdentifier(string identifier)
 		{
 			return IsIdentifier(identifier)
-				? identifier 
+				? identifier
 				: QuoteLeft + identifier.Replace(QuoteRightStr, EscapeQuoteRight) + QuoteRight;
 		}
 

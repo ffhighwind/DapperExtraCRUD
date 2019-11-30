@@ -384,12 +384,12 @@ namespace Dapper
 			return SqlMapper.AsList(source);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void TRACE(string sql)
 		{
 #if DEBUG
 			Console.WriteLine(sql);
 			Console.WriteLine();
+			// add an extra newline if there isn't one at the end of sql
 			for (int i = sql.Length - 1; i >= 0; i--) {
 				if (sql[i] == ' ')
 					continue;

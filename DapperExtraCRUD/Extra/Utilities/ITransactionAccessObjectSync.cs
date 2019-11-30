@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Text;
 
 namespace Dapper.Extra.Utilities
 {
@@ -13,7 +12,7 @@ namespace Dapper.Extra.Utilities
 		int BulkUpdate(SqlTransaction transaction, IEnumerable<T> objs, int commandTimeout = 30);
 		int BulkUpsert(SqlTransaction transaction, IEnumerable<T> objs, int commandTimeout = 30);
 		int BulkInsertIfNotExists(SqlTransaction transaction, IEnumerable<T> objs, int commandTimeout = 30);
-		int BulkDelete<KeyType>(SqlTransaction transaction, IEnumerable<KeyType> keys, int commandTimeout = 30);
+		int BulkDelete(SqlTransaction transaction, IEnumerable<object> keys, int commandTimeout = 30);
 
 		bool Delete(IDbTransaction transaction, T obj, int commandTimeout = 30);
 		int Delete(IDbTransaction transaction, string whereCondition = "", object param = null, int commandTimeout = 30);
@@ -35,10 +34,10 @@ namespace Dapper.Extra.Utilities
 		IEnumerable<T> GetDistinctLimit(IDbTransaction transaction, int limit, string whereCondition = "", object param = null, int commandTimeout = 30);
 		IEnumerable<T> GetDistinctLimit(IDbTransaction transaction, Type columnFilter, int limit, string whereCondition = "", object param = null, int commandTimeout = 30);
 
-		T Get<KeyType>(IDbTransaction transaction, KeyType key, int commandTimeout = 30);
-		bool Delete<KeyType>(IDbTransaction transaction, KeyType key, int commandTimeout = 30);
+		T Get(IDbTransaction transaction, object key, int commandTimeout = 30);
+		bool Delete(IDbTransaction transaction, object key, int commandTimeout = 30);
 		IEnumerable<KeyType> GetKeys<KeyType>(IDbTransaction transaction, string whereCondition = "", object param = null, int commandTimeout = 30);
 		List<T> BulkGet(SqlTransaction transaction, IEnumerable<T> keys, int commandTimeout = 30);
-		List<T> BulkGet<KeyType>(SqlTransaction transaction, IEnumerable<KeyType> keys, int commandTimeout = 30);
+		List<T> BulkGet(SqlTransaction transaction, IEnumerable<object> keys, int commandTimeout = 30);
 	}
 }

@@ -24,14 +24,12 @@
 // SOFTWARE.
 #endregion
 
+using Dapper.Extra.Annotations;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using Dapper.Extra.Annotations;
 
 namespace Dapper.Extra.Internal
 {

@@ -24,13 +24,9 @@
 // SOFTWARE.
 #endregion
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Dapper.Extra.Utilities
 {
@@ -63,7 +59,7 @@ namespace Dapper.Extra.Utilities
 		internal class Enumerator : IEnumerator<T>
 		{
 			private IDbConnection conn;
-			private IEnumerator<T> enumerator;
+			private readonly IEnumerator<T> enumerator;
 
 			public Enumerator(IDbConnection conn, IEnumerator<T> enumerator)
 			{

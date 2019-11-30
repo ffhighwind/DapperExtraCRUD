@@ -24,29 +24,17 @@
 // SOFTWARE.
 #endregion
 
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Data.SqlClient;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Dapper.Extra.Internal
 {
-	public interface ISqlQueries<T, KeyType> where T : class
-	{
-		DbKeysList<T, KeyType> BulkGet { get; }
-		SqlKeysInt<T, KeyType> BulkDelete { get; }
-		DbKeyBool<KeyType> Delete { get; }
-		DbKeyObj<T, KeyType> Get { get; }
-		DbWhereKeys<KeyType> GetKeys { get; }
-	}
-
-
 	public interface ISqlQueries<T> where T : class
 	{
+		DbKeyObj<T> GetKey { get; }
+		DbKeysList<T> BulkGetKeys { get; }
+		SqlKeysInt<T> BulkDeleteKeys { get; }
+		DbKeyBool DeleteKey { get; }
+		DbWhereKeys GetKeysKeys { get; }
+
 		SqlListList<T> BulkGet { get; }
 		SqlListInt<T> BulkDelete { get; }
 		SqlListVoid<T> BulkInsert { get; }

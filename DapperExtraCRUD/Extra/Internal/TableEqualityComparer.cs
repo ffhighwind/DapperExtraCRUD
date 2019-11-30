@@ -24,13 +24,9 @@
 // SOFTWARE.
 #endregion
 
-using System;
+using Fasterflect;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using Fasterflect;
 
 namespace Dapper.Extra.Internal
 {

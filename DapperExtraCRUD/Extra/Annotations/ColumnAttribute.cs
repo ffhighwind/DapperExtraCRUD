@@ -25,10 +25,6 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Dapper.Extra.Annotations
 {
@@ -46,7 +42,7 @@ namespace Dapper.Extra.Annotations
 		/// <summary>
 		/// The name of the column.
 		/// </summary>
-		public string Name { get; } 
+		public string Name { get; }
 
 		/// <summary>
 		/// The zero-based ordinal of the column.

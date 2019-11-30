@@ -24,21 +24,17 @@
 // SOFTWARE.
 #endregion
 
+using Fasterflect;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Dynamic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using Dapper.Extra.Utilities;
-using System.Data.Common;
-using Fasterflect;
 
 namespace Dapper.Extra.Internal
 {
@@ -59,8 +55,7 @@ namespace Dapper.Extra.Internal
 				throw new InvalidOperationException("String is not a valid table type.");
 			Info = info;
 			BulkStagingTable = Info.Adapter.CreateTempTableName(Info.Type.Name + (Info.Type.FullName.GetHashCode() % 10000));
-			Queries = new SqlQueries<T>()
-			{
+			var queries = new SqlQueries<T>() {
 				Delete = CreateDelete(),
 				Get = CreateGet(),
 				GetList = CreateGetList(),
@@ -87,6 +82,7 @@ namespace Dapper.Extra.Internal
 				LazyGetFilter = new Lazy<DbTypeWhereList<T>>(() => CreateGetFilterList(), threadSafety),
 				LazyGetFilterLimit = new Lazy<DbTypeLimitList<T>>(() => CreateGetFilterLimit(), threadSafety),
 			};
+			Queries = queries;
 			DataReaderFactory = new DataReaderFactory(typeof(T), info.Columns.Select(c => c.Property));
 
 			if (info.EqualityColumns.Count == 1) {
@@ -95,54 +91,54 @@ namespace Dapper.Extra.Internal
 				TypeCode typeCode = Type.GetTypeCode(type);
 				switch (typeCode) {
 					case TypeCode.Int16:
-						KeyBuilder = new SqlBuilder<T, short>(this);
+						Create<short>(threadSafety);
 						break;
 					case TypeCode.Int32:
-						KeyBuilder = new SqlBuilder<T, int>(this);
+						Create<int>(threadSafety);
 						break;
 					case TypeCode.Int64:
-						KeyBuilder = new SqlBuilder<T, long>(this);
+						Create<long>(threadSafety);
 						break;
 					case TypeCode.SByte:
-						KeyBuilder = new SqlBuilder<T, sbyte>(this);
+						Create<sbyte>(threadSafety);
 						break;
 					case TypeCode.Single:
-						KeyBuilder = new SqlBuilder<T, float>(this);
+						Create<float>(threadSafety);
 						break;
 					case TypeCode.String:
-						KeyBuilder = new SqlBuilder<T, string>(this);
+						Create<string>(threadSafety);
 						break;
 					case TypeCode.UInt16:
-						KeyBuilder = new SqlBuilder<T, ushort>(this);
+						Create<ushort>(threadSafety);
 						break;
 					case TypeCode.Double:
-						KeyBuilder = new SqlBuilder<T, double>(this);
+						Create<double>(threadSafety);
 						break;
 					case TypeCode.UInt32:
-						KeyBuilder = new SqlBuilder<T, uint>(this);
+						Create<uint>(threadSafety);
 						break;
 					case TypeCode.UInt64:
-						KeyBuilder = new SqlBuilder<T, ulong>(this);
+						Create<ulong>(threadSafety);
 						break;
 					case TypeCode.Byte:
-						KeyBuilder = new SqlBuilder<T, byte>(this);
+						Create<byte>(threadSafety);
 						break;
 					case TypeCode.Char:
-						KeyBuilder = new SqlBuilder<T, char>(this);
+						Create<char>(threadSafety);
 						break;
 					case TypeCode.DateTime:
-						KeyBuilder = new SqlBuilder<T, DateTime>(this);
+						Create<DateTime>(threadSafety);
 						break;
 					case TypeCode.Decimal:
-						KeyBuilder = new SqlBuilder<T, decimal>(this);
+						Create<decimal>(threadSafety);
 						break;
 					default:
 						if (type == typeof(Guid))
-							KeyBuilder = new SqlBuilder<T, Guid>(this);
+							Create<Guid>(threadSafety);
 						else if (type == typeof(DateTimeOffset))
-							KeyBuilder = new SqlBuilder<T, DateTimeOffset>(this);
+							Create<DateTimeOffset>(threadSafety);
 						else if (type == typeof(TimeSpan))
-							KeyBuilder = new SqlBuilder<T, TimeSpan>(this);
+							Create<TimeSpan>(threadSafety);
 						break;
 				}
 			}
@@ -183,37 +179,36 @@ namespace Dapper.Extra.Internal
 		/// </summary>
 		public IEqualityComparer<T> EqualityComparer { get; private set; }
 		/// <summary>
-		/// A <see cref="SqlBuilder{T, KeyType}"/> if a single key exists.
-		/// </summary>
-		public ISqlBuilder KeyBuilder { get; private set; }
-		/// <summary>
-		/// The same value as <see cref="Queries"/>.
-		/// </summary>
-		public object QueriesObject => Queries;
-		/// <summary>
 		/// Generates <see cref="DbDataReader"/>
 		/// </summary>
 		public DataReaderFactory DataReaderFactory { get; private set; }
+		/// <summary>
+		/// Creates an object from a single value key.
+		/// </summary>
+		public Func<object, T> CreateFromKey { get; private set; }
 
 		/// <summary>
 		/// Casts <see cref="KeyBuilder"/> to the given <see cref="SqlBuilder{T, KeyType}"/>.
 		/// </summary>
 		/// <typeparam name="KeyType">The key type.</typeparam>
-		public SqlBuilder<T, KeyType> Create<KeyType>()
+		internal void Create<KeyType>(LazyThreadSafetyMode threadSafety)
 		{
-			if (KeyBuilder is SqlBuilder<T, KeyType> child)
-				return child;
-			if (Info.KeyColumns.Count != 1)
-				throw new InvalidOperationException(typeof(T).Name + " requires a single key");
-			if (KeyBuilder != null) {
-				Type expected = Info.KeyColumns[0].Property.PropertyType;
-				throw new InvalidOperationException(expected.Name + " is not the correct key type for " + typeof(T).Name + ". Expected " + expected.Name + ".");
-			}
-			throw new InvalidOperationException(typeof(KeyType).Name + " is an unsupported key type.");
+			SqlQueries<T> queries = (SqlQueries<T>)Queries;
+			MemberSetter setter = EqualityColumns[0].Setter;
+			CreateFromKey = (key) => {
+				object result = System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(T));
+				setter(result, key);
+				return (T) result;
+			};
+			queries.LazyBulkDeleteKeys = new Lazy<SqlKeysInt<T>>(() => CreateBulkDeleteKeys<KeyType>(), threadSafety);
+			queries.LazyBulkGetKeys = new Lazy<DbKeysList<T>>(() => CreateBulkGetKeys<KeyType>(), threadSafety);
+			queries.LazyGetKeysKeys = new Lazy<DbWhereKeys>(() => CreateGetKeysKeys<KeyType>(), threadSafety);
+			queries.GetKey = CreateGetKey();
+			queries.DeleteKey = CreateDeleteKey();
 		}
 
 		#region Filtered Selects
-		private ConcurrentDictionary<Type, string> SelectMap = new ConcurrentDictionary<Type, string>();
+		private readonly ConcurrentDictionary<Type, string> SelectMap = new ConcurrentDictionary<Type, string>();
 
 		private IEnumerable<SqlColumn> GetSharedColumns(Type type, IEnumerable<SqlColumn> columns)
 		{
@@ -240,7 +235,7 @@ namespace Dapper.Extra.Internal
 		/// Stores strings to reduce memory usage.
 		/// </summary>
 		/// <remarks> String.Intern could be used to cache these strings, but this would prevent clearing the caches.</remarks>
-		private ConcurrentDictionary<string, string> StringCache = new ConcurrentDictionary<string, string>();
+		private readonly ConcurrentDictionary<string, string> StringCache = new ConcurrentDictionary<string, string>();
 
 		/// <summary>
 		/// Checks the cache for a string and returns it if it exists, otherwise it adds the string to the cache.
@@ -371,8 +366,7 @@ namespace Dapper.Extra.Internal
 		#region Selects
 		private DbWhereInt<T> CreateRecordCount()
 		{
-			return (connection, whereCondition, param, transaction, commandTimeout) =>
-			{
+			return (connection, whereCondition, param, transaction, commandTimeout) => {
 				string query = $"SELECT COUNT(*) FROM {TableName}\n{whereCondition}";
 				int count = connection.Query<int>(query, param, transaction, true, commandTimeout).First();
 				return count;
@@ -387,8 +381,7 @@ namespace Dapper.Extra.Internal
 			string whereEquals = WhereEquals(EqualityColumns);
 			MemberSetter[] setters = columns.Select(c => c.Setter).ToArray();
 			string[] names = columns.Select(c => c.Property.Name).ToArray();
-			return (connection, obj, transaction, commandTimeout) =>
-			{
+			return (connection, obj, transaction, commandTimeout) => {
 				string cmd = $"SELECT {paramsSelect}\nFROM {TableName}\nWHERE \t{whereEquals}";
 				IDictionary<string, object> value = connection.QueryFirstOrDefault(cmd, obj, transaction, commandTimeout);
 				if (value != null) {
@@ -401,8 +394,7 @@ namespace Dapper.Extra.Internal
 
 		private DbTypeWhereList<T> CreateGetFilterList()
 		{
-			return (connection, type, whereCondition, param, transaction, buffered, commandTimeout) =>
-			{
+			return (connection, type, whereCondition, param, transaction, buffered, commandTimeout) => {
 				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
 					paramsSelect = CreateParamsSelect(type);
 				}
@@ -416,8 +408,7 @@ namespace Dapper.Extra.Internal
 		{
 			string paramsSelectFromTable = ParamsSelectFromTable();
 			string whereEquals = WhereEquals(EqualityColumns);
-			return (connection, obj, transaction, commandTimeout) =>
-			{
+			return (connection, obj, transaction, commandTimeout) => {
 				string query = $"SELECT {paramsSelectFromTable}WHERE \t{whereEquals}";
 				T val = connection.QueryFirstOrDefault<T>(query, obj, transaction, commandTimeout);
 				return val;
@@ -427,8 +418,7 @@ namespace Dapper.Extra.Internal
 		private DbWhereList<T> CreateGetKeys()
 		{
 			string paramsSelectKeys = ParamsSelect(EqualityColumns);
-			return (connection, whereCondition, param, transaction, buffered, commandTimeout) =>
-			{
+			return (connection, whereCondition, param, transaction, buffered, commandTimeout) => {
 				string query = $"SELECT {paramsSelectKeys}\nFROM {TableName}\n{whereCondition}";
 				IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
 				return result;
@@ -438,8 +428,7 @@ namespace Dapper.Extra.Internal
 		private DbWhereList<T> CreateGetList()
 		{
 			string paramsSelectFromTable = ParamsSelectFromTable();
-			return (connection, whereCondition, param, transaction, buffered, commandTimeout) =>
-			{
+			return (connection, whereCondition, param, transaction, buffered, commandTimeout) => {
 				string query = $"SELECT {paramsSelectFromTable}{whereCondition}";
 				IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
 				return result;
@@ -449,8 +438,7 @@ namespace Dapper.Extra.Internal
 		private DbTypeWhereList<T> CreateGetDistinct()
 		{
 			//string paramsSelectFromTable = ParamsSelectFromTable();
-			return (connection, type, whereCondition, param, transaction, buffered, commandTimeout) =>
-			{
+			return (connection, type, whereCondition, param, transaction, buffered, commandTimeout) => {
 				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
 					paramsSelect = CreateParamsSelect(type);
 				}
@@ -465,8 +453,7 @@ namespace Dapper.Extra.Internal
 			string paramsSelectFromTable = ParamsSelectFromTable();
 			string limitStartQuery = Info.Adapter.SelectLimitStart;
 			string limitEndQuery = Info.Adapter.SelectLimitEnd;
-			return (connection, limit, whereCondition, param, transaction, buffered, commandTimeout) =>
-			{
+			return (connection, limit, whereCondition, param, transaction, buffered, commandTimeout) => {
 				string queryStart = string.Format(limitStartQuery, limit);
 				string queryEnd = string.Format(limitEndQuery, limit);
 				string query = $"SELECT {queryStart}{paramsSelectFromTable}{whereCondition}{queryEnd}";
@@ -479,8 +466,7 @@ namespace Dapper.Extra.Internal
 		{
 			string limitStartQuery = Info.Adapter.SelectLimitStart;
 			string limitEndQuery = Info.Adapter.SelectLimitEnd;
-			return (connection, type, limit, whereCondition, param, transaction, buffered, commandTimeout) =>
-			{
+			return (connection, type, limit, whereCondition, param, transaction, buffered, commandTimeout) => {
 				string queryStart = string.Format(limitStartQuery, limit);
 				string queryEnd = string.Format(limitEndQuery, limit);
 				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
@@ -497,8 +483,7 @@ namespace Dapper.Extra.Internal
 			//string paramsSelectFromTable = ParamsSelectFromTable();
 			string limitStartQuery = Info.Adapter.SelectLimitStart;
 			string limitEndQuery = Info.Adapter.SelectLimitEnd;
-			return (connection, type, limit, whereCondition, param, transaction, buffered, commandTimeout) =>
-			{
+			return (connection, type, limit, whereCondition, param, transaction, buffered, commandTimeout) => {
 				string queryStart = string.Format(limitStartQuery, limit);
 				string queryEnd = string.Format(limitEndQuery, limit);
 				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
@@ -516,8 +501,7 @@ namespace Dapper.Extra.Internal
 			string selectEqualityIntoStagingCmd = SelectIntoStagingTable(EqualityColumns);
 			string paramsSelectFromTableBulk = ParamsSelectFromTableBulk();
 			string equalsTables = WhereEqualsTables(EqualityColumns);
-			return (connection, objs, transaction, commandTimeout) =>
-			{
+			return (connection, objs, transaction, commandTimeout) => {
 				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 				connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
 				ExtraUtil.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, EqualityColumns, commandTimeout,
@@ -540,8 +524,7 @@ namespace Dapper.Extra.Internal
 			else {
 				string deleteCmd = DeleteCmd();
 				string deleteEquals = WhereEquals(Info.DeleteKeyColumns);
-				return (connection, obj, transaction, commandTimeout) =>
-				{
+				return (connection, obj, transaction, commandTimeout) => {
 					string cmd = deleteCmd + "WHERE \t" + deleteEquals;
 					int count = connection.Execute(cmd, obj, transaction, commandTimeout);
 					return count > 0;
@@ -557,8 +540,7 @@ namespace Dapper.Extra.Internal
 			}
 			else {
 				string deleteCmd = DeleteCmd();
-				return (connection, whereCondition, param, transaction, commandTimeout) =>
-				{
+				return (connection, whereCondition, param, transaction, commandTimeout) => {
 					string cmd = deleteCmd + whereCondition;
 					int count = connection.Execute(cmd, param, transaction, commandTimeout);
 					return count;
@@ -574,8 +556,7 @@ namespace Dapper.Extra.Internal
 			}
 			else {
 				string truncateCmd = Store(Info.Adapter.TruncateTable(TableName));
-				return (connection, transaction, commandTimeout) =>
-				{
+				return (connection, transaction, commandTimeout) => {
 					int count = connection.Execute(truncateCmd, null, transaction, commandTimeout);
 				};
 			}
@@ -591,8 +572,7 @@ namespace Dapper.Extra.Internal
 				string dropBulkTableCmd = DropBulkTableCmd();
 				string selectEqualityIntoStagingCmd = SelectIntoStagingTable(EqualityColumns);
 				string equalsTables = WhereEqualsTables(EqualityColumns);
-				return (connection, objs, transaction, commandTimeout) =>
-				{
+				return (connection, objs, transaction, commandTimeout) => {
 					connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 					connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
 					ExtraUtil.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, EqualityColumns, commandTimeout,
@@ -618,16 +598,14 @@ namespace Dapper.Extra.Internal
 				string insertedValues = InsertedValues(Info.InsertColumns);
 				if (Info.AutoKeyColumn == null) {
 					if (!Info.InsertAutoSyncColumns.Any()) {
-						return (connection, obj, transaction, commandTimeout) =>
-						{
+						return (connection, obj, transaction, commandTimeout) => {
 							string cmd = insertIntoCmd + insertedValues;
 							connection.Execute(cmd, obj, transaction, commandTimeout);
 						};
 					}
 					else {
 						DbTVoid<T> insertAutoSync = Queries.InsertAutoSync;
-						return (connection, obj, transaction, commandTimeout) =>
-						{
+						return (connection, obj, transaction, commandTimeout) => {
 							string cmd = insertIntoCmd + insertedValues;
 							connection.Execute(cmd, obj, transaction, commandTimeout);
 							insertAutoSync(connection, obj, transaction, commandTimeout);
@@ -638,8 +616,7 @@ namespace Dapper.Extra.Internal
 					string selectAutoKey = SelectAutoKey();
 					MemberSetter autoKeySetter = Info.AutoKeyColumn.Setter;
 					if (!Info.InsertAutoSyncColumns.Any()) {
-						return (connection, obj, transaction, commandTimeout) =>
-						{
+						return (connection, obj, transaction, commandTimeout) => {
 							string cmd = insertIntoCmd + insertedValues + ";\n" + selectAutoKey;
 							IDictionary<string, object> key = connection.QueryFirst(cmd, obj, transaction, commandTimeout);
 							autoKeySetter(obj, key.Values.First());
@@ -647,8 +624,7 @@ namespace Dapper.Extra.Internal
 					}
 					else {
 						DbTVoid<T> insertAutoSync = Queries.InsertAutoSync;
-						return (connection, obj, transaction, commandTimeout) =>
-						{
+						return (connection, obj, transaction, commandTimeout) => {
 							string cmd = insertIntoCmd + insertedValues + ";\n" + selectAutoKey;
 							IDictionary<string, object> key = connection.QueryFirst(cmd, obj, transaction, commandTimeout);
 							autoKeySetter(obj, key.Values.First());
@@ -670,8 +646,7 @@ namespace Dapper.Extra.Internal
 				string whereEquals = WhereEquals(EqualityColumns);
 				if (Info.AutoKeyColumn == null) {
 					if (!Info.InsertAutoSyncColumns.Any()) {
-						return (connection, obj, transaction, commandTimeout) =>
-						{
+						return (connection, obj, transaction, commandTimeout) => {
 							string cmd = $"IF NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{whereEquals})\n{insertIntoCmd}{insertedValues}";
 							int count = connection.Execute(cmd, obj, transaction, commandTimeout);
 							return count > 0;
@@ -679,8 +654,7 @@ namespace Dapper.Extra.Internal
 					}
 					else {
 						DbTVoid<T> insertAutoSync = Queries.InsertAutoSync;
-						return (connection, obj, transaction, commandTimeout) =>
-						{
+						return (connection, obj, transaction, commandTimeout) => {
 							string cmd = $"IF NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{whereEquals})\n{insertIntoCmd}{insertedValues}";
 							int count = connection.Execute(cmd, obj, transaction, commandTimeout);
 							insertAutoSync(connection, obj, transaction, commandTimeout);
@@ -692,8 +666,7 @@ namespace Dapper.Extra.Internal
 					string selectAutoKey = SelectAutoKey();
 					MemberSetter autoKeySetter = Info.AutoKeyColumn.Setter;
 					if (!Info.InsertAutoSyncColumns.Any()) {
-						return (connection, obj, transaction, commandTimeout) =>
-						{
+						return (connection, obj, transaction, commandTimeout) => {
 							string cmd = $"IF NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{whereEquals})\n{insertIntoCmd}{insertedValues};\n{selectAutoKey}";
 							object key = connection.QueryFirst<dynamic>(cmd, obj, transaction, commandTimeout).Id;
 							if (key != null) {
@@ -705,8 +678,7 @@ namespace Dapper.Extra.Internal
 					}
 					else {
 						DbTVoid<T> insertAutoSync = Queries.InsertAutoSync;
-						return (connection, obj, transaction, commandTimeout) =>
-						{
+						return (connection, obj, transaction, commandTimeout) => {
 							string cmd = $"IF NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{whereEquals})\n{insertIntoCmd}{insertedValues};\n{selectAutoKey}";
 							object key = connection.QueryFirst<dynamic>(cmd, obj, transaction, commandTimeout).Id;
 							if (key != null) {
@@ -727,8 +699,7 @@ namespace Dapper.Extra.Internal
 				return DoNothingSqlList;
 			}
 			else {
-				return (connection, objs, transaction, commandTimeout) =>
-				{
+				return (connection, objs, transaction, commandTimeout) => {
 					ExtraUtil.BulkInsert(connection, objs, transaction, TableName, DataReaderFactory, Info.InsertColumns, commandTimeout,
 						SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.CheckConstraints | SqlBulkCopyOptions.FireTriggers | SqlBulkCopyOptions.TableLock);
 				};
@@ -747,8 +718,7 @@ namespace Dapper.Extra.Internal
 				string insertColumns = ColumnNames(Info.InsertColumns);
 				string insertIntoCmd = InsertIntoCmd();
 				string insertedValues = InsertedValues(Info.InsertColumns);
-				return (connection, objs, transaction, commandTimeout) =>
-				{
+				return (connection, objs, transaction, commandTimeout) => {
 					connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 					connection.Execute(selectInsertIntoStagingCmd, null, transaction, commandTimeout);
 					ExtraUtil.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.BulkInsertIfNotExistsColumns, commandTimeout,
@@ -773,8 +743,7 @@ namespace Dapper.Extra.Internal
 				string whereUpdateEquals = WhereEquals(Info.UpdateKeyColumns);
 				string updateSet = UpdateSet(Info.UpdateColumns);
 				if (!Info.UpdateAutoSyncColumns.Any()) {
-					return (connection, obj, transaction, commandTimeout) =>
-					{
+					return (connection, obj, transaction, commandTimeout) => {
 						string updateCmd = $"UPDATE {TableName}{updateSet}\nWHERE \t{whereUpdateEquals}";
 						int count = connection.Execute(updateCmd, obj, transaction, commandTimeout);
 						return count > 0;
@@ -782,8 +751,7 @@ namespace Dapper.Extra.Internal
 				}
 				else {
 					DbTVoid<T> updateAutoSync = Queries.UpdateAutoSync;
-					return (connection, obj, transaction, commandTimeout) =>
-					{
+					return (connection, obj, transaction, commandTimeout) => {
 						string updateCmd = $"UPDATE {TableName}{updateSet}\nWHERE \t{whereUpdateEquals}";
 						int count = connection.Execute(updateCmd, obj, transaction, commandTimeout);
 						bool success = count > 0;
@@ -805,8 +773,7 @@ namespace Dapper.Extra.Internal
 			else {
 				string whereUpdateEquals = WhereEquals(Info.UpdateKeyColumns);
 				ConcurrentDictionary<Type, string> UpdateSetMap = new ConcurrentDictionary<Type, string>();
-				return (connection, obj, transaction, commandTimeout) =>
-				{
+				return (connection, obj, transaction, commandTimeout) => {
 					Type type = obj.GetType();
 					if (UpdateSetMap.TryGetValue(type, out string updateSet)) {
 						IEnumerable<SqlColumn> columns = GetSharedColumns(type, Info.UpdateColumns);
@@ -831,8 +798,7 @@ namespace Dapper.Extra.Internal
 				string bulkUpdateSetParams = UpdateSetTables();
 				string selectEqualityIntoStagingCmd = SelectIntoStagingTable(Info.BulkUpdateColumns);
 				string updateEquals = WhereEqualsTables(Info.UpdateKeyColumns);
-				return (connection, objs, transaction, commandTimeout) =>
-				{
+				return (connection, objs, transaction, commandTimeout) => {
 					connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 					connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
 					ExtraUtil.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.BulkUpdateColumns, commandTimeout,
@@ -862,16 +828,14 @@ namespace Dapper.Extra.Internal
 				DbTBool<T> update = Queries.Update;
 				if (!Info.InsertColumns.Any()) {
 					// Update only
-					return (connection, obj, transaction, commandTimeout) =>
-					{
+					return (connection, obj, transaction, commandTimeout) => {
 						bool success = update(connection, obj, transaction, commandTimeout);
 						return false;
 					};
 				}
 				else {
 					DbTBool<T> insertIfNotExists = Queries.InsertIfNotExists;
-					return (connection, obj, transaction, commandTimeout) =>
-					{
+					return (connection, obj, transaction, commandTimeout) => {
 						bool success = update(connection, obj, transaction, commandTimeout);
 						if (success)
 							return false;
@@ -897,8 +861,7 @@ namespace Dapper.Extra.Internal
 				SqlListInt<T> bulkUpdate = Queries.BulkUpdate;
 				if (!Info.InsertColumns.Any()) {
 					// Update only
-					return (connection, objs, transaction, commandTimeout) =>
-					{
+					return (connection, objs, transaction, commandTimeout) => {
 						int count = bulkUpdate(connection, objs, transaction, commandTimeout);
 						return 0;
 					};
@@ -912,8 +875,7 @@ namespace Dapper.Extra.Internal
 					string equalsTables = WhereEqualsTables(EqualityColumns);
 					string insertIntoCmd = InsertIntoCmd();
 					string insertColumns = ColumnNames(Info.InsertColumns);
-					return (connection, objs, transaction, commandTimeout) =>
-					{
+					return (connection, objs, transaction, commandTimeout) => {
 						connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 						connection.Execute(selectUpsertIntoStagingCmd, null, transaction, commandTimeout);
 						ExtraUtil.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.UpsertColumns, commandTimeout,
@@ -929,96 +891,33 @@ namespace Dapper.Extra.Internal
 			}
 		}
 		#endregion Upserts
-	}
 
-	/// <summary>
-	/// Stores metadata and generates SQL commands and queries for the given type.
-	/// </summary>
-	/// <typeparam name="T">The table type.</typeparam>
-	/// <typeparam name="KeyType">The key type.</typeparam>
-	public sealed class SqlBuilder<T, KeyType> : ISqlBuilder
-		where T : class
-	{
-		internal SqlBuilder(SqlBuilder<T> parent)
+		#region Keys
+		private DbWhereKeys CreateGetKeysKeys<KeyType>()
 		{
-			Parent = parent;
-			SqlQueries<T, KeyType> queries = new SqlQueries<T, KeyType>()
-			{
-				Get = CreateGet(),
-				LazyBulkDelete = new Lazy<SqlKeysInt<T, KeyType>>(() => CreateBulkDelete()),
-				LazyBulkGet = new Lazy<DbKeysList<T, KeyType>>(() => CreateBulkGet()),
-				LazyDelete = new Lazy<DbKeyBool<KeyType>>(() => CreateDelete()),
-				LazyGetKeys = new Lazy<DbWhereKeys<KeyType>>(() => CreateGetKeys()),
-			};
-			Queries = queries;
-		}
-
-		/// <summary>
-		/// The <see cref="SqlBuilder{T}"/> that created this object.
-		/// </summary>
-		public SqlBuilder<T> Parent { get; private set; }
-		/// <summary>
-		/// The quoted table name or the class name.
-		/// </summary>
-		public string TableName => Info.TableName;
-		/// <summary>
-		/// The temporary table name for bulk operations.
-		/// </summary>
-		public string BulkStagingTable => Parent.BulkStagingTable;
-		/// <summary>
-		/// The syntax used to generate SQL commands.
-		/// </summary>
-		public SqlSyntax Syntax => Info.Syntax;
-		/// <summary>
-		/// Stores metadata for for the given type.
-		/// </summary>
-		public SqlTypeInfo Info => Parent.Info;
-		/// <summary>
-		///  All valid columns for the given type.
-		/// </summary>
-		public IReadOnlyList<SqlColumn> Columns => Parent.Columns;
-		/// <summary>
-		/// The key column.
-		/// </summary>
-		public SqlColumn EqualityColumn => Parent.EqualityColumns[0];
-		/// <summary>
-		/// The queries and commands for this type.
-		/// </summary>
-		public ISqlQueries<T, KeyType> Queries { get; private set; }
-		/// <summary>
-		/// The same value as <see cref="Queries"/>.
-		/// </summary>
-		public object QueriesObject => Queries;
-
-		#region Create Delegates
-		private DbWhereKeys<KeyType> CreateGetKeys()
-		{
-			string paramsSelectKeys = Parent.ParamsSelect(Parent.EqualityColumns);
-			return (connection, whereCondition, param, transaction, buffered, commandTimeout) =>
-			{
+			string paramsSelectKeys = ParamsSelect(EqualityColumns);
+			return (connection, whereCondition, param, transaction, buffered, commandTimeout) => {
 				string query = $"SELECT {paramsSelectKeys}\nFROM {TableName}\n{whereCondition}";
 				IEnumerable<KeyType> result = connection.Query<KeyType>(query, param, transaction, buffered, commandTimeout);
-				return result;
+				return result.Select(r => (object)r);
 			};
 		}
 
-		private SqlKeysInt<T, KeyType> CreateBulkDelete()
+		private SqlKeysInt<T> CreateBulkDeleteKeys<KeyType>()
 		{
 			if (Info.DeleteKeyColumns.Count == 0) {
 				//	NoDeltesAttribute
-				return (connection, keys, transaction, commandTimeout) =>
-				{
+				return (connection, keys, transaction, commandTimeout) => {
 					return 0;
 				};
 			}
 			else {
-				string deleteCmd = Parent.DeleteCmd();
-				string keyName = EqualityColumn.ColumnName;
-				return (connection, keys, transaction, commandTimeout) =>
-				{
+				string deleteCmd = DeleteCmd();
+				string keyName = EqualityColumns[0].ColumnName;
+				return (connection, keys, transaction, commandTimeout) => {
 					int count = 0;
 					string bulkDeleteCmd = $"{deleteCmd}WHERE \t{keyName} in @Keys";
-					foreach (IEnumerable<KeyType> Keys in Extensions.UtilExtensions.Partition<KeyType>(keys, 2000)) {
+					foreach (IEnumerable<KeyType> Keys in Extensions.UtilExtensions.Partition<KeyType>(keys.Select(k => (KeyType)k), 2000)) {
 						int deleted = connection.Execute(bulkDeleteCmd, new { Keys }, transaction, commandTimeout);
 						count += deleted;
 					}
@@ -1027,13 +926,12 @@ namespace Dapper.Extra.Internal
 			}
 		}
 
-		private DbKeyObj<T, KeyType> CreateGet()
+		private DbKeyObj<T> CreateGetKey()
 		{
-			string paramsSelectFromTable = Parent.ParamsSelectFromTable();
-			string whereEquals = Parent.WhereEquals(Parent.EqualityColumns);
-			string keyName = EqualityColumn.Property.Name;
-			return (connection, key, transaction, commandTimeout) =>
-			{
+			string paramsSelectFromTable = ParamsSelectFromTable();
+			string whereEquals = WhereEquals(EqualityColumns);
+			string keyName = EqualityColumns[0].Property.Name;
+			return (connection, key, transaction, commandTimeout) => {
 				string query = $"SELECT {paramsSelectFromTable}WHERE \t{whereEquals}";
 				IDictionary<string, object> obj = new ExpandoObject();
 				obj.Add(keyName, key);
@@ -1042,21 +940,19 @@ namespace Dapper.Extra.Internal
 			};
 		}
 
-		private DbKeyBool<KeyType> CreateDelete()
+		private DbKeyBool CreateDeleteKey()
 		{
 			if (Info.DeleteKeyColumns.Count == 0) {
 				//	NoDeltesAttribute
-				return (connection, obj, transaction, commandTimeout) =>
-				{
+				return (connection, obj, transaction, commandTimeout) => {
 					return false;
 				};
 			}
 			else {
-				string deleteCmd = Parent.DeleteCmd();
-				string deleteEquals = Parent.WhereEquals(Info.DeleteKeyColumns);
-				string keyName = EqualityColumn.Property.Name;
-				return (connection, key, transaction, commandTimeout) =>
-				{
+				string deleteCmd = DeleteCmd();
+				string deleteEquals = WhereEquals(Info.DeleteKeyColumns);
+				string keyName = EqualityColumns[0].Property.Name;
+				return (connection, key, transaction, commandTimeout) => {
 					string cmd = $"{deleteCmd}WHERE \t{deleteEquals}";
 					IDictionary<string, object> obj = new ExpandoObject();
 					obj.Add(keyName, key);
@@ -1066,21 +962,20 @@ namespace Dapper.Extra.Internal
 			}
 		}
 
-		private DbKeysList<T, KeyType> CreateBulkGet()
+		private DbKeysList<T> CreateBulkGetKeys<KeyType>()
 		{
-			string paramsSelectFromTableBulk = Parent.ParamsSelectFromTableBulk();
-			string keyName = EqualityColumn.ColumnName;
-			return (connection, keys, transaction, commandTimeout) =>
-			{
+			string paramsSelectFromTableBulk = ParamsSelectFromTableBulk();
+			string keyName = EqualityColumns[0].ColumnName;
+			return (connection, keys, transaction, commandTimeout) => {
 				List<T> result = new List<T>();
 				string bulkGetKeysQuery = $"SELECT {paramsSelectFromTableBulk}WHERE \t{keyName} in @Keys";
-				foreach (IEnumerable<KeyType> Keys in Extensions.UtilExtensions.Partition<KeyType>(keys.AsList(), 2000)) {
+				foreach (IEnumerable<KeyType> Keys in Extensions.UtilExtensions.Partition<KeyType>(keys.Select(k => (KeyType)k), 2000)) {
 					IEnumerable<T> list = connection.Query<T>(bulkGetKeysQuery, new { Keys }, transaction, true, commandTimeout);
 					result.AddRange(list);
 				}
 				return result;
 			};
 		}
-		#endregion Create Delegates
+		#endregion Keys
 	}
 }

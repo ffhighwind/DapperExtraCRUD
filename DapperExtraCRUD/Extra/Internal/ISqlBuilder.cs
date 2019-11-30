@@ -24,20 +24,12 @@
 // SOFTWARE.
 #endregion
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Dapper.Extra.Internal
 {
 	public interface ISqlBuilder
 	{
-		/// <summary>
-		/// The internal <see cref="ISqlQueries{T}"/> or <see cref="ISqlQueries{T, KeyType}"/> object.
-		/// </summary>
-		object QueriesObject { get; }
 		/// <summary>
 		/// The quoted table name or the class name.
 		/// </summary>

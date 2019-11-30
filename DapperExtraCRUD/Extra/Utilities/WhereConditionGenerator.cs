@@ -24,18 +24,13 @@
 // SOFTWARE.
 #endregion
 
+using Dapper.Extra.Internal;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
-using Dapper;
-using Dapper.Extra.Internal;
 
 namespace Dapper.Extra.Utilities
 {
@@ -47,9 +42,9 @@ namespace Dapper.Extra.Utilities
 		where T : class
 	{
 		private readonly string TableName;
-		private StringBuilder Results = new StringBuilder(150);
+		private readonly StringBuilder Results = new StringBuilder(150);
 		private ParameterExpression InputParam;
-		private IDictionary<string, object> OutputParam = new ExpandoObject();
+		private readonly IDictionary<string, object> OutputParam = new ExpandoObject();
 
 		private WhereConditionGenerator() : base()
 		{
@@ -388,7 +383,7 @@ namespace Dapper.Extra.Utilities
 					value = obj.ToString();
 					break;
 				case TypeCode.Char:
-					char ch = (char) obj;
+					char ch = (char)obj;
 					value = ch == '\'' ? "''''" : "'" + ch + "'";
 					break;
 				case TypeCode.String:

@@ -1,13 +1,10 @@
-﻿using System;
+﻿using Dapper.Extra.Internal;
+using Fasterflect;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using Dapper.Extra.Internal;
-using Dapper.Extra.Utilities;
 
 namespace Dapper.Extra
 {
@@ -46,8 +43,7 @@ namespace Dapper.Extra
 			return comparer;
 		}
 
-		internal static Dictionary<Type, DbType> DbTypeMap = new Dictionary<Type, DbType>()
-		{
+		internal static Dictionary<Type, DbType> DbTypeMap = new Dictionary<Type, DbType>() {
 			[typeof(byte)] = DbType.Byte,
 			[typeof(sbyte)] = DbType.SByte,
 			[typeof(short)] = DbType.Int16,
@@ -146,13 +142,13 @@ namespace Dapper.Extra
 					str = null;
 					return false;
 				case TypeCode.Boolean:
-					str = ((bool) value) ? "TRUE" : "FALSE";
+					str = ((bool)value) ? "TRUE" : "FALSE";
 					return true;
 				case TypeCode.String:
 					str = "'" + value.ToString().Replace("'", "''") + "'";
 					return true;
 				case TypeCode.Char:
-					str = (char) value == '\'' ? "''''" : "'" + value.ToString() + "'";
+					str = (char)value == '\'' ? "''''" : "'" + value.ToString() + "'";
 					return true;
 				case TypeCode.Decimal:
 				case TypeCode.SByte:

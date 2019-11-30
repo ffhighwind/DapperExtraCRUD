@@ -25,30 +25,9 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Dapper.Extra.Internal
 {
-	public class SqlQueries<T, KeyType> : ISqlQueries<T, KeyType> where T : class
-	{
-		public DbKeyObj<T, KeyType> Get { get; internal set; }
-
-		public DbKeysList<T, KeyType> BulkGet => LazyBulkGet.Value;
-		public SqlKeysInt<T, KeyType> BulkDelete => LazyBulkDelete.Value;
-		public DbKeyBool<KeyType> Delete => LazyDelete.Value;
-		public DbWhereKeys<KeyType> GetKeys => LazyGetKeys.Value;
-
-		#region Lazy Internal
-		internal Lazy<DbKeysList<T, KeyType>> LazyBulkGet { get; set; }
-		internal Lazy<SqlKeysInt<T, KeyType>> LazyBulkDelete { get; set; }
-		internal Lazy<DbKeyBool<KeyType>> LazyDelete { get; set; }
-		internal Lazy<DbWhereKeys<KeyType>> LazyGetKeys { get; set; }
-		#endregion Lazy Internal
-	}
-
 	public class SqlQueries<T> : ISqlQueries<T> where T : class
 	{
 		public DbTBool<T> Delete { get; internal set; }
@@ -56,6 +35,12 @@ namespace Dapper.Extra.Internal
 		public DbWhereList<T> GetList { get; internal set; }
 		public DbTVoid<T> Insert { get; internal set; }
 		public DbTBool<T> Update { get; internal set; }
+
+		public DbKeyObj<T> GetKey { get; internal set; }
+		public DbKeyBool DeleteKey { get; internal set; }
+		public DbKeysList<T> BulkGetKeys => LazyBulkGetKeys.Value;
+		public SqlKeysInt<T> BulkDeleteKeys => LazyBulkDeleteKeys.Value;
+		public DbWhereKeys GetKeysKeys => LazyGetKeysKeys.Value;
 
 		public SqlListList<T> BulkGet => LazyBulkGet.Value;
 		public SqlListInt<T> BulkDelete => LazyBulkDelete.Value;
@@ -97,6 +82,10 @@ namespace Dapper.Extra.Internal
 		internal Lazy<DbObjBool<T>> LazyUpdateObj { get; set; }
 		internal Lazy<DbTBool<T>> LazyUpsert { get; set; }
 		internal Lazy<DbTBool<T>> LazyInsertIfNotExists { get; set; }
+		// Keys
+		internal Lazy<DbKeysList<T>> LazyBulkGetKeys { get; set; }
+		internal Lazy<SqlKeysInt<T>> LazyBulkDeleteKeys { get; set; }
+		internal Lazy<DbWhereKeys> LazyGetKeysKeys { get; set; }
 		#endregion Lazy Internal
 	}
 }

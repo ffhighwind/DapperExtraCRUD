@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Dapper.Extra.Utilities
@@ -14,7 +13,7 @@ namespace Dapper.Extra.Utilities
 		Task<int> BulkUpdateAsync(SqlTransaction transaction, IEnumerable<T> objs, int commandTimeout = 30);
 		Task<int> BulkUpsertAsync(SqlTransaction transaction, IEnumerable<T> objs, int commandTimeout = 30);
 		Task<int> BulkInsertIfNotExistsAsync(SqlTransaction transaction, IEnumerable<T> objs, int commandTimeout = 30);
-		Task<int> BulkDeleteAsync<KeyType>(SqlTransaction transaction, IEnumerable<KeyType> keys, int commandTimeout = 30);
+		Task<int> BulkDeleteAsync(SqlTransaction transaction, IEnumerable<object> keys, int commandTimeout = 30);
 
 		Task<bool> DeleteAsync(IDbTransaction transaction, T obj, int commandTimeout = 30);
 		Task<int> DeleteAsync(IDbTransaction transaction, string whereCondition = "", object param = null, int commandTimeout = 30);
@@ -36,10 +35,10 @@ namespace Dapper.Extra.Utilities
 		Task<IEnumerable<T>> GetDistinctLimitAsync(IDbTransaction transaction, int limit, string whereCondition = "", object param = null, int commandTimeout = 30);
 		Task<IEnumerable<T>> GetDistinctLimitAsync(IDbTransaction transaction, Type columnFilter, int limit, string whereCondition = "", object param = null, int commandTimeout = 30);
 
-		Task<T> Get<KeyType>(IDbTransaction transaction, KeyType key, int commandTimeout = 30);
-		Task<bool> Delete<KeyType>(IDbTransaction transaction, KeyType key, int commandTimeout = 30);
+		Task<T> Get(IDbTransaction transaction, object key, int commandTimeout = 30);
+		Task<bool> Delete(IDbTransaction transaction, object key, int commandTimeout = 30);
 		Task<IEnumerable<KeyType>> GetKeys<KeyType>(IDbTransaction transaction, string whereCondition = "", object param = null, int commandTimeout = 30);
 		Task<List<T>> BulkGet(SqlTransaction transaction, IEnumerable<T> keys, int commandTimeout = 30);
-		Task<List<T>> BulkGet<KeyType>(SqlTransaction transaction, IEnumerable<KeyType> keys, int commandTimeout = 30);
+		Task<List<T>> BulkGet(SqlTransaction transaction, IEnumerable<object> keys, int commandTimeout = 30);
 	}
 }

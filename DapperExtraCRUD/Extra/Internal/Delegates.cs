@@ -28,25 +28,22 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Dapper.Extra.Internal
 {
 	#region Keys
-	public delegate List<T> DbKeysList<T, KeyType>(IDbConnection connection, IEnumerable<KeyType> keys, IDbTransaction transaction = null, int commandTimeout = 30)
+	public delegate List<T> DbKeysList<T>(IDbConnection connection, IEnumerable<object> keys, IDbTransaction transaction = null, int commandTimeout = 30)
 		where T : class;
-	public delegate List<T> SqlKeysList<T, KeyType>(SqlConnection connection, IEnumerable<KeyType> keys, SqlTransaction transaction = null, int commandTimeout = 30)
+	public delegate List<T> SqlKeysList<T>(SqlConnection connection, IEnumerable<object> keys, SqlTransaction transaction = null, int commandTimeout = 30)
 		where T : class;
-	public delegate IEnumerable<KeyType> SqlKeysKeys<T, KeyType>(SqlConnection connection, IEnumerable<KeyType> keys, SqlTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+	public delegate IEnumerable<object> SqlKeysKeys<T>(SqlConnection connection, IEnumerable<object> keys, SqlTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 		where T : class;
-	public delegate int SqlKeysInt<T, KeyType>(SqlConnection connection, IEnumerable<KeyType> keys, SqlTransaction transaction = null, int commandTimeout = 30)
+	public delegate int SqlKeysInt<T>(SqlConnection connection, IEnumerable<object> keys, SqlTransaction transaction = null, int commandTimeout = 30)
 		where T : class;
-	public delegate bool DbKeyBool<KeyType>(IDbConnection connection, KeyType key, IDbTransaction transaction = null, int commandTimeout = 30);
-	public delegate T DbKeyObj<T, KeyType>(IDbConnection connection, KeyType key, IDbTransaction transaction = null, int commandTimeout = 30)
+	public delegate bool DbKeyBool(IDbConnection connection, object key, IDbTransaction transaction = null, int commandTimeout = 30);
+	public delegate T DbKeyObj<T>(IDbConnection connection, object key, IDbTransaction transaction = null, int commandTimeout = 30)
 		where T : class;
-	public delegate IEnumerable<KeyType> DbWhereKeys<KeyType>(IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30);
+	public delegate IEnumerable<object> DbWhereKeys(IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30);
 	#endregion Keys
 
 	#region T

@@ -24,15 +24,11 @@
 // SOFTWARE.
 #endregion
 
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Dapper.Extra.Annotations;
 using Fasterflect;
+using System;
+using System.Data;
+using System.Reflection;
 
 namespace Dapper.Extra.Internal
 {
@@ -48,10 +44,11 @@ namespace Dapper.Extra.Internal
 		{
 			Property = property;
 			ColumnName = columnName;
-			if(property.CanRead)
-				Getter = Fasterflect.PropertyExtensions.DelegateForGetPropertyValue(property.DeclaringType, property.Name);
-			if(property.CanWrite)
-				Setter = Fasterflect.PropertyExtensions.DelegateForSetPropertyValue(property.DeclaringType, property.Name);
+			Ordinal = ordinal;
+			if (property.CanRead)
+				Getter = Reflect.PropertyGetter(property);
+			if (property.CanWrite)
+				Setter = Reflect.PropertySetter(property);
 		}
 
 		/// <summary>

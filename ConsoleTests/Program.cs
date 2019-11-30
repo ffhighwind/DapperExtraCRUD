@@ -304,7 +304,7 @@ DROP TABLE dbo.{tableName};";
 		public static void Get_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
 		{
 			foreach (T item in list) {
-				T get = conn.Get<T, KeyType>(item.GetKey(), trans);
+				T get = conn.Get<T>(item.GetKey(), trans);
 				if (!item.IsIdentical(get))
 					throw new InvalidOperationException();
 			}
@@ -360,15 +360,15 @@ DROP TABLE dbo.{tableName};";
 			//bool Delete<KeyType>(KeyType key, int commandTimeout = 30);
 			for (int i = 0; i < list.Count; i++) {
 				var key = list[i].GetKey();
-				T t = conn.Get<T, KeyType>(key, trans);
+				T t = conn.Get<T>(key, trans);
 				if (t == null)
 					throw new InvalidOperationException();
-				if (!conn.Delete<T, KeyType>(key, trans))
+				if (!conn.Delete<T>(key, trans))
 					throw new InvalidOperationException();
 				int count1 = conn.RecordCount<T>(trans);
 				if (count1 != (list.Count - i - 1))
 					throw new InvalidOperationException();
-				t = conn.Get<T, KeyType>(key, trans);
+				t = conn.Get<T>(key, trans);
 				if (t != null)
 					throw new InvalidOperationException();
 			}
@@ -511,7 +511,7 @@ DROP TABLE dbo.{tableName};";
 			int max = Math.Min(list.Count, 10);
 			for (int i = 2; i < max; i++) {
 				List<T> limited = list.Take(i).ToList();
-				List<T> bulk = conn.BulkGet<T, KeyType>(limited.Select(c => c.GetKey()), trans).AsList();
+				List<T> bulk = conn.BulkGet<T>(limited.Select(c => (object) c.GetKey()), trans).AsList();
 				for (int j = 0; j < i; j++) {
 					if (!limited[j].IsIdentical(bulk[j]))
 						throw new InvalidOperationException();
@@ -558,7 +558,7 @@ DROP TABLE dbo.{tableName};";
 		{
 			//int BulkDelete<KeyType>(IEnumerable<KeyType> keys, int commandTimeout = 30);
 			List<KeyType> keys = conn.GetList<T>(trans).Select(t => t.GetKey()).AsList();
-			int count = conn.BulkDelete<T, KeyType>(keys, trans);
+			int count = conn.BulkDelete<T>(keys.Select(k => (object)k), trans);
 			if (count != keys.Count)
 				throw new InvalidOperationException();
 			count = conn.RecordCount<T>(trans);
