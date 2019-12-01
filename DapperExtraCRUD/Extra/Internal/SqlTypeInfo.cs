@@ -144,7 +144,11 @@ namespace Dapper.Extra.Internal
 			}
 
 			if (keys.Count == 0) {
+#if NET45
+				KeyColumns = Constants.SqlColumnsEmpty;
+#else
 				KeyColumns = Array.Empty<SqlColumn>();
+#endif
 			}
 			else {
 				KeyColumns = keys.ToArray();
@@ -155,7 +159,7 @@ namespace Dapper.Extra.Internal
 					throw new InvalidOperationException(Type.FullName + " cannot have a both a composite key and an autoincrement key.");
 				}
 				else {
-					// remove SqlColumnAttributes.AutoKey from all columns
+					// remove SqlColumnAttributes.AutoKey from all key columns
 					foreach (SqlColumn key in keys) {
 						key.Attributes = SqlColumnAttributes.Key;
 					}
@@ -220,7 +224,11 @@ namespace Dapper.Extra.Internal
 
 			Columns = columns.Where(c => !c.NotMapped).ToArray();
 			EqualityColumns = KeyColumns.Count == 0 || KeyColumns.Count == Columns.Count ? Columns : KeyColumns;
+#if NET45
+			UpdateKeyColumns = Columns == EqualityColumns ? Constants.SqlColumnsEmpty : Columns.Where(c => c.IsKey || c.MatchUpdate).ToArray();
+#else
 			UpdateKeyColumns = Columns == EqualityColumns ? Array.Empty<SqlColumn>() : Columns.Where(c => c.IsKey || c.MatchUpdate).ToArray();
+#endif
 			DeleteKeyColumns = Columns == EqualityColumns ? Columns : Columns.Where(c => c.IsKey || c.MatchDelete).ToArray();
 		}
 
@@ -229,12 +237,24 @@ namespace Dapper.Extra.Internal
 		/// </summary>
 		public Type Type { get; private set; }
 		/// <summary>
-		/// The attributes of the table.
+		/// The table attributes.
 		/// </summary>
 		public SqlTableAttributes Attributes { get; private set; }
+		/// <summary>
+		/// Determines if the properties are declared-only (top-level).
+		/// </summary>
 		public bool DeclaredOnly => Attributes.HasFlag(SqlTableAttributes.DeclaredOnly);
+		/// <summary>
+		/// Determines if deletes are ignored.
+		/// </summary>
 		public bool IgnoreDelete => Attributes.HasFlag(SqlTableAttributes.IgnoreDelete);
+		/// <summary>
+		/// Determines if inserts are ignored.
+		/// </summary>
 		public bool IgnoreInsert => Attributes.HasFlag(SqlTableAttributes.IgnoreInsert);
+		/// <summary>
+		/// Determines if updates are ignored.
+		/// </summary>
 		public bool IgnoreUpdate => Attributes.HasFlag(SqlTableAttributes.IgnoreUpdate);
 
 		/// <summary>

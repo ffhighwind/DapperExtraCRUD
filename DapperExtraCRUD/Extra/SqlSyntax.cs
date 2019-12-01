@@ -32,10 +32,22 @@ namespace Dapper.Extra
 	/// </summary>
 	public enum SqlSyntax
 	{
-		SQLServer,
-		PostgreSQL,
-		MySQL,
-		SQLite,
+		/// <summary>
+		/// Microsoft SQL Server
+		/// </summary>
+		SQLServer = 0,
+		/// <summary>
+		/// PostgreSQL
+		/// </summary>
+		PostgreSQL = 1,
+		/// <summary>
+		/// MySQL
+		/// </summary>
+		MySQL = 2,
+		/// <summary>
+		/// SQLite
+		/// </summary>
+		SQLite = 3,
 		//Oracle,
 	}
 }

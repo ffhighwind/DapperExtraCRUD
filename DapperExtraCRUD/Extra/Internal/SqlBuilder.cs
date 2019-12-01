@@ -39,12 +39,17 @@ using System.Threading;
 namespace Dapper.Extra.Internal
 {
 	/// <summary>
-	/// Stores metadata and generates SQL commands and queries for the given type.
+	/// Stores metadata and generates SQL commands for the given type.
 	/// </summary>
 	/// <typeparam name="T">The type of to generate queries for.</typeparam>
 	public sealed class SqlBuilder<T> : ISqlBuilder
 		where T : class
 	{
+		/// <summary>
+		/// Constructs a builder which generates metadata and SQL commands for the given type.
+		/// </summary>
+		/// <param name="info"></param>
+		/// <param name="threadSafety"></param>
 		public SqlBuilder(SqlTypeInfo info, LazyThreadSafetyMode threadSafety = LazyThreadSafetyMode.ExecutionAndPublication)
 		{
 			if (info.Type.IsGenericTypeDefinition && info.Type.GetGenericTypeDefinition() == typeof(List<>))
@@ -183,14 +188,15 @@ namespace Dapper.Extra.Internal
 		/// </summary>
 		public DataReaderFactory DataReaderFactory { get; private set; }
 		/// <summary>
-		/// Creates an object from a single value key.
+		/// Creates an object from a single value key. This can be used by a dictionary where <typeparamref name="T"/> is the key.
 		/// </summary>
 		public Func<object, T> CreateFromKey { get; private set; }
 
 		/// <summary>
-		/// Casts <see cref="KeyBuilder"/> to the given <see cref="SqlBuilder{T, KeyType}"/>.
+		/// Creates single key queries.
 		/// </summary>
 		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <param name="threadSafety">Determines the thread safe access for the</param>
 		internal void Create<KeyType>(LazyThreadSafetyMode threadSafety)
 		{
 			SqlQueries<T> queries = (SqlQueries<T>)Queries;
@@ -198,7 +204,7 @@ namespace Dapper.Extra.Internal
 			CreateFromKey = (key) => {
 				object result = System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(T));
 				setter(result, key);
-				return (T) result;
+				return (T)result;
 			};
 			queries.LazyBulkDeleteKeys = new Lazy<SqlKeysInt<T>>(() => CreateBulkDeleteKeys<KeyType>(), threadSafety);
 			queries.LazyBulkGetKeys = new Lazy<DbKeysList<T>>(() => CreateBulkGetKeys<KeyType>(), threadSafety);
@@ -373,6 +379,11 @@ namespace Dapper.Extra.Internal
 			};
 		}
 
+		/// <summary>
+		/// Creates a function that syncs the given columns.
+		/// </summary>
+		/// <param name="columns">The columns that will be queried and updated.</param>
+		/// <returns>An auto-sync query.</returns>
 		public DbTVoid<T> CreateAutoSync(IEnumerable<SqlColumn> columns)
 		{
 			if (!columns.Any())

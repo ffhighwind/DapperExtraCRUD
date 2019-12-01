@@ -32,12 +32,30 @@ namespace Dapper.Extra.Internal
 	/// </summary>
 	public enum SqlTableAttributes
 	{
+		/// <summary>
+		/// No table attributes.
+		/// </summary>
 		None = 0,
+		/// <summary>
+		/// Prevent inherited properties.
+		/// </summary>
 		DeclaredOnly = 1,
+		/// <summary>
+		/// Include inherited attributes.
+		/// </summary>
 		InheritAttributes = 1 << 1,
 		//IgnoreSelect = 1 << 2,
+		/// <summary>
+		/// Prevents insert commands.
+		/// </summary>
 		IgnoreInsert = 1 << 3,
+		/// <summary>
+		/// Prevents update commands.
+		/// </summary>
 		IgnoreUpdate = 1 << 4,
+		/// <summary>
+		/// Prevents delete commands.
+		/// </summary>
 		IgnoreDelete = 1 << 5
 	}
 }

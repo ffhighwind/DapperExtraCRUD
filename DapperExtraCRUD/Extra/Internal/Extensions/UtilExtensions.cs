@@ -29,6 +29,9 @@ using System.Linq;
 
 namespace Dapper.Extra.Internal.Extensions
 {
+	/// <summary>
+	/// Extensions intended for internal use.
+	/// </summary>
 	public static class UtilExtensions
 	{
 		/// <summary>

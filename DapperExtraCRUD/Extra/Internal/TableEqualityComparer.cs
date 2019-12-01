@@ -38,7 +38,6 @@ namespace Dapper.Extra.Internal
 			InitialHash = tableName.GetHashCode() * 31619117;
 		}
 
-		//private SqlColumn EqualityColumn { get; set; }
 		private MemberGetter Getter { get; set; }
 		private int InitialHash { get; set; }
 
@@ -79,7 +78,6 @@ namespace Dapper.Extra.Internal
 			InitialHash = tableName.GetHashCode();
 		}
 
-		//private IReadOnlyList<SqlColumn> EqualityColumns { get; set; }
 		private IReadOnlyList<MemberGetter> Getters { get; set; }
 		private int InitialHash { get; set; }
 

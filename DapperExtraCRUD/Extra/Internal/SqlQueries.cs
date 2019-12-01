@@ -28,7 +28,7 @@ using System;
 
 namespace Dapper.Extra.Internal
 {
-	public class SqlQueries<T> : ISqlQueries<T> where T : class
+	internal class SqlQueries<T> : ISqlQueries<T> where T : class
 	{
 		public DbTBool<T> Delete { get; internal set; }
 		public DbTT<T> Get { get; internal set; }

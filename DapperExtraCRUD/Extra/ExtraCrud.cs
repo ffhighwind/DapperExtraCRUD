@@ -31,12 +31,17 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
-using static Dapper.SqlMapper;
 
 namespace Dapper.Extra
 {
+	/// <summary>
+	/// Utilities and metadata accessors for Dapper.ExtraCRUD.
+	/// </summary>
 	public static class ExtraCrud
 	{
+		/// <summary>
+		/// The default syntax for tables without a <see cref="Dapper.Extra.Annotations.TableAttribute"/>.
+		/// </summary>
 		public static SqlSyntax Syntax { get; set; } = SqlSyntax.SQLServer;
 		private static readonly ConcurrentDictionary<Type, object> BuilderCache = new ConcurrentDictionary<Type, object>();
 		private static readonly ConcurrentDictionary<Type, object> QueriesCache = new ConcurrentDictionary<Type, object>();
@@ -72,14 +77,14 @@ namespace Dapper.Extra
 		/// </summary>
 		/// <typeparam name="T">The table type.</typeparam>
 		/// <returns>The queries for the given type.</returns>
-		public static SqlQueries<T> Queries<T>() where T : class
+		public static ISqlQueries<T> Queries<T>() where T : class
 		{
 			Type type = typeof(T);
 			if (QueriesCache.TryGetValue(type, out object obj)) {
 				return (SqlQueries<T>)obj;
 			}
 			ISqlQueries<T> queries = Builder<T>().Queries;
-			return (SqlQueries<T>)QueriesCache.GetOrAdd(type, queries);
+			return (ISqlQueries<T>)QueriesCache.GetOrAdd(type, queries);
 		}
 
 		/// <summary>
@@ -130,7 +135,7 @@ namespace Dapper.Extra
 		/// <summary>
 		/// Returns whether a property will be mapped. These must be writable and be of a valid Dapper/SQL type.
 		/// </summary>
-		/// <param name="property">The <see cref="PropertyInfo"/> representing the column.</param>
+		/// <param name="property">The <see cref="System.Reflection.PropertyInfo"/> representing the column.</param>
 		/// <returns>True if the given property will be mapped; otherwise false.</returns>
 		public static bool IsValidProperty(PropertyInfo property)
 		{
@@ -156,7 +161,7 @@ namespace Dapper.Extra
 				Type genericArgType = type.GetGenericArguments()[0];
 				return genericArgType == typeof(byte);
 			}
-			bool success = type.GetInterfaces().Any(ty => ty == typeof(ITypeHandler));
+			bool success = type.GetInterfaces().Any(ty => ty == typeof(Dapper.SqlMapper.ITypeHandler));
 			return success;
 		}
 

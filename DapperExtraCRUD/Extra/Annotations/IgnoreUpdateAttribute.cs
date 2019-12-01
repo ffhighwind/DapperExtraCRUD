@@ -29,20 +29,20 @@ using System;
 namespace Dapper.Extra.Annotations
 {
 	/// <summary>
-	/// Ignores the <see cref="PropertyInfo"/> for updates.
+	/// Ignores the <see cref="System.Reflection.PropertyInfo"/> for updates.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
 	public class IgnoreUpdateAttribute : Attribute, IDefaultAttribute
 	{
 		/// <summary>
-		/// Ignores the <see cref="PropertyInfo"/> for updates.
+		/// Ignores the <see cref="System.Reflection.PropertyInfo"/> for updates.
 		/// </summary>
 		public IgnoreUpdateAttribute()
 		{
 		}
 
 		/// <summary>
-		/// Ignores the <see cref="PropertyInfo"/> for updates.
+		/// Ignores the <see cref="System.Reflection.PropertyInfo"/> for updates.
 		/// </summary>
 		/// <param name="value">A string that is injected into the update statement as the column's value. 
 		/// If this is <see langword="null"/> then the column cannot be updated.</param>

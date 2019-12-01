@@ -5,44 +5,16 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
+using System.Globalization;
+using System.Linq;
 
 namespace Dapper.Extra
 {
+	/// <summary>
+	/// SQL utilities.
+	/// </summary>
 	public static class ExtraUtil
 	{
-		/// <summary>
-		/// Converts a <see cref="StringComparison"/> to the equivilent <see cref="StringComparer"/>.
-		/// </summary>
-		/// <param name="comparison">The <see cref="StringComparison"/>.</param>
-		/// <returns>A <see cref="StringComparer"/> to compare strings.</returns>
-		public static IEqualityComparer<string> ToComparer(StringComparison comparison)
-		{
-			IEqualityComparer<string> comparer;
-			switch (comparison) {
-				case StringComparison.CurrentCulture:
-					comparer = StringComparer.CurrentCulture;
-					break;
-				case StringComparison.CurrentCultureIgnoreCase:
-					comparer = StringComparer.CurrentCultureIgnoreCase;
-					break;
-				case StringComparison.InvariantCulture:
-					comparer = StringComparer.InvariantCulture;
-					break;
-				case StringComparison.InvariantCultureIgnoreCase:
-					comparer = StringComparer.InvariantCultureIgnoreCase;
-					break;
-				case StringComparison.Ordinal:
-					comparer = StringComparer.Ordinal;
-					break;
-				case StringComparison.OrdinalIgnoreCase:
-					comparer = StringComparer.OrdinalIgnoreCase;
-					break;
-				default:
-					throw new NotSupportedException(comparison.ToString());
-			}
-			return comparer;
-		}
-
 		internal static Dictionary<Type, DbType> DbTypeMap = new Dictionary<Type, DbType>() {
 			[typeof(byte)] = DbType.Byte,
 			[typeof(sbyte)] = DbType.SByte,
@@ -84,24 +56,21 @@ namespace Dapper.Extra
 		};
 
 		/// <summary>
-		/// Returns the <see cref="DbType"/> that represents the given <see cref="Type"/>.
+		/// Returns the <see cref="DbType"/> that represents the given <see cref="Type"/>. This can be used for switch
+		/// statements when handling objects being passed to an SQL database.
 		/// </summary>
 		/// <param name="type">The type to determine the <see cref="DbType"/> for.</param>
-		/// <param name="dbType">The <see cref="DbType"/> representing the type if one exists; otherwise null.</param>
-		/// <returns>True if there is a <see cref="DbType"/> representing the given <see cref="Type"/>.</returns>
-		public static bool TryGetDbType(Type type, out DbType dbType)
+		/// <returns>The <see cref="DbType"/> representing the type if one exists; otherwise <see cref="DbType.Object"/>.</returns>
+		public static DbType GetDbType(Type type)
 		{
-			if (DbTypeMap.TryGetValue(type, out dbType))
-				return true;
-			if (type.IsEnum) {
-				dbType = DbType.Int32;
-				return true;
+			if (!DbTypeMap.TryGetValue(type, out DbType dbType)) {
+				dbType = type.IsEnum ? DbType.Int32 : DbType.Object;
 			}
-			return false;
+			return dbType;
 		}
 
 		/// <summary>
-		/// Returns whether the ToString() value of an object with the given type should be quoted in an SQL command.
+		/// Returns whether the value of an object with the given type should be quoted in SQL.
 		/// </summary>
 		/// <param name="type">The type of object.</param>
 		/// <returns>True if the type should be quoted; false otherwise.</returns>
@@ -114,111 +83,81 @@ namespace Dapper.Extra
 				case TypeCode.String:
 					return true;
 				case TypeCode.Object:
-					return type == typeof(TimeSpan) || type == typeof(DateTimeOffset) || type == typeof(Guid);
-				default:
-					return false;
+					return type == typeof(Guid) || type == typeof(DateTimeOffset) || type == typeof(TimeSpan);
 			}
+			return false;
 		}
 
-		public static bool SqlValue(object value, out string str)
+		/// <summary>
+		/// Returns the SQL string and <see cref="DbType"/> that represent an object.
+		/// </summary>
+		/// <param name="value">The object to obtain the SQL value of.</param>
+		/// <param name="str">The SQL string representation of the value. This will be <see langword="null"/> if the value cannot be determined.</param>
+		/// <returns>The <see cref="DbType"/> that represents the object's <see cref="Type"/>.</returns>
+		public static DbType SqlValue(object value, out string str)
 		{
 			if (value == null) {
 				str = "NULL";
-				return true;
+				return DbType.Object;
 			}
-			Type type = value.GetType();
-			type = Nullable.GetUnderlyingType(type) ?? type;
-			TypeCode typeCode = Type.GetTypeCode(type);
-			switch (typeCode) {
-				case TypeCode.Object:
-					if (type == typeof(TimeSpan) || type == typeof(DateTimeOffset) || type == typeof(Guid)) {
-						str = null;
-						return false;
-					}
-					break;
-				case TypeCode.Single:
-				case TypeCode.Double:
-				case TypeCode.DateTime:
-					str = null;
-					return false;
-				case TypeCode.Boolean:
-					str = ((bool)value) ? "TRUE" : "FALSE";
-					return true;
-				case TypeCode.String:
-					str = "'" + value.ToString().Replace("'", "''") + "'";
-					return true;
-				case TypeCode.Char:
-					str = (char)value == '\'' ? "''''" : "'" + value.ToString() + "'";
-					return true;
-				case TypeCode.Decimal:
-				case TypeCode.SByte:
-				case TypeCode.Byte:
-				case TypeCode.Int16:
-				case TypeCode.UInt16:
-				case TypeCode.Int32:
-				case TypeCode.UInt32:
-				case TypeCode.Int64:
-				case TypeCode.UInt64:
-					str = value.ToString();
-					return true;
-				//case TypeCode.DBNull:
-				case TypeCode.Empty:
-					str = "NULL";
-					return true;
-			}
-			throw new InvalidOperationException("Invalid SQL type " + type.Name.ToString());
-		}
-
-		public static bool SqlDefaultValue(Type type, out object value)
-		{
-			if (!type.IsValueType) {
-				value = "NULL";
-				return true;
-			}
-			TypeCode typeCode = Type.GetTypeCode(type);
-			switch (typeCode) {
-				case TypeCode.Object:
-					if (type == typeof(TimeSpan))
-						value = default(TimeSpan);
-					else if (type == typeof(DateTimeOffset))
-						value = default(DateTimeOffset);
-					else if (type == typeof(Guid))
-						value = default(Guid);
-					else
+			DbType dbType = GetDbType(value.GetType());
+			switch (dbType) {
+				case DbType.AnsiStringFixedLength:
+				case DbType.StringFixedLength:
+					if (value is char ch) {
+						str = ch == '\'' ? "''''" : "'" + value.ToString() + "'";
 						break;
-					return false;
-				case TypeCode.Boolean:
-					value = "FALSE";
-					return true;
-				case TypeCode.Char:
-					value = "'\0'";
-					return true;
-				case TypeCode.SByte:
-				case TypeCode.Byte:
-				case TypeCode.Int16:
-				case TypeCode.UInt16:
-				case TypeCode.Int32:
-				case TypeCode.UInt32:
-				case TypeCode.Int64:
-				case TypeCode.UInt64:
-				case TypeCode.Single:
-				case TypeCode.Double:
-				case TypeCode.Decimal:
-					value = "0";
-					return true;
-				case TypeCode.DateTime:
-					value = default(DateTime);
-					return false;
-				//case TypeCode.String:
-				//	value = "NULL";
-				//	return true;
-				case TypeCode.Empty:
-				case TypeCode.DBNull:
-				default:
+					}
+					goto case DbType.Xml;
+				case DbType.AnsiString:
+				case DbType.String:
+				case DbType.Xml:
+					str = "'" + value.ToString().Replace("'", "''") + "'";
 					break;
+				case DbType.Boolean:
+					str = ((bool)value) ? "TRUE" : "FALSE";
+					break;
+				case DbType.Byte:
+				case DbType.Int16:
+				case DbType.Int32:
+				case DbType.Int64:
+				case DbType.SByte:
+				case DbType.UInt16:
+				case DbType.UInt32:
+				case DbType.UInt64:
+					str = value.ToString();
+					break;
+				case DbType.Guid:
+					str = "'" + value.ToString() + "'";
+					break;
+				case DbType.Binary:
+				case DbType.Object:
+					str = null;
+					break;
+				case DbType.Time:
+					str = ((TimeSpan)value).ToString("'HH:mm:ss:fff'");
+					break;
+				case DbType.Single:
+				case DbType.Double:
+				case DbType.VarNumeric:
+				case DbType.Decimal:
+				case DbType.Currency:
+					str = ((decimal)value).ToString();
+					break;
+				case DbType.Date:
+					str = ((DateTime)value).ToString("'yyyy-MM-dd'");
+					break;
+				case DbType.DateTime:
+				case DbType.DateTime2:
+					str = ((DateTime)value).ToString("'yyyy-MM-dd HH:mm:ss:fff'");
+					break;
+				case DbType.DateTimeOffset:
+					str = ((DateTimeOffset)value).ToString("'dddd, MMM dd yyyy HH:mm:ss:fff zzz'", CultureInfo.InvariantCulture);
+					break;
+				default:
+					throw new InvalidOperationException("Unknown DbType: " + dbType.ToString());
 			}
-			value = null;
-			return false;
+			return dbType;
 		}
 
 		/// <summary>
@@ -234,15 +173,33 @@ namespace Dapper.Extra
 		/// <param name="commandTimeout">The command timeout in seconds. 0 or null prevent a timeout.</param>
 		/// <param name="options">The bulk copy options used when transfering data.</param>
 		public static void BulkInsert<T>(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction, string tableName, DataReaderFactory factory,
-			IEnumerable<SqlColumn> columns, int? commandTimeout, SqlBulkCopyOptions options)
+			IEnumerable<SqlColumn> columns, int commandTimeout = 30, SqlBulkCopyOptions options = SqlBulkCopyOptions.Default)
 			where T : class
 		{
 			DbDataReader dataReader = factory.Create(objs);
+			BulkInsert(connection, dataReader, transaction, tableName, columns.Select(c => c.Property.Name), columns.Select(c => c.ColumnName), commandTimeout, options);
+		}
+
+		/// <summary>
+		/// Inserts data into a table using <see cref="SqlBulkCopy"/>.
+		/// </summary>
+		/// <param name="connection">The database connection.</param>
+		/// <param name="dataReader">The source of data to be inserted.</param>
+		/// <param name="transaction">The transaction for the connection, or null if an internal transaction should be used.</param>
+		/// <param name="tableName">The name of the table.</param>
+		/// <param name="propertyNames">The property names that map to the column names.</param>
+		/// <param name="columnNames">The column names that map to the properties.</param>
+		/// <param name="commandTimeout">The command timeout in seconds. 0 or null prevent a timeout.</param>
+		/// <param name="options">The bulk copy options used when transfering data.</param>
+		public static void BulkInsert(SqlConnection connection, DbDataReader dataReader, SqlTransaction transaction, string tableName, IEnumerable<string> propertyNames,
+			IEnumerable<string> columnNames, int commandTimeout = 30, SqlBulkCopyOptions options = SqlBulkCopyOptions.Default)
+		{
 			using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connection, options, transaction)) {
 				bulkCopy.DestinationTableName = tableName;
-				bulkCopy.BulkCopyTimeout = commandTimeout ?? 0;
-				foreach (SqlColumn column in columns) {
-					bulkCopy.ColumnMappings.Add(column.Property.Name, column.ColumnName);
+				bulkCopy.BulkCopyTimeout = commandTimeout;
+				var columns = propertyNames.Zip(columnNames, (p, c) => new { PropertyName = p, ColumnName = c });
+				foreach (var column in columns) {
+					bulkCopy.ColumnMappings.Add(column.PropertyName, column.ColumnName);
 				}
 				bulkCopy.WriteToServer(dataReader);
 			}

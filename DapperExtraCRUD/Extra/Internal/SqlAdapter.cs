@@ -114,7 +114,7 @@ namespace Dapper.Extra.Internal
 					SelectLimitStart = "";
 					SelectLimitEnd = "\nLIMIT {0}";
 					break;
-				/** case SqlSyntax.Oracle:
+				/* case SqlSyntax.Oracle:
 					QuoteLeft = '\'';
 					QuoteRight = '\'';
 					EscapeQuoteRight = "''";
@@ -212,7 +212,6 @@ IF OBJECT_ID('tempdb..{0}') IS NOT NULL DROP TABLE {0}";
 		/// Creates an SQL command to drop a temporary table if it exists.
 		/// </summary>
 		/// <param name="tableName">The temporary table name.</param>
-		/// <param name="schema">The schema of the table.</param>
 		/// <returns>A command to drop a table if it exists.</returns>
 		public string DropTempTableIfExists(string tableName)
 		{
@@ -249,8 +248,13 @@ IF OBJECT_ID('tempdb..{0}') IS NOT NULL DROP TABLE {0}";
 		private readonly string DropTempTableIfExistsQuery;
 		private readonly string TempTableName;
 		private readonly string CreateTempTable;
-
+		/// <summary>
+		/// The text that comes after 'SELECT' in a limit query. This should be passed to string.Format as the first parameter with the number as the second parameter.
+		/// </summary>
 		public string SelectLimitStart { get; private set; }
+		/// <summary>
+		/// The text that comes at the end of a limit query. This should be passed to string.Format as the first parameter with the number as the second parameter.
+		/// </summary>
 		public string SelectLimitEnd { get; private set; }
 	}
 }

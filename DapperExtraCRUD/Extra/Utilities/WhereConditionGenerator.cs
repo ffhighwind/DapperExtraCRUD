@@ -62,7 +62,7 @@ namespace Dapper.Extra.Utilities
 		/// <summary>
 		/// Converts a <see cref="Predicate{T}"/> to a WHERE expression in SQL.
 		/// </summary>
-		/// <param name="node">The predicate.</param>
+		/// <param name="predicate">The predicate.</param>
 		/// <param name="param">The Dapper parameters for the WHERE condition.</param>
 		/// <returns>The WHERE expression in SQL that the predicate represents.</returns>
 		public static string Create(Expression<Predicate<T>> predicate, out IDictionary<string, object> param)
@@ -197,14 +197,55 @@ namespace Dapper.Extra.Utilities
 		protected override Expression VisitDefault(DefaultExpression node)
 		{
 			// default(a)
-			if (!ExtraUtil.SqlDefaultValue(node.Type, out object value)) {
-				if (value == null)
-					throw new InvalidOperationException("Invalid default type: " + node.Type.FullName);
-				AddParam(value);
-			}
+			object value = DefaultValue(node.Type);
+			if (value is string str)
+				Results.Append(str);
 			else
-				Results.Append(value);
+				AddParam(value);
 			return null;
+		}
+
+		/// <summary>
+		/// Creates the default value for a type and converts it to the SQL string representation if possible.
+		/// </summary>
+		/// <param name="type">The type.</param>
+		/// <returns>The default value for a given type converted to an SQL string if possible.</returns>
+		private static object DefaultValue(Type type)
+		{
+			if (!type.IsValueType)
+				return "NULL";
+			TypeCode typeCode = Type.GetTypeCode(type);
+			switch (typeCode) {
+				case TypeCode.Object:
+					if (type == typeof(TimeSpan))
+						return default(TimeSpan);
+					else if (type == typeof(DateTimeOffset))
+						return default(DateTimeOffset);
+					else if (type == typeof(Guid))
+						return default(Guid);
+					return Activator.CreateInstance(type);
+				case TypeCode.Boolean:
+					return "FALSE";
+				case TypeCode.Char:
+					return "'\0'";
+				case TypeCode.SByte:
+				case TypeCode.Byte:
+				case TypeCode.Int16:
+				case TypeCode.UInt16:
+				case TypeCode.Int32:
+				case TypeCode.UInt32:
+				case TypeCode.Int64:
+				case TypeCode.UInt64:
+				case TypeCode.Single:
+				case TypeCode.Double:
+				case TypeCode.Decimal:
+					return "0";
+				case TypeCode.DateTime:
+					return default(DateTime);
+				default:
+					break;
+			}
+			throw new InvalidOperationException("Invalid default type: " + type.FullName);
 		}
 
 		/// <summary>
@@ -214,9 +255,8 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
 		protected override Expression VisitUnary(UnaryExpression node)
 		{
-			if (node.CanReduce) {
+			if (node.CanReduce)
 				base.Visit(node.Reduce());
-			}
 			else {
 				string op;
 				switch (node.NodeType) {
@@ -692,7 +732,7 @@ namespace Dapper.Extra.Utilities
 		/// <summary>
 		/// Visits the children of the <see cref="System.Linq.Expressions.Expression"/>.
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="Ty">The type of the lambda expression.</typeparam>
 		/// <param name="node">The expression to visit.</param>
 		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
 		protected override Expression VisitLambda<Ty>(Expression<Ty> node)

@@ -29,7 +29,7 @@ using System;
 namespace Dapper.Extra.Annotations
 {
 	/// <summary>
-	/// Turns a <see cref="PropertyInfo"/> into a pseudo key for deletions.
+	/// Turns a <see cref="System.Reflection.PropertyInfo"/> into a pseudo key for deletions.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
 	public class MatchDeleteAttribute : Attribute

@@ -27,7 +27,6 @@
 using Dapper.Extra.Annotations;
 using Fasterflect;
 using System;
-using System.Data;
 using System.Reflection;
 
 namespace Dapper.Extra.Internal
@@ -52,11 +51,11 @@ namespace Dapper.Extra.Internal
 		}
 
 		/// <summary>
-		/// The <see cref="PropertyInfo"/> that this column represents.
+		/// The <see cref="System.Reflection.PropertyInfo"/> that this column represents.
 		/// </summary>
 		public PropertyInfo Property { get; private set; }
 		/// <summary>
-		/// The <see cref="PropertyInfo"/> type.
+		/// The <see cref="System.Reflection.PropertyInfo"/> type.
 		/// </summary>
 		public Type Type => Property.PropertyType;
 		/// <summary>
@@ -68,10 +67,6 @@ namespace Dapper.Extra.Internal
 		/// </summary>
 		public MemberSetter Setter { get; private set; }
 		/// <summary>
-		/// The <see cref="DbType"/> that represents this column's type.
-		/// </summary>
-		public DbType DbType => ExtraUtil.TryGetDbType(Property.PropertyType, out DbType dbType) ? dbType : DbType.Object;
-		/// <summary>
 		/// The name of the column. This is quoted using the <see cref="SqlAdapter"/> if necessary.
 		/// </summary>
 		public string ColumnName { get; private set; }
@@ -80,24 +75,60 @@ namespace Dapper.Extra.Internal
 		/// </summary>
 		public int Ordinal { get; internal set; }
 		/// <summary>
-		/// The value stored in the <see cref="IgnoreInsertAttribute"/> if one exists.
+		/// The value from the <see cref="IgnoreInsertAttribute"/> if it exists.
 		/// </summary>
 		public string InsertValue { get; internal set; }
 		/// <summary>
-		/// The value stored in the <see cref="IgnoreUpdateAttribute"/> or <see cref="MatchUpdateAttribute"/> if one exists. 
+		/// The value from the <see cref="IgnoreUpdateAttribute"/> or <see cref="MatchUpdateAttribute"/> if it exists. 
 		/// </summary>
 		public string UpdateValue { get; internal set; }
+		/// <summary>
+		/// The column is part of the primary key.
+		/// </summary>
 		public bool IsKey => (Attributes & SqlColumnAttributes.Key) != 0;
+		/// <summary>
+		/// The column is an auto-increment key.
+		/// </summary>
 		public bool IsAutoKey => (Attributes & SqlColumnAttributes.AutoKey) == SqlColumnAttributes.AutoKey;
+		/// <summary>
+		/// Ignores the column for selects.
+		/// </summary>
 		public bool IgnoreSelect => (Attributes & SqlColumnAttributes.IgnoreSelect) != 0;
+		/// <summary>
+		/// Ignores the column for inserts.
+		/// </summary>
 		public bool IgnoreInsert => (Attributes & SqlColumnAttributes.IgnoreInsert) != 0;
+		/// <summary>
+		/// Ignores the column for updates.
+		/// </summary>
 		public bool IgnoreUpdate => (Attributes & SqlColumnAttributes.IgnoreUpdate) != 0;
+		/// <summary>
+		/// Ignores the column for inserts.
+		/// </summary>
 		public bool IgnoreDelete => (Attributes & SqlColumnAttributes.IgnoreDelete) != 0;
+		/// <summary>
+		/// Prevents the column from being included in commands.
+		/// </summary>
 		public bool NotMapped => (Attributes & SqlColumnAttributes.NotMapped) == SqlColumnAttributes.NotMapped;
+		/// <summary>
+		/// Determines if the column must matched the database on updates.
+		/// </summary>
 		public bool MatchUpdate => (Attributes & SqlColumnAttributes.MatchUpdate) != 0;
+		/// <summary>
+		/// Determines if the column must match the database on deletes.
+		/// </summary>
 		public bool MatchDelete => (Attributes & SqlColumnAttributes.MatchDelete) != 0;
+		/// <summary>
+		/// Determines if the column should be synchronized after inserts.
+		/// </summary>
 		public bool InsertAutoSync => (Attributes & SqlColumnAttributes.InsertAutoSync) != 0;
+		/// <summary>
+		/// Determines if the column should be synchronized after updates.
+		/// </summary>
 		public bool UpdateAutoSync => (Attributes & SqlColumnAttributes.UpdateAutoSync) != 0;
+		/// <summary>
+		/// The column attributes.
+		/// </summary>
 		public SqlColumnAttributes Attributes { get; internal set; }
 
 		// Getter

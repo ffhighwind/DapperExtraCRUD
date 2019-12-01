@@ -34,6 +34,9 @@ using System.Threading.Tasks;
 
 namespace Dapper
 {
+	/// <summary>
+	/// Dapper extension methods for <see cref="IDbConnection"/> and <see cref="SqlConnection"/>.
+	/// </summary>
 	public static class DapperExtraExtensions
 	{
 		#region Delegates <T, KeyType> Sync
@@ -89,7 +92,6 @@ namespace Dapper
 		/// Selects the row with the given key.
 		/// </summary>
 		/// <typeparam name="T">The table type.</typeparam>
-		/// <typeparam name="KeyType">The key type.</typeparam>
 		/// <param name="connection">The connection to query on.</param>
 		/// <param name="key">The key of the row to select.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
@@ -271,7 +273,7 @@ namespace Dapper
 		/// </summary>
 		/// <typeparam name="T">The table type.</typeparam>
 		/// <param name="connection">The connection to query on.</param>
-		/// <param name="objs">The objects to insert.</param>
+		/// <param name="obj">The object to insert.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>True if the the row was inserted; false otherwise.</returns>
@@ -397,7 +399,7 @@ namespace Dapper
 		/// </summary>
 		/// <typeparam name="T">The table type.</typeparam>
 		/// <param name="connection">The connection to query on.</param>
-		/// <param name="obj">The objects to select.</param>
+		/// <param name="objs">The objects to select.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given keys.</returns>
@@ -926,7 +928,7 @@ namespace Dapper
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The number of deleted rows.</returns>
-		public static async Task<int> DeleteAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, int commandTimeout = 30)
+		public static async Task<int> DeleteListAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
 			return await Task.Run(() => DeleteList<T>(connection, "", null, transaction, commandTimeout));
@@ -965,7 +967,7 @@ namespace Dapper
 		/// </summary>
 		/// <typeparam name="T">The table type.</typeparam>
 		/// <param name="connection">The connection to query on.</param>
-		/// <param name="objs">The objects to insert.</param>
+		/// <param name="obj">The object to insert.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>True if the the row was inserted; false otherwise.</returns>
@@ -1221,7 +1223,6 @@ namespace Dapper
 		/// </summary>
 		/// <typeparam name="T">The table type.</typeparam>
 		/// <param name="connection">The connection to query on.</param>
-		/// <param name="limit">The maximum number of rows.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
@@ -1240,7 +1241,6 @@ namespace Dapper
 		/// <typeparam name="T">The table type.</typeparam>
 		/// <param name="connection">The connection to query on.</param>
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
-		/// <param name="limit">The maximum number of rows.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
@@ -1259,7 +1259,6 @@ namespace Dapper
 		/// <typeparam name="T">The table type.</typeparam>
 		/// <param name="connection">The connection to query on.</param>
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
-		/// <param name="limit">The maximum number of rows.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
@@ -1275,7 +1274,6 @@ namespace Dapper
 		/// </summary>
 		/// <typeparam name="T">The table type.</typeparam>
 		/// <param name="connection">The connection to query on.</param>
-		/// <param name="limit">The maximum number of rows.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
@@ -1330,8 +1328,6 @@ namespace Dapper
 		/// <param name="connection">The connection to query on.</param>
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="limit">The maximum number of rows.</param>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
@@ -1406,7 +1402,7 @@ namespace Dapper
 		/// </summary>
 		/// <typeparam name="T">The table type.</typeparam>
 		/// <param name="connection">The connection to query on.</param>
-		/// <param name="obj">The objects to select.</param>
+		/// <param name="objs">The objects to select.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given keys.</returns>

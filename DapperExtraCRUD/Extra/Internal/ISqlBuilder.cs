@@ -28,6 +28,9 @@ using System.Collections.Generic;
 
 namespace Dapper.Extra.Internal
 {
+	/// <summary>
+	/// Stores metadata and generates SQL commands.
+	/// </summary>
 	public interface ISqlBuilder
 	{
 		/// <summary>

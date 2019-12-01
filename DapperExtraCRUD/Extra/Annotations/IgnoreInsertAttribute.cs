@@ -29,20 +29,20 @@ using System;
 namespace Dapper.Extra.Annotations
 {
 	/// <summary>
-	/// Ignores the <see cref="PropertyInfo"/> for inserts.
+	/// Ignores the <see cref="System.Reflection.PropertyInfo"/> for inserts.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
 	public class IgnoreInsertAttribute : Attribute, IDefaultAttribute
 	{
 		/// <summary>
-		/// Ignores the <see cref="PropertyInfo"/> for inserts.
+		/// Ignores the <see cref="System.Reflection.PropertyInfo"/> for inserts.
 		/// </summary>
 		public IgnoreInsertAttribute()
 		{
 		}
 
 		/// <summary>
-		/// Ignores the <see cref="PropertyInfo"/> for inserts.
+		/// Ignores the <see cref="System.Reflection.PropertyInfo"/> for inserts.
 		/// </summary>
 		/// <param name="value">A string that is injected into the insert statement as the column's value.
 		/// If this is <see langword="null"/> then the default value will be inserted instead.</param>

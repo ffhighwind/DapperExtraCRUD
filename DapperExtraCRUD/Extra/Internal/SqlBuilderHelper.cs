@@ -31,7 +31,7 @@ using System.Text;
 namespace Dapper.Extra.Internal
 {
 	/// <summary>
-	/// Creates partial SQL commands that are used by <see cref="SqlBuilder"/>.
+	/// Creates partial SQL commands that are used by <see cref="SqlBuilder{T}"/>.
 	/// </summary>
 	public static class SqlBuilderHelper
 	{
@@ -62,8 +62,8 @@ namespace Dapper.Extra.Internal
 		/// Creates the WHERE section for bulk operations.<para></para>
 		/// Source.[x] = TableName.[x] AND Source.[y] = TableName.[y]
 		/// </summary>
-		/// <param name="tableSource">The source table that is used to modify the destination.</param>
-		/// <param name="tableDestination">The destination table that is modified.</param>
+		/// <param name="sourceTable">The source table that is used to modify the destination.</param>
+		/// <param name="destinationTable">The destination table that is modified.</param>
 		/// <param name="columns">The columns to set.</param>
 		public static string WhereEqualsTables(string sourceTable, string destinationTable, IEnumerable<SqlColumn> columns)
 		{

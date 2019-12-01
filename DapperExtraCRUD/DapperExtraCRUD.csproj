@@ -1,47 +1,75 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>net451;netstandard2.0;netcoreapp2.0</TargetFrameworks>
     <AssemblyName>Dapper.ExtraCRUD</AssemblyName>
-    <Version>1.0.1</Version>
+    <Version>1.0.0</Version>
     <Authors>Wesley Hamilton</Authors>
-    <Description></Description>
+    <Description>Dapper Extension inspired by of DapperSimpleCRUD, Dapper-Plus, and more.</Description>
     <NeutralLanguage>en-us</NeutralLanguage>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <PackageTags>dapper orm .net45 .netstandard2</PackageTags>
+    <PackageTags>dapper orm micro-orm sql</PackageTags>
     <PackageLicense>Apache-2.0</PackageLicense>
     <PackageProjectUrl>https://github.com/ffhighwind/DapperExtraCRUD</PackageProjectUrl>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Copyright>Copyright (c) 2018 Wesley Hamilton</Copyright>
-    <RepositoryUrl>https://github.com/ffhighwind/fasterflect</RepositoryUrl>
+    <RepositoryUrl>https://github.com/ffhighwind/DapperExtraCRUD</RepositoryUrl>
     <RepositoryType>GIT</RepositoryType>
     <DelaySign>false</DelaySign>
     <ProjectGuid>{4DBE71C1-2ECD-4192-BC66-E4D1C8DCEC08}</ProjectGuid>
     <RootNamespace>Dapper</RootNamespace>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
-    <DefineConstants>NETSTANDARD2_0</DefineConstants>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)'=='Release|netcoreapp2.0'">
     <OutputPath>bin\lib\</OutputPath>
+    <DocumentationFile>bin\lib\Dapper.ExtraCRUD.xml</DocumentationFile>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
-    <DefineConstants>NETSTANDARD2_0</DefineConstants>
-    <OutputPath>bin\Debug\</OutputPath>
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.0'">
+    <DefineConstants>NETCOREAPP;NETCOREAPP2_0</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net461|AnyCPU'">
-    <DefineConstants>NET461</DefineConstants>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)'=='Release|netstandard2.0'">
     <OutputPath>bin\lib\</OutputPath>
+    <DocumentationFile>bin\lib\Dapper.ExtraCRUD.xml</DocumentationFile>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net461|AnyCPU'">
-    <DefineConstants>NET461</DefineConstants>
-    <OutputPath>bin\Debug\</OutputPath>
+  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
+    <DefineConstants>NETSTANDARD;NETSTANDARD2_0</DefineConstants>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)'=='Release|net451'">
+    <OutputPath>bin\lib\</OutputPath>
+    <DocumentationFile>bin\lib\Dapper.ExtraCRUD.xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)'=='net451'">
+    <DefineConstants>NETFRAMEWORK;NET45</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.0.30" />
     <PackageReference Include="Fasterflect.Reflect" Version="3.0.3" />
-    <PackageReference Include="Microsoft.CSharp" Version="4.6.0" />
-    <PackageReference Include="System.ComponentModel.Annotations" Version="4.6.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.7.0" />
   </ItemGroup>
-  <ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
+    <PackageReference Include="Dapper" Version="2.0.30" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.6.0" />
+    <PackageReference Include="System.ComponentModel" Version="4.3.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.7.0" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="4.6.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)'=='netcoreapp2.0'">
+    <PackageReference Include="Dapper" Version="2.0.30" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.6.0" />
+    <PackageReference Include="System.ComponentModel" Version="4.3.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.7.0" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="4.6.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)'=='net451'">
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.ComponentModel" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <PackageReference Include="Dapper" Version="1.60.6" />
   </ItemGroup>
 </Project>

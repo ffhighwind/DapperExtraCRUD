@@ -25,25 +25,24 @@
 #endregion
 
 using System;
-using System.Reflection;
 
 namespace Dapper.Extra.Annotations
 {
 	/// <summary>
-	/// Turns the <see cref="PropertyInfo"/> into a pseudo key for updates.
+	/// Turns the <see cref="System.Reflection.PropertyInfo"/> into a pseudo key for updates.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
 	public class MatchUpdateAttribute : Attribute, IDefaultAttribute
 	{
 		/// <summary>
-		/// Turns the <see cref="PropertyInfo"/> into a pseudo key for updates and sets the value to the string input if specified.
+		/// Turns the <see cref="System.Reflection.PropertyInfo"/> into a pseudo key for updates and sets the value to the string input if specified.
 		/// </summary>
 		public MatchUpdateAttribute()
 		{
 		}
 
 		/// <summary>
-		/// Turns the <see cref="PropertyInfo"/> into a pseudo key for updates and sets the value to the string input if specified.
+		/// Turns the <see cref="System.Reflection.PropertyInfo"/> into a pseudo key for updates and sets the value to the string input if specified.
 		/// </summary>
 		/// <param name="value">A string that is injected into the update statement as the column's value.
 		/// If this is <see langword="null"/> then the column is not modified.</param>
