@@ -32,7 +32,7 @@ namespace Dapper.Extra.Utilities
 {
 	public interface IAccessObjectAsync<T> where T : class
 	{
-		#region Methods
+		#region Bulk
 
 		/// <summary>
 		/// Deletes the rows with the given keys.
@@ -96,6 +96,10 @@ namespace Dapper.Extra.Utilities
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The number of upserted rows.</returns>
 		Task<int> BulkUpsertAsync(IEnumerable<T> objs, int commandTimeout = 30);
+
+		#endregion Bulk
+
+		#region Other Methods
 
 		/// <summary>
 		/// Deletes the row with the given key.
@@ -301,6 +305,6 @@ namespace Dapper.Extra.Utilities
 		/// <returns>True if the object was upserted; false otherwise.</returns>
 		Task<bool> UpsertAsync(T obj, int commandTimeout = 30);
 
-		#endregion
+		#endregion Other Methods
 	}
 }

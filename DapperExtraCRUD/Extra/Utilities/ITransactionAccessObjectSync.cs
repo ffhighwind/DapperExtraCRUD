@@ -32,6 +32,7 @@ namespace Dapper.Extra.Utilities
 {
 	public interface ITransactionAccessObjectSync<T> where T : class
 	{
+		#region Bulk
 		/// <summary>
 		/// Deletes the rows with the given keys.
 		/// </summary>
@@ -103,6 +104,9 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The number of upserted rows.</returns>
 		int BulkUpsert(IDbTransaction transaction, IEnumerable<T> objs, int commandTimeout = 30);
 
+		#endregion Bulk
+
+		#region Other Methods
 		/// <summary>
 		/// Deletes the row with the given key.
 		/// </summary>
@@ -328,5 +332,7 @@ namespace Dapper.Extra.Utilities
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>True if the object was upserted; false otherwise.</returns>
 		bool Upsert(IDbTransaction transaction, T obj, int commandTimeout = 30);
+
+		#endregion Other Methods
 	}
 }

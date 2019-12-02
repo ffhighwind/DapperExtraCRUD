@@ -316,29 +316,29 @@ namespace Dapper
 		}
 
 		/// <summary>
-		/// Deletes all rows.
+		/// Truncates all rows.
 		/// </summary>
 		/// <typeparam name="T">The table type.</typeparam>
 		/// <param name="connection">The connection to query on.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		public static void DeleteAll<T>(this IDbConnection connection, IDbTransaction transaction = null, int commandTimeout = 30)
+		public static void Truncate<T>(this IDbConnection connection, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
 			ExtraCrud.Queries<T>().Truncate(connection, transaction, commandTimeout);
 		}
 
 		/// <summary>
-		/// Deletes all rows asynchronously.
+		/// Truncates all rows asynchronously.
 		/// </summary>
 		/// <typeparam name="T">The table type.</typeparam>
 		/// <param name="connection">The connection to query on.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		public static async Task DeleteAllAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, int commandTimeout = 30)
+		public static async Task TruncateAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			await Task.Run(() => DeleteAll<T>(connection, transaction, commandTimeout));
+			await Task.Run(() => Truncate<T>(connection, transaction, commandTimeout));
 		}
 
 		/// <summary>
