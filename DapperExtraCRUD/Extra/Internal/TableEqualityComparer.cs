@@ -24,9 +24,9 @@
 // SOFTWARE.
 #endregion
 
-using Fasterflect;
 using System.Collections.Generic;
 using System.Linq;
+using Fasterflect;
 
 namespace Dapper.Extra.Internal
 {

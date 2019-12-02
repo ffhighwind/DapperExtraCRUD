@@ -76,7 +76,7 @@ namespace UnitTests
 						break;
 					fails++;
 					if (fails > 3)
-						break; // only autokeys
+						break; // assumes only autokeys
 				}
 				map.Add(created, created);
 			}
@@ -193,7 +193,7 @@ namespace UnitTests
 			}
 		}
 
-		private static Dictionary<T, T> CreateMap<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
+		private static Dictionary<T, T> CreateMap<T>(List<T> list) where T : class, IDto<T>
 		{
 			Dictionary<T, T> map = new Dictionary<T, T>(list[0]);
 			foreach (T item in list) {
@@ -202,7 +202,7 @@ namespace UnitTests
 			return map;
 		}
 
-		private static Dictionary<KeyType, T> CreateMap<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
+		private static Dictionary<KeyType, T> CreateMap<T, KeyType>(List<T> list) where T : class, IDtoKey<T, KeyType>
 		{
 			Dictionary<KeyType, T> map = new Dictionary<KeyType, T>();
 			foreach (T item in list) {
@@ -279,7 +279,7 @@ DROP TABLE dbo.{tableName};";
 
 		public static void GetList<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
-			Dictionary<T, T> map = CreateMap<T>(conn, trans, list);
+			Dictionary<T, T> map = CreateMap<T>(list);
 			var list2 = conn.GetList<T>(trans).AsList();
 			if (map.Count != list2.Count)
 				throw new InvalidOperationException();
@@ -329,7 +329,7 @@ DROP TABLE dbo.{tableName};";
 
 		public static void GetKeys<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
-			Dictionary<T, T> map = CreateMap<T>(conn, trans, list);
+			Dictionary<T, T> map = CreateMap<T>(list);
 			IEnumerable<T> keys = conn.GetKeys<T>(trans);
 			foreach (T key in keys) {
 				if (!map.Remove(key)) {
@@ -340,7 +340,7 @@ DROP TABLE dbo.{tableName};";
 
 		public static void GetKeys_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
 		{
-			Dictionary<KeyType, T> map = CreateMap<T, KeyType>(conn, trans, list);
+			Dictionary<KeyType, T> map = CreateMap<T, KeyType>(list);
 			IEnumerable<KeyType> keys = conn.GetKeys<T, KeyType>(trans);
 			foreach (KeyType key in keys) {
 				if (!map.Remove(key))
@@ -451,7 +451,7 @@ DROP TABLE dbo.{tableName};";
 		public static void GetDistinct<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
 			//requires IgnoreSelect to be useful
-			Dictionary<T, T> map = CreateMap<T>(conn, trans, list);
+			Dictionary<T, T> map = CreateMap<T>(list);
 			List<T> list2 = conn.GetDistinct<T>(trans).AsList();
 			if (map.Count != list2.Count)
 				throw new InvalidOperationException();
@@ -466,7 +466,7 @@ DROP TABLE dbo.{tableName};";
 		{
 			int max = Math.Min(list.Count, 10);
 			for (int i = 2; i < max; i++) {
-				Dictionary<T, T> map = CreateMap<T>(conn, trans, list);
+				Dictionary<T, T> map = CreateMap<T>(list);
 				List<T> list2 = conn.GetDistinctLimit<T>(i, trans).AsList();
 				if (list2.Count != i)
 					throw new InvalidOperationException();
@@ -482,7 +482,7 @@ DROP TABLE dbo.{tableName};";
 		{
 			int max = Math.Min(list.Count, 10);
 			for (int i = 2; i < max; i++) {
-				Dictionary<T, T> map = CreateMap<T>(conn, trans, list);
+				Dictionary<T, T> map = CreateMap<T>(list);
 				List<T> list2 = conn.GetDistinctLimit<T>(filter.GetType(), i, "", null, trans).AsList();
 				if (list2.Count == 0)
 					throw new InvalidOperationException();
@@ -511,7 +511,7 @@ DROP TABLE dbo.{tableName};";
 			int max = Math.Min(list.Count, 10);
 			for (int i = 2; i < max; i++) {
 				List<T> limited = list.Take(i).ToList();
-				List<T> bulk = conn.BulkGet<T>(limited.Select(c => (object) c.GetKey()), trans).AsList();
+				List<T> bulk = conn.BulkGet<T>(limited.Select(c => (object)c.GetKey()), trans).AsList();
 				for (int j = 0; j < i; j++) {
 					if (!limited[j].IsIdentical(bulk[j]))
 						throw new InvalidOperationException();
@@ -571,14 +571,14 @@ DROP TABLE dbo.{tableName};";
 		{
 			//bool Update(object obj, int commandTimeout = 30);
 		}
-		
+
 		public static void BulkUpsert<T>(SqlConnection conn, SqlTransaction trans) where T : class, IDto<T>
 		{
 			//int BulkUpsert(IEnumerable<T> objs, int commandTimeout = 30);
 			List<T> list = conn.GetList<T>(trans).AsList();
 			List<T> updates = new List<T>();
 			List<T> inserts = new List<T>();
-			for (int i = 0; i < list.Count; i+=2) {
+			for (int i = 0; i < list.Count; i += 2) {
 				updates.Add(list[i]);
 			}
 			for (int i = 1; i < list.Count; i += 2) {
@@ -613,7 +613,7 @@ DROP TABLE dbo.{tableName};";
 		public static void InsertIfNotExists<T>(SqlConnection conn, SqlTransaction trans) where T : class, IDto<T>
 		{
 			List<T> list = conn.GetList<T>(trans).AsList();
-			for(int i = 0; i < list.Count; i++) {
+			for (int i = 0; i < list.Count; i++) {
 				T item = list[i];
 				if (conn.InsertIfNotExists(item, trans))
 					throw new InvalidOperationException();

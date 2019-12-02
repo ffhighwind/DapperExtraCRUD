@@ -29,7 +29,7 @@ using System;
 namespace Dapper.Extra.Annotations
 {
 	/// <summary>
-	/// Ignores the <see cref="System.Reflection.PropertyInfo"/> for deletes.
+	/// Ignores the property for deletes.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
 	public class IgnoreDeleteAttribute : Attribute

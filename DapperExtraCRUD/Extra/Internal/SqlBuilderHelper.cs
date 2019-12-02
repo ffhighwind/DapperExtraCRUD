@@ -77,7 +77,7 @@ namespace Dapper.Extra.Internal
 		}
 
 		/// <summary>
-		/// Creates the WHERE section for commands.<para></para>
+		/// Creates the WHERE section for commands.<para />
 		/// x = @x AND y = @y
 		/// </summary>
 		/// <param name="columns">The columns to compare.</param>
@@ -92,7 +92,7 @@ namespace Dapper.Extra.Internal
 		}
 
 		/// <summary>
-		/// Creates the column list for select commands.<para></para>
+		/// Creates the column list for select commands.<para />
 		/// [x] as X, [y], [z] as Z
 		/// </summary>
 		/// <param name="columns">The columns to select.</param>
@@ -111,7 +111,7 @@ namespace Dapper.Extra.Internal
 		}
 
 		/// <summary>
-		/// Creates the column list for select commands.<para></para>
+		/// Creates the column list for select commands.<para />
 		/// TableName.[x] as X, TableName.[y], TableName.[z] as Z
 		/// </summary>
 		/// <param name="columns">The columns to select.</param>
@@ -154,7 +154,7 @@ namespace Dapper.Extra.Internal
 		}
 
 		/// <summary>
-		/// Creates the SET section for update commands.<para></para>
+		/// Creates the SET section for update commands.<para />
 		/// SET [x] = @x, [y] = getdate()
 		/// </summary>
 		/// <param name="columns">The columns to set.</param>
@@ -173,7 +173,7 @@ namespace Dapper.Extra.Internal
 		}
 
 		/// <summary>
-		/// Creates the VALUES section for insert commands.<para></para>
+		/// Creates the VALUES section for insert commands.<para />
 		/// VALUES (@a,@b,getdate())
 		/// </summary>
 		/// <param name="columns">The columns to insert.</param>

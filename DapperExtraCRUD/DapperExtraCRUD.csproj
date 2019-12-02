@@ -45,6 +45,12 @@
   <PropertyGroup Condition="'$(TargetFramework)'=='net451'">
     <DefineConstants>NETFRAMEWORK;NET45</DefineConstants>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Extra\Internal\Adapters\OracleAdapter.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Extra\Internal\Adapters\OracleAdapter.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Fasterflect.Reflect" Version="3.0.3" />

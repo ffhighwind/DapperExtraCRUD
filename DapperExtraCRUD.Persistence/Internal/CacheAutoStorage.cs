@@ -27,12 +27,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
 using Dapper.Extra.Persistence.Interfaces;
 
 namespace Dapper.Extra.Persistence.Internal
@@ -121,7 +118,7 @@ namespace Dapper.Extra.Persistence.Internal
 
 		public bool ContainsKey<KeyType>(KeyType key)
 		{
-			T obj = (T) FormatterServices.GetUninitializedObject(typeof(T));
+			T obj = (T)FormatterServices.GetUninitializedObject(typeof(T));
 			KeyProperty.SetValue(obj, key);
 			bool success = Cache.ContainsKey(obj);
 			return success;

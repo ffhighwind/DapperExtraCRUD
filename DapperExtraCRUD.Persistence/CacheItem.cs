@@ -24,12 +24,6 @@
 // SOFTWARE.
 #endregion
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
 
 namespace Dapper.Extra.Persistence
 {
@@ -44,6 +38,9 @@ namespace Dapper.Extra.Persistence
 		/// Null if deleted.
 		/// </summary>
 		public T Item { get; internal set; }
-		public void Delete() => Item = null;
+		public void Delete()
+		{
+			Item = null;
+		}
 	}
 }

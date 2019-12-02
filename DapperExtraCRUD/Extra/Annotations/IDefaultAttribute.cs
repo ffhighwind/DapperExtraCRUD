@@ -28,12 +28,21 @@
 namespace Dapper.Extra.Annotations
 {
 	/// <summary>
-	/// Base Attribute for MatchUpdate, IgnoreInsert, and IgnoreUpdate.
+	/// Base class for <see cref="MatchUpdateAttribute"/>, <see cref="IgnoreInsertAttribute"/>, and <see cref="IgnoreUpdateAttribute"/>.
 	/// </summary>
 	public interface IDefaultAttribute
 	{
+		/// <summary>
+		/// The value to be substituted for the property's value.
+		/// </summary>
 		string Value { get; }
+		/// <summary>
+		/// Determines if the property has a value.
+		/// </summary>
 		bool HasValue { get; }
+		/// <summary>
+		/// Determines if the column should be automatically synchronized with the database.
+		/// </summary>
 		bool AutoSync { get; }
 	}
 }

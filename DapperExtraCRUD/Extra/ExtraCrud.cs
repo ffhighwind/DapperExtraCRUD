@@ -24,13 +24,13 @@
 // SOFTWARE.
 #endregion
 
-using Dapper.Extra.Internal;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
+using Dapper.Extra.Internal;
 
 namespace Dapper.Extra
 {
@@ -112,8 +112,8 @@ namespace Dapper.Extra
 		public static void Purge<T>() where T : class
 		{
 			Type type = typeof(T);
-			BuilderCache.TryRemove(type, out object obj);
-			QueriesCache.TryRemove(type, out obj);
+			BuilderCache.TryRemove(type, out _);
+			QueriesCache.TryRemove(type, out _);
 		}
 
 		/// <summary>

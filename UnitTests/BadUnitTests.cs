@@ -1,12 +1,4 @@
-﻿
-using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Linq;
-using Dapper;
-using Dapper.Extra;
-using Dapper.Extra.Annotations;
-using Dapper.Extra.Utilities;
+﻿using Dapper.Extra;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTests

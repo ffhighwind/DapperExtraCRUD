@@ -44,7 +44,9 @@ namespace Dapper.Extra.Internal
 		/// Include inherited attributes.
 		/// </summary>
 		InheritAttributes = 1 << 1,
+
 		//IgnoreSelect = 1 << 2,
+
 		/// <summary>
 		/// Prevents insert commands.
 		/// </summary>

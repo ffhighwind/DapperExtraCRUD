@@ -29,20 +29,20 @@ using System;
 namespace Dapper.Extra.Annotations
 {
 	/// <summary>
-	/// Ignores the <see cref="System.Reflection.PropertyInfo"/> for updates.
+	/// Ignores the property for updates.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
 	public class IgnoreUpdateAttribute : Attribute, IDefaultAttribute
 	{
 		/// <summary>
-		/// Ignores the <see cref="System.Reflection.PropertyInfo"/> for updates.
+		/// Ignores the property for updates.
 		/// </summary>
 		public IgnoreUpdateAttribute()
 		{
 		}
 
 		/// <summary>
-		/// Ignores the <see cref="System.Reflection.PropertyInfo"/> for updates.
+		/// Ignores the property for updates.
 		/// </summary>
 		/// <param name="value">A string that is injected into the update statement as the column's value. 
 		/// If this is <see langword="null"/> then the column cannot be updated.</param>
@@ -56,12 +56,12 @@ namespace Dapper.Extra.Annotations
 		}
 
 		/// <summary>
-		/// A string that is injected into the update statement as the column's value.
-		/// If this is <see langword="null"/> then the column cannot be updated.
+		/// A string that is substituted for the column's value on insert.
+		/// If this is <see langword="null"/> then the column will not be updated.
 		/// </summary>
 		public string Value { get; }
 		/// <summary>
-		/// Checks if the value is null.
+		/// Checks if the value is <see langword="null"/>.
 		/// </summary>
 		public bool HasValue => Value != null;
 		/// <summary>

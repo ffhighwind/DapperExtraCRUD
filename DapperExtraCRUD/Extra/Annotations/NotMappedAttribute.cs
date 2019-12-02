@@ -29,7 +29,7 @@ using System;
 namespace Dapper.Extra.Annotations
 {
 	/// <summary>
-	/// Prevents the <see cref="System.Reflection.PropertyInfo"/> from being mapped.
+	/// Prevents the property from being mapped.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 	public class NotMappedAttribute : Attribute

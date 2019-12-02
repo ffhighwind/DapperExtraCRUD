@@ -29,23 +29,23 @@ using System;
 namespace Dapper.Extra.Annotations
 {
 	/// <summary>
-	/// Turns the <see cref="System.Reflection.PropertyInfo"/> into a pseudo key for updates.
+	/// Turns the property into a pseudo key for updates.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
 	public class MatchUpdateAttribute : Attribute, IDefaultAttribute
 	{
 		/// <summary>
-		/// Turns the <see cref="System.Reflection.PropertyInfo"/> into a pseudo key for updates and sets the value to the string input if specified.
+		/// Turns the property into a pseudo key for updates and sets the value to the string input if specified.
 		/// </summary>
 		public MatchUpdateAttribute()
 		{
 		}
 
 		/// <summary>
-		/// Turns the <see cref="System.Reflection.PropertyInfo"/> into a pseudo key for updates and sets the value to the string input if specified.
+		/// Turns the property into a pseudo key for updates and sets the value to the string input if specified.
 		/// </summary>
-		/// <param name="value">A string that is injected into the update statement as the column's value.
-		/// If this is <see langword="null"/> then the column is not modified.</param>
+		/// <param name="value">A string that is substituted for the column's value on insert.
+		/// If this is <see langword="null"/> then the column will not be updated.</param>
 		/// <param name="autoSync">Determines if the property should be selected to match the database after an update.</param>
 		public MatchUpdateAttribute(string value, bool autoSync = false)
 		{
@@ -55,12 +55,12 @@ namespace Dapper.Extra.Annotations
 			}
 		}
 		/// <summary>
-		/// A string that is injected into the update statement as the column's new value for updates.
-		/// If this is <see langword="null"/> then the column's value will not change on updates.
+		/// A string that is substituted for the column's value on insert.
+		/// If this is <see langword="null"/> then the column will not be updated.
 		/// </summary>
 		public string Value { get; }
 		/// <summary>
-		/// Checks if the value is null.
+		/// Checks if the value is <see langword="null"/>.
 		/// </summary>
 		public bool HasValue => Value != null;
 		/// <summary>

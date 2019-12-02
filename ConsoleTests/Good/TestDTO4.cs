@@ -25,11 +25,6 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Dapper;
 using Dapper.Extra.Annotations;
 
 namespace UnitTests
@@ -117,7 +112,7 @@ CREATE TABLE [dbo].[Test4](
 
 		public TestDTO4 UpdateRandomize(Random random)
 		{
-			TestDTO4 clone = (TestDTO4) MemberwiseClone();
+			TestDTO4 clone = (TestDTO4)MemberwiseClone();
 			clone.FirstName = random.Next().ToString();
 			return clone;
 		}

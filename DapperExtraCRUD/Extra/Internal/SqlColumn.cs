@@ -24,10 +24,10 @@
 // SOFTWARE.
 #endregion
 
-using Dapper.Extra.Annotations;
-using Fasterflect;
 using System;
 using System.Reflection;
+using Dapper.Extra.Annotations;
+using Fasterflect;
 
 namespace Dapper.Extra.Internal
 {
@@ -44,10 +44,6 @@ namespace Dapper.Extra.Internal
 			Property = property;
 			ColumnName = columnName;
 			Ordinal = ordinal;
-			if (property.CanRead)
-				Getter = Reflect.PropertyGetter(property);
-			if (property.CanWrite)
-				Setter = Reflect.PropertySetter(property);
 		}
 
 		/// <summary>
@@ -61,11 +57,11 @@ namespace Dapper.Extra.Internal
 		/// <summary>
 		/// Gets the value of the property for an object.
 		/// </summary>
-		public MemberGetter Getter { get; private set; }
+		public MemberGetter Getter => Property.CanRead ? Reflect.PropertyGetter(Property) : null;
 		/// <summary>
 		/// Sets the value of athe property for an object.
 		/// </summary>
-		public MemberSetter Setter { get; private set; }
+		public MemberSetter Setter => Property.CanWrite ? Reflect.PropertySetter(Property) : null;
 		/// <summary>
 		/// The name of the column. This is quoted using the <see cref="SqlAdapter"/> if necessary.
 		/// </summary>
@@ -130,9 +126,5 @@ namespace Dapper.Extra.Internal
 		/// The column attributes.
 		/// </summary>
 		public SqlColumnAttributes Attributes { get; internal set; }
-
-		// Getter
-		// Setter
-		// TypeHandler
 	}
 }

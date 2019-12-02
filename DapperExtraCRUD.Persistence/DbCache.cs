@@ -26,11 +26,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Dapper.Extra.Persistence.Internal;
 
 namespace Dapper.Extra.Persistence
 {
@@ -51,7 +46,7 @@ namespace Dapper.Extra.Persistence
 				cache = new DbCacheTable<T>(ConnectionString);
 				Map[typeof(T)] = cache;
 			}
-			return (DbCacheTable<T>) cache;
+			return (DbCacheTable<T>)cache;
 		}
 	}
 }

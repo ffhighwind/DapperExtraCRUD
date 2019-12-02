@@ -26,10 +26,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Dapper;
 using Dapper.Extra.Annotations;
 
 namespace UnitTests
@@ -42,7 +38,7 @@ namespace UnitTests
 		{
 			Col1 = random.Next();
 			Col2 = random.Next().ToString();
-			Col3 = (float) random.NextDouble();
+			Col3 = (float)random.NextDouble();
 		}
 
 		[Key(false)]
@@ -124,7 +120,7 @@ CREATE TABLE [dbo].[Test2](
 
 		public TestDTO2 UpdateRandomize(Random random)
 		{
-			TestDTO2 clone = (TestDTO2) MemberwiseClone();
+			TestDTO2 clone = (TestDTO2)MemberwiseClone();
 			return clone;
 		}
 

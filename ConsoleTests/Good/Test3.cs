@@ -26,10 +26,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Dapper;
 using Dapper.Extra.Annotations;
 
 namespace UnitTests
@@ -41,8 +37,8 @@ namespace UnitTests
 		{
 			Col1 = random.Next();
 			Col2 = random.Next().ToString();
-			Col3 = (float) random.NextDouble();
-			Col4 = random.Next() >= 0 ? random.Next() : (int?) null;
+			Col3 = (float)random.NextDouble();
+			Col4 = random.Next() >= 0 ? random.Next() : (int?)null;
 		}
 		[Key]
 		public int Col1 { get; set; }
@@ -93,9 +89,9 @@ CREATE TABLE [dbo].[Test3](
 		public int CompareTo(Test3 other)
 		{
 			int ret = Col1.CompareTo(other.Col1);
-			if(ret == 0) {
+			if (ret == 0) {
 				ret = Col2.CompareTo(other.Col2);
-				if(ret == 0) {
+				if (ret == 0) {
 					ret = Col3.CompareTo(other.Col3);
 				}
 			}
@@ -126,7 +122,7 @@ CREATE TABLE [dbo].[Test3](
 
 		public Test3 UpdateRandomize(Random random)
 		{
-			Test3 clone = (Test3) MemberwiseClone();
+			Test3 clone = (Test3)MemberwiseClone();
 			clone.Col4 = random.Next();
 			return clone;
 		}

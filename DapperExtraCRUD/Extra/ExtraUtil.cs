@@ -1,12 +1,12 @@
-﻿using Dapper.Extra.Internal;
-using Fasterflect;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Globalization;
 using System.Linq;
+using Dapper.Extra.Internal;
+using Fasterflect;
 
 namespace Dapper.Extra
 {
@@ -161,48 +161,24 @@ namespace Dapper.Extra
 		}
 
 		/// <summary>
-		/// Inserts data into a table using <see cref="SqlBulkCopy"/>.
+		/// Checks if the input string qualifies as a basic identifier. This will return false if 
+		/// the string does not match the following regular expression: [a-zA-Z_][a-zA-Z0-9_]*
 		/// </summary>
-		/// <typeparam name="T">The type of object to insert.</typeparam>
-		/// <param name="connection">The database connection.</param>
-		/// <param name="objs">The objects to insert into the table.</param>
-		/// <param name="transaction">The transaction for the connection, or null if an internal transaction should be used.</param>
-		/// <param name="tableName">The name of the table.</param>
-		/// <param name="factory">The factory from an <see cref="SqlBuilder{T}"/>.</param>
-		/// <param name="columns">The column mappings for the table.</param>
-		/// <param name="commandTimeout">The command timeout in seconds. 0 or null prevent a timeout.</param>
-		/// <param name="options">The bulk copy options used when transfering data.</param>
-		public static void BulkInsert<T>(SqlConnection connection, IEnumerable<T> objs, SqlTransaction transaction, string tableName, DataReaderFactory factory,
-			IEnumerable<SqlColumn> columns, int commandTimeout = 30, SqlBulkCopyOptions options = SqlBulkCopyOptions.Default)
-			where T : class
+		/// <param name="identifier">The identifier.</param>
+		/// <returns>True if input qualifies as a basic identifier; otherwise false.</returns>
+		public static bool IsSqlIdentifier(string identifier)
 		{
-			DbDataReader dataReader = factory.Create(objs);
-			BulkInsert(connection, dataReader, transaction, tableName, columns.Select(c => c.Property.Name), columns.Select(c => c.ColumnName), commandTimeout, options);
-		}
-
-		/// <summary>
-		/// Inserts data into a table using <see cref="SqlBulkCopy"/>.
-		/// </summary>
-		/// <param name="connection">The database connection.</param>
-		/// <param name="dataReader">The source of data to be inserted.</param>
-		/// <param name="transaction">The transaction for the connection, or null if an internal transaction should be used.</param>
-		/// <param name="tableName">The name of the table.</param>
-		/// <param name="propertyNames">The property names that map to the column names.</param>
-		/// <param name="columnNames">The column names that map to the properties.</param>
-		/// <param name="commandTimeout">The command timeout in seconds. 0 or null prevent a timeout.</param>
-		/// <param name="options">The bulk copy options used when transfering data.</param>
-		public static void BulkInsert(SqlConnection connection, DbDataReader dataReader, SqlTransaction transaction, string tableName, IEnumerable<string> propertyNames,
-			IEnumerable<string> columnNames, int commandTimeout = 30, SqlBulkCopyOptions options = SqlBulkCopyOptions.Default)
-		{
-			using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connection, options, transaction)) {
-				bulkCopy.DestinationTableName = tableName;
-				bulkCopy.BulkCopyTimeout = commandTimeout;
-				var columns = propertyNames.Zip(columnNames, (p, c) => new { PropertyName = p, ColumnName = c });
-				foreach (var column in columns) {
-					bulkCopy.ColumnMappings.Add(column.PropertyName, column.ColumnName);
+			char c = identifier[0];
+			if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'))
+				return false;
+			for (int i = 1; i < identifier.Length; i++) {
+				c = identifier[i];
+				if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9' || c == '_')) {
+					continue;
 				}
-				bulkCopy.WriteToServer(dataReader);
+				return false;
 			}
+			return true;
 		}
 	}
 }

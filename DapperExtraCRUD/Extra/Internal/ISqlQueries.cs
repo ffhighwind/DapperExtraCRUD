@@ -44,7 +44,7 @@ namespace Dapper.Extra.Internal
 		/// <summary>
 		/// Bulk delete command for single-value keys.
 		/// </summary>
-		SqlKeysInt<T> BulkDeleteKeys { get; }
+		DbKeysInt<T> BulkDeleteKeys { get; }
 		/// <summary>
 		/// Delete command for a single key.
 		/// </summary>
@@ -56,27 +56,27 @@ namespace Dapper.Extra.Internal
 		/// <summary>
 		/// Bulk select command for any key type.
 		/// </summary>
-		SqlListList<T> BulkGet { get; }
+		DbListList<T> BulkGet { get; }
 		/// <summary>
 		/// Bulk delete command for any key type.
 		/// </summary>
-		SqlListInt<T> BulkDelete { get; }
+		DbListInt<T> BulkDelete { get; }
 		/// <summary>
 		/// Bulk insert command for any key type.
 		/// </summary>
-		SqlListVoid<T> BulkInsert { get; }
+		DbListVoid<T> BulkInsert { get; }
 		/// <summary>
 		/// Bulk update command for any key type.
 		/// </summary>
-		SqlListInt<T> BulkUpdate { get; }
+		DbListInt<T> BulkUpdate { get; }
 		/// <summary>
 		/// Bulk upsert (insert or update) command.
 		/// </summary>
-		SqlListInt<T> BulkUpsert { get; }
+		DbListInt<T> BulkUpsert { get; }
 		/// <summary>
 		/// Bulk insert-if-not-exists command.
 		/// </summary>
-		SqlListInt<T> BulkInsertIfNotExists { get; }
+		DbListInt<T> BulkInsertIfNotExists { get; }
 		/// <summary>
 		/// Delete command for any key type.
 		/// </summary>
@@ -88,7 +88,7 @@ namespace Dapper.Extra.Internal
 		/// <summary>
 		/// Truncate command.
 		/// </summary>
-		DbVoid DeleteAll { get; }
+		DbVoid Truncate { get; }
 		/// <summary>
 		/// Select command for any key type.
 		/// </summary>

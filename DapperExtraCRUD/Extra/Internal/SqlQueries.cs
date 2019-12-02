@@ -39,17 +39,17 @@ namespace Dapper.Extra.Internal
 		public DbKeyObj<T> GetKey { get; internal set; }
 		public DbKeyBool DeleteKey { get; internal set; }
 		public DbKeysList<T> BulkGetKeys => LazyBulkGetKeys.Value;
-		public SqlKeysInt<T> BulkDeleteKeys => LazyBulkDeleteKeys.Value;
+		public DbKeysInt<T> BulkDeleteKeys => LazyBulkDeleteKeys.Value;
 		public DbWhereKeys GetKeysKeys => LazyGetKeysKeys.Value;
 
-		public SqlListList<T> BulkGet => LazyBulkGet.Value;
-		public SqlListInt<T> BulkDelete => LazyBulkDelete.Value;
-		public SqlListVoid<T> BulkInsert => LazyBulkInsert.Value;
-		public SqlListInt<T> BulkUpdate => LazyBulkUpdate.Value;
-		public SqlListInt<T> BulkUpsert => LazyBulkUpsert.Value;
-		public SqlListInt<T> BulkInsertIfNotExists => LazyBulkInsertIfNotExists.Value;
+		public DbListList<T> BulkGet => LazyBulkGet.Value;
+		public DbListInt<T> BulkDelete => LazyBulkDelete.Value;
+		public DbListVoid<T> BulkInsert => LazyBulkInsert.Value;
+		public DbListInt<T> BulkUpdate => LazyBulkUpdate.Value;
+		public DbListInt<T> BulkUpsert => LazyBulkUpsert.Value;
+		public DbListInt<T> BulkInsertIfNotExists => LazyBulkInsertIfNotExists.Value;
 		public DbWhereInt<T> DeleteList => LazyDeleteList.Value;
-		public DbVoid DeleteAll => LazyDeleteAll.Value;
+		public DbVoid Truncate => LazyTruncate.Value;
 		public DbWhereList<T> GetKeys => LazyGetKeys.Value;
 		public DbTypeWhereList<T> GetDistinct => LazyGetDistinct.Value;
 		public DbLimitList<T> GetLimit => LazyGetLimit.Value;
@@ -64,16 +64,16 @@ namespace Dapper.Extra.Internal
 		public DbTVoid<T> UpdateAutoSync { get; internal set; }
 
 		#region Lazy Internal
-		internal Lazy<SqlListList<T>> LazyBulkGet { get; set; }
-		internal Lazy<SqlListInt<T>> LazyBulkDelete { get; set; }
-		internal Lazy<SqlListVoid<T>> LazyBulkInsert { get; set; }
-		internal Lazy<SqlListInt<T>> LazyBulkUpdate { get; set; }
-		internal Lazy<SqlListInt<T>> LazyBulkUpsert { get; set; }
-		internal Lazy<SqlListInt<T>> LazyBulkInsertIfNotExists { get; set; }
+		internal Lazy<DbListList<T>> LazyBulkGet { get; set; }
+		internal Lazy<DbListInt<T>> LazyBulkDelete { get; set; }
+		internal Lazy<DbListVoid<T>> LazyBulkInsert { get; set; }
+		internal Lazy<DbListInt<T>> LazyBulkUpdate { get; set; }
+		internal Lazy<DbListInt<T>> LazyBulkUpsert { get; set; }
+		internal Lazy<DbListInt<T>> LazyBulkInsertIfNotExists { get; set; }
 		internal Lazy<DbWhereInt<T>> LazyDeleteList { get; set; }
 		internal Lazy<DbTypeWhereList<T>> LazyGetFilter { get; set; }
 		internal Lazy<DbTypeLimitList<T>> LazyGetFilterLimit { get; set; }
-		internal Lazy<DbVoid> LazyDeleteAll { get; set; }
+		internal Lazy<DbVoid> LazyTruncate { get; set; }
 		internal Lazy<DbWhereList<T>> LazyGetKeys { get; set; }
 		internal Lazy<DbTypeWhereList<T>> LazyGetDistinct { get; set; }
 		internal Lazy<DbLimitList<T>> LazyGetLimit { get; set; }
@@ -84,7 +84,7 @@ namespace Dapper.Extra.Internal
 		internal Lazy<DbTBool<T>> LazyInsertIfNotExists { get; set; }
 		// Keys
 		internal Lazy<DbKeysList<T>> LazyBulkGetKeys { get; set; }
-		internal Lazy<SqlKeysInt<T>> LazyBulkDeleteKeys { get; set; }
+		internal Lazy<DbKeysInt<T>> LazyBulkDeleteKeys { get; set; }
 		internal Lazy<DbWhereKeys> LazyGetKeysKeys { get; set; }
 		#endregion Lazy Internal
 	}

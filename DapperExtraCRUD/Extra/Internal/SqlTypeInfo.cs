@@ -24,12 +24,12 @@
 // SOFTWARE.
 #endregion
 
-using Dapper.Extra.Annotations;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using Dapper.Extra.Annotations;
 
 namespace Dapper.Extra.Internal
 {
@@ -144,11 +144,7 @@ namespace Dapper.Extra.Internal
 			}
 
 			if (keys.Count == 0) {
-#if NET45
 				KeyColumns = Constants.SqlColumnsEmpty;
-#else
-				KeyColumns = Array.Empty<SqlColumn>();
-#endif
 			}
 			else {
 				KeyColumns = keys.ToArray();
@@ -224,11 +220,7 @@ namespace Dapper.Extra.Internal
 
 			Columns = columns.Where(c => !c.NotMapped).ToArray();
 			EqualityColumns = KeyColumns.Count == 0 || KeyColumns.Count == Columns.Count ? Columns : KeyColumns;
-#if NET45
 			UpdateKeyColumns = Columns == EqualityColumns ? Constants.SqlColumnsEmpty : Columns.Where(c => c.IsKey || c.MatchUpdate).ToArray();
-#else
-			UpdateKeyColumns = Columns == EqualityColumns ? Array.Empty<SqlColumn>() : Columns.Where(c => c.IsKey || c.MatchUpdate).ToArray();
-#endif
 			DeleteKeyColumns = Columns == EqualityColumns ? Columns : Columns.Where(c => c.IsKey || c.MatchDelete).ToArray();
 		}
 
@@ -272,7 +264,7 @@ namespace Dapper.Extra.Internal
 		/// <summary>
 		/// Generates SQL commands using a given syntax.
 		/// </summary>
-		public SqlAdapter Adapter { get; private set; }
+		public ISqlAdapter Adapter { get; private set; }
 		/// <summary>
 		///  All valid columns for the given type.
 		/// </summary>

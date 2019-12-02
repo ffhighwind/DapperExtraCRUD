@@ -38,7 +38,8 @@ namespace Dapper.Extra.Annotations
 		/// A primary key column.
 		/// </summary>
 		/// <param name="autoIncrement">Determines if the key is an identity (auto-incrementing). 
-		/// This is ignored if it is not an integral property type (int, long, short, etc).</param>
+		/// This is ignored if it is not an integral property type (<see langword="int"/>, 
+		/// <see langword="long"/>, <see langword="short"/>, etc).</param>
 		public KeyAttribute(bool autoIncrement = true)
 		{
 			AutoIncrement = autoIncrement;
@@ -46,7 +47,8 @@ namespace Dapper.Extra.Annotations
 
 		/// <summary>
 		/// Determines if the primary key is an identity (auto-incrementing).
-		/// This is ignored if it is not an integral property type (int, long, short, etc).
+		/// This is ignored if it is not an integral property type (<see langword="int"/>, 
+		/// <see langword="long"/>, <see langword="short"/>, etc).
 		/// </summary>
 		public bool AutoIncrement { get; private set; }
 	}

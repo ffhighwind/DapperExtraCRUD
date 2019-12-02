@@ -38,10 +38,6 @@ namespace Dapper.Extra.Internal
 		/// </summary>
 		string TableName { get; }
 		/// <summary>
-		/// The temporary table name for bulk operations.
-		/// </summary>
-		string BulkStagingTable { get; }
-		/// <summary>
 		/// The syntax used to generate SQL commands.
 		/// </summary>
 		SqlSyntax Syntax { get; }
@@ -50,7 +46,7 @@ namespace Dapper.Extra.Internal
 		/// </summary>
 		SqlTypeInfo Info { get; }
 		/// <summary>
-		///  All valid columns for the given type.
+		/// The valid columns for the given type.
 		/// </summary>
 		IReadOnlyList<SqlColumn> Columns { get; }
 	}

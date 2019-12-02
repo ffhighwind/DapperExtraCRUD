@@ -29,13 +29,18 @@ using System;
 namespace Dapper.Extra.Annotations
 {
 	/// <summary>
-	/// The name of the column.
+	/// A named column in a database table.
 	/// </summary>
 	public class ColumnAttribute : Attribute
 	{
+		/// <summary>
+		/// A named column in a database table.
+		/// </summary>
+		/// <param name="name">The name of the column.</param>
+		/// <param name="ordinal">The zero-based ordinal of the column.</param>
 		public ColumnAttribute(string name, int ordinal = 0)
 		{
-			Name = name?.Trim();
+			Name = name;
 			Ordinal = ordinal;
 		}
 

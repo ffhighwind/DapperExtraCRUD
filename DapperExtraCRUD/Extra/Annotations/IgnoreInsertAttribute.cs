@@ -29,24 +29,24 @@ using System;
 namespace Dapper.Extra.Annotations
 {
 	/// <summary>
-	/// Ignores the <see cref="System.Reflection.PropertyInfo"/> for inserts.
+	/// Ignores the property for inserts.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
 	public class IgnoreInsertAttribute : Attribute, IDefaultAttribute
 	{
 		/// <summary>
-		/// Ignores the <see cref="System.Reflection.PropertyInfo"/> for inserts.
+		/// Ignores the property for inserts.
 		/// </summary>
 		public IgnoreInsertAttribute()
 		{
 		}
 
 		/// <summary>
-		/// Ignores the <see cref="System.Reflection.PropertyInfo"/> for inserts.
+		/// Ignores the property for inserts.
 		/// </summary>
-		/// <param name="value">A string that is injected into the insert statement as the column's value.
-		/// If this is <see langword="null"/> then the default value will be inserted instead.</param>
-		/// <param name="autoSync">Determines if the property should be selected to match the database after an insert.</param>
+		/// <param name="value">A string that is substituted for the column's value on insert.
+		/// If this is <see langword="null"/> then the database's default value will be inserted instead.</param>
+		/// <param name="autoSync">Determines if this column will be automatically selected after an insert.</param>
 		public IgnoreInsertAttribute(string value, bool autoSync = false)
 		{
 			AutoSync = autoSync;
@@ -56,12 +56,12 @@ namespace Dapper.Extra.Annotations
 		}
 
 		/// <summary>
-		/// A string that is injected into the insert statement as the column's value.
-		/// If this is <see langword="null"/> then the default value will be inserted instead.
+		/// A string that is substituted for the column's value on insert.
+		/// If this is <see langword="null"/> then the database's default value will be inserted instead.
 		/// </summary>
 		public string Value { get; }
 		/// <summary>
-		/// Checks if the value is null.
+		/// Checks if the value is <see langword="null"/>.
 		/// </summary>
 		public bool HasValue => Value != null;
 		/// <summary>
