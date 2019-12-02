@@ -31,8 +31,9 @@ using System.Data;
 namespace Dapper.Extra.Utilities
 {
 	/// <summary>
-	/// Allows an <see cref="IDbConnection"/> to stay open until a queried list is completely traversed or
-	/// the enumeration is disposed. This allows you to use unbuffered queries without wrapping the connection in a using statement.
+	/// Allows an <see cref="IDbConnection"/> to stay open until the enumeration is completely traversed or it is disposed.
+	/// This allows unbuffered queries th be returned without being wrapped in a using statement.
+	/// However, it should be wrapped in a using statement or try catch block before it is traversed.
 	/// </summary>
 	/// <typeparam name="T">The type returned by the query.</typeparam>
 	public class ConnectedEnumerable<T> : IEnumerable<T>
@@ -48,10 +49,20 @@ namespace Dapper.Extra.Utilities
 			Connection = connection;
 		}
 
+		/// <summary>
+		/// The connection that should be closed once <see cref="List"/> 
+		/// <see cref="GetEnumerator"/> has been traversed completely.
+		/// </summary>
 		public IDbConnection Connection { get; private set; }
 
+		/// <summary>
+		/// The unbuffered result from the query.
+		/// </summary>
 		public IEnumerable<T> List { get; private set; }
 
+		/// <summary>
+		/// The enumerator for <see cref="List"/>.
+		/// </summary>
 		public IEnumerator<T> GetEnumerator()
 		{
 			return new Enumerator(Connection, List.GetEnumerator());

@@ -31,6 +31,10 @@ using System.Threading.Tasks;
 
 namespace Dapper.Extra.Utilities
 {
+	/// <summary>
+	/// Interface for an object that interacts with an <see cref="Dapper.Extra.Internal.ISqlQueries{T}"/>.
+	/// </summary>
+	/// <typeparam name="T">The table type.</typeparam>
 	public interface ITransactionAccessObjectAsync<T> where T : class
 	{
 		#region Bulk

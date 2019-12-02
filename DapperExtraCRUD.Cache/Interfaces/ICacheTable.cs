@@ -26,15 +26,27 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using Dapper.Extra.Internal;
 
-namespace Dapper.Extra.Utilities
+namespace Dapper.Extra.Cache.Interfaces
 {
-	/// <summary>
-	/// Interface for an object that interacts with an <see cref="Dapper.Extra.Internal.ISqlQueries{T}"/>.
-	/// </summary>
-	/// <typeparam name="T">The table type.</typeparam>
-	public interface IAccessObjectSync<T> where T : class
+	public interface ICacheTable
 	{
+		DbCacheTransaction BeginTransaction();
+		void BeginTransaction(DbCacheTransaction transaction);
+		SqlTypeInfo Info { get; }
+	}
+
+	public interface ICacheTable<T, R>
+		where T : class
+		where R : CacheItem<T>
+	{
+		ICacheStorage<T, R> Storage { get; }
+
+		R Find(T obj, int commandTimeout = 30);
+		R Find(object key, int commandTimeout = 30);
+
 		#region Bulk
 
 		/// <summary>
@@ -59,7 +71,7 @@ namespace Dapper.Extra.Utilities
 		/// <param name="keys">The keys of the rows to select.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows with the given keys.</returns>
-		IEnumerable<T> BulkGet(IEnumerable<object> keys, int commandTimeout = 30);
+		IEnumerable<R> BulkGet(IEnumerable<object> keys, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows with the given keys.
@@ -135,7 +147,7 @@ namespace Dapper.Extra.Utilities
 		/// <param name="key">The key of the row to select.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The row with the given key.</returns>
-		T Get(object key, int commandTimeout = 30);
+		R Get(object key, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects a row.
@@ -143,7 +155,7 @@ namespace Dapper.Extra.Utilities
 		/// <param name="obj">The object to select.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The selected row if it exists; otherwise null.</returns>
-		T Get(T obj, int commandTimeout = 30);
+		R Get(T obj, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows that match the given condition.
@@ -153,7 +165,7 @@ namespace Dapper.Extra.Utilities
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<T> GetDistinct(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<R> GetDistinct(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows that match the given condition.
@@ -175,7 +187,7 @@ namespace Dapper.Extra.Utilities
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<T> GetDistinctLimit(int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<R> GetDistinctLimit(int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows that match the given condition.
@@ -219,7 +231,7 @@ namespace Dapper.Extra.Utilities
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The limited number of rows that match the given condition.</returns>
-		IEnumerable<T> GetLimit(int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<R> GetLimit(int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects a limited number of rows that match the given condition.
@@ -241,7 +253,7 @@ namespace Dapper.Extra.Utilities
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<T> GetList(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<R> GetList(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows that match the given condition.
@@ -259,7 +271,7 @@ namespace Dapper.Extra.Utilities
 		/// </summary>
 		/// <param name="obj">The object to insert.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		void Insert(T obj, int commandTimeout = 30);
+		R Insert(T obj, int commandTimeout = 30);
 
 		/// <summary>
 		/// Inserts a row if it does not exist.
@@ -267,7 +279,7 @@ namespace Dapper.Extra.Utilities
 		/// <param name="obj">The object to insert.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>True if the the row was inserted; false otherwise.</returns>
-		bool InsertIfNotExists(T obj, int commandTimeout = 30);
+		R InsertIfNotExists(T obj, int commandTimeout = 30);
 
 		/// <summary>
 		/// Counts the number of rows that match the given condition.

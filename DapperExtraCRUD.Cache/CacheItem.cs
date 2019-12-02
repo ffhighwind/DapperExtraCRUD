@@ -24,29 +24,19 @@
 // SOFTWARE.
 #endregion
 
-using System;
-using System.Collections.Generic;
 
-namespace Dapper.Extra.Persistence
+namespace Dapper.Extra.Cache
 {
-	public class DbCache
+	public class CacheItem<T>
+		where T : class
 	{
-		protected internal IDictionary<Type, object> Map = new Dictionary<Type, object>();
-		protected internal string ConnectionString { get; set; }
-
-		public DbCache(string connectionString)
+		protected CacheItem()
 		{
-			ConnectionString = connectionString;
 		}
 
-		public DbCacheTable<T> CreateTable<T>()
-			where T : class
-		{
-			if (!Map.TryGetValue(typeof(T), out object cache)) {
-				cache = new DbCacheTable<T>(ConnectionString);
-				Map[typeof(T)] = cache;
-			}
-			return (DbCacheTable<T>)cache;
-		}
+		/// <summary>
+		/// Null if deleted.
+		/// </summary>
+		public T CacheValue { get; internal set; }
 	}
 }

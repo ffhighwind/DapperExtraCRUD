@@ -26,21 +26,22 @@
 
 using System.Collections.Generic;
 
-namespace Dapper.Extra.Persistence.Interfaces
+namespace Dapper.Extra.Cache.Interfaces
 {
-	public interface ICacheStorage<T> : IEnumerable<KeyValuePair<T, CacheItem<T>>>, IReadOnlyDictionary<T, CacheItem<T>>
+	public interface ICacheStorage<T, R> : IEnumerable<KeyValuePair<T, R>>, IReadOnlyDictionary<T, R>
 		where T : class
+		where R : CacheItem<T>
 	{
 		CacheItem<T> AddOrUpdate(T value);
 		List<CacheItem<T>> AddOrUpdate(IEnumerable<T> values);
 		CacheItem<T> Add(T value);
 		List<CacheItem<T>> Add(IEnumerable<T> values);
 		CacheItem<T> Remove(T value);
-		CacheItem<T> RemoveKey<KeyType>(KeyType key);
+		CacheItem<T> RemoveKey(object key);
 		void Remove(IEnumerable<T> values);
-		void RemoveKeys<KeyType>(IEnumerable<KeyType> keys);
+		void RemoveKeys(IEnumerable<object> keys);
 		void Clear();
 		bool Contains(T value);
-		bool ContainsKey<KeyType>(KeyType key);
+		bool ContainsKey(object key);
 	}
 }

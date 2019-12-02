@@ -27,9 +27,14 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Dapper.Extra.Internal;
 
 namespace Dapper.Extra.Utilities
 {
+	/// <summary>
+	/// Interface for an object that interacts with an <see cref="ISqlQueries{T}"/>.
+	/// </summary>
+	/// <typeparam name="T">The table type.</typeparam>
 	public interface IAccessObjectAsync<T> where T : class
 	{
 		#region Bulk

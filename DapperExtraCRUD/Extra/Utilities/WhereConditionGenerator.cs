@@ -499,7 +499,7 @@ namespace Dapper.Extra.Utilities
 						base.Visit(node.Arguments[1]);
 						Results.Append(" IN ");
 						// new a[] { b, c, d }
-						CompileListExpression(newExp.Type.GetElementType(), newExp, newExp.Expressions);
+						CompileListExpression(newExp.Type.GetElementType(), newExp.Expressions);
 						return null;
 					}
 				}
@@ -533,7 +533,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
 		protected override Expression VisitNewArray(NewArrayExpression node)
 		{
-			CompileListExpression(node.Type.GetElementType(), node, node.Expressions);
+			CompileListExpression(node.Type.GetElementType(), node.Expressions);
 			return null;
 		}
 
@@ -714,7 +714,7 @@ namespace Dapper.Extra.Utilities
 			CompileValueExpression(expr, type, obj);
 		}
 
-		private void CompileListExpression(Type type, Expression node, IEnumerable<Expression> exprs)
+		private void CompileListExpression(Type type, IEnumerable<Expression> exprs)
 		{
 			// new a[] { b, c, d }
 			Type underlying = Nullable.GetUnderlyingType(type) ?? type;

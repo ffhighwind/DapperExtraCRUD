@@ -26,13 +26,11 @@
 
 using System;
 
-namespace Dapper.Extra.Persistence.Internal
+namespace Dapper.Extra.Cache.Internal
 {
 	internal interface ITransactionStorage : IDisposable
 	{
 		void Commit();
 		void Rollback();
-		void Rollback(string savePointName);
-		void Save(string savePointName);
 	}
 }

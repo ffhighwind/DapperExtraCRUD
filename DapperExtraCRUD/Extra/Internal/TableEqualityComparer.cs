@@ -72,7 +72,7 @@ namespace Dapper.Extra.Internal
 			int hashCode = InitialHash;
 			foreach (MemberGetter getter in Getters) {
 				object value = getter(obj);
-				hashCode = hashCode * 31619117;
+				hashCode *= 31619117;
 				if (value != null) {
 					hashCode ^= value.GetHashCode();
 				}

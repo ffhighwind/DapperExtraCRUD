@@ -33,16 +33,17 @@ using Dapper.Extra.Internal;
 namespace Dapper.Extra.Utilities
 {
 	/// <summary>
-	/// Automatically connects to the database and performs SQL operations.
+	/// An object that interacts with an <see cref="ISqlQueries{T}"/>.
+	/// Automatically connects to a database and performs SQL operations in a thread-safe way.
 	/// </summary>
 	/// <typeparam name="T">The table type.</typeparam>
-	public class AutoAccessObject<T> : IAccessObject<T>, ITransactionAccessObjectSync<T>
+	public class AutoAccessObject<T> : IAccessObject<T>, ITransactionAccessObjectSync<T>, ITransactionAccessObjectAsync<T>
 		where T : class
 	{
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AutoAccessObject{T}"/> class.
 		/// </summary>
-		/// <param name="connectionString">The connectionString<see cref="string"/></param>
+		/// <param name="connectionString">The connection string used for SQL commands. This is ignored for transaction based commands.</param>
 		public AutoAccessObject(string connectionString = null)
 		{
 			ConnectionString = connectionString;
@@ -50,8 +51,14 @@ namespace Dapper.Extra.Utilities
 			Queries = builder.Queries;
 		}
 
+		/// <summary>
+		/// The connection string used for SQL commands. This is ignored for transaction based commands.
+		/// </summary>
 		public string ConnectionString { get; set; }
 
+		/// <summary>
+		/// The SQL commands for a given type.
+		/// </summary>
 		protected ISqlQueries<T> Queries { get; private set; }
 
 		#region Bulk

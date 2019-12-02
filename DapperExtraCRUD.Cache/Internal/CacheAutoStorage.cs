@@ -30,12 +30,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
-using Dapper.Extra.Persistence.Interfaces;
+using Dapper.Extra.Cache.Interfaces;
 
-namespace Dapper.Extra.Persistence.Internal
+namespace Dapper.Extra.Cache.Internal
 {
-	internal class CacheAutoStorage<T> : ICacheStorage<T>
+	internal class CacheAutoStorage<T, R> : ICacheStorage<T, R>
 		where T : class
+		where R : CacheItem<T>
 	{
 		private readonly IDictionary<T, CacheItem<T>> Cache;
 

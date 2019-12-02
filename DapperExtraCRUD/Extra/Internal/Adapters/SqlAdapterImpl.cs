@@ -123,7 +123,7 @@ namespace Dapper.Extra.Internal.Adapters
 		}
 
 		/// <summary>
-		/// Quotes an identifier if necessary. This uses <see cref="IsIdentifier(string)"/> to determine if it needs to be quoted.
+		/// Quotes an identifier if necessary. This uses <see cref="Dapper.Extra.ExtraUtil.IsSqlIdentifier(string)"/> to determine if it needs to be quoted.
 		/// </summary>
 		/// <param name="identifier">The identifier.</param>
 		/// <returns>The original identifier if it does not need to be quoted, otherwise a quoted identifier.</returns>

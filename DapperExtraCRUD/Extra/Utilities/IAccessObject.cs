@@ -25,9 +25,14 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Dapper.Extra.Internal;
 
 namespace Dapper.Extra.Utilities
 {
+	/// <summary>
+	/// Abstract class for an object that interacts with an <see cref="ISqlQueries{T}"/>.
+	/// </summary>
+	/// <typeparam name="T">The table type.</typeparam>
 	public abstract class IAccessObject<T> : IAccessObjectSync<T>, IAccessObjectAsync<T>
 		where T : class
 	{

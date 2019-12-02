@@ -33,8 +33,8 @@ using System.Linq;
 namespace Dapper.Extra.Utilities
 {
 	/// <summary>
-	/// Connects to the database and performs SQL operations. This is not thread-safe because the 
-	/// <see cref="SqlConnection"/> and <see cref="SqlTransaction"/> are reused.
+	/// An object that interacts with an <see cref="ISqlQueries{T}"/>. This is not thread-safe
+	/// because the <see cref="SqlConnection"/> and <see cref="SqlTransaction"/> on every method.
 	/// </summary>
 	/// <typeparam name="T">The table type.</typeparam>
 	public class DataAccessObject<T> : IAccessObject<T>, IDataAccessConnection

@@ -39,7 +39,7 @@ namespace UnitTests
 	{
 		private const string ConnString = @"Data Source=DESKTOP-V0JVTST\SQLEXPRESS;Initial Catalog=Test;Integrated Security=True;";
 
-		public static void Main(string[] args)
+		public static void Main()
 		{
 			Random random = new Random(123512);
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
@@ -140,7 +140,7 @@ namespace UnitTests
 					BulkGet(conn, trans, list);
 				}
 				using (SqlTransaction trans = conn.BeginTransaction()) {
-					BulkInsert(conn, trans, list, constructor);
+					BulkInsert(conn, trans, list);
 				}
 				using (SqlTransaction trans = conn.BeginTransaction()) {
 					BulkUpdate(conn, trans, list, (t) => randomize(t));
@@ -400,7 +400,7 @@ DROP TABLE dbo.{tableName};";
 			int count = conn.RecordCount<T>(trans);
 			if (count == 0)
 				throw new InvalidOperationException();
-			conn.DeleteAll<T>(trans);
+			conn.Truncate<T>(trans);
 			count = conn.RecordCount<T>(trans);
 			if (count != 0)
 				throw new InvalidOperationException();
@@ -519,9 +519,9 @@ DROP TABLE dbo.{tableName};";
 			}
 		}
 
-		public static void BulkInsert<T>(SqlConnection conn, SqlTransaction trans, List<T> list, Func<T> constructor) where T : class, IDto<T>
+		public static void BulkInsert<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
-			conn.DeleteAll<T>(trans);
+			conn.Truncate<T>(trans);
 			if (conn.RecordCount<T>(trans) != 0)
 				throw new InvalidOperationException();
 			conn.BulkInsert<T>(list, trans);

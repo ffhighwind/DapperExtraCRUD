@@ -29,11 +29,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Dapper.Extra.Internal;
-using Dapper.Extra.Persistence.Interfaces;
-using Dapper.Extra.Persistence.Internal;
+using Dapper.Extra.Cache.Interfaces;
+using Dapper.Extra.Cache.Internal;
 using Dapper.Extra.Utilities;
 
-namespace Dapper.Extra.Persistence
+namespace Dapper.Extra.Cache
 {
 	public sealed class DbCacheTable<T> : ICacheTable<T, CacheItem<T>>, ICacheTable, IReadOnlyDictionary<T, CacheItem<T>>
 		where T : class

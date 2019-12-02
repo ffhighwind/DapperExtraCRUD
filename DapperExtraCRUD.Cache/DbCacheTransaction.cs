@@ -27,14 +27,14 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using Dapper.Extra.Persistence.Interfaces;
-using Dapper.Extra.Persistence.Internal;
+using Dapper.Extra.Cache.Interfaces;
+using Dapper.Extra.Cache.Internal;
 
-namespace Dapper.Extra.Persistence
+namespace Dapper.Extra.Cache
 {
 	public class DbCacheTransaction : IDbTransaction
 	{
-		internal DbCacheTransaction(SqlTransaction transaction)
+		internal DbCacheTransaction(IDbTransaction transaction)
 		{
 			Transaction = transaction;
 		}
@@ -53,7 +53,7 @@ namespace Dapper.Extra.Persistence
 			}
 		}
 
-		internal readonly SqlTransaction Transaction;
+		internal readonly IDbTransaction Transaction;
 		public IDbConnection Connection => Transaction.Connection;
 		public IsolationLevel IsolationLevel => Transaction.IsolationLevel;
 
@@ -67,27 +67,11 @@ namespace Dapper.Extra.Persistence
 			TransactionStorage.Clear();
 		}
 
-		public void Save(string savePointName)
-		{
-			Transaction.Save(savePointName);
-			foreach (ITransactionStorage storage in TransactionStorage) {
-				storage.Save(savePointName);
-			}
-		}
-
 		public void Rollback()
 		{
 			Transaction.Rollback();
 			foreach (ITransactionStorage storage in TransactionStorage) {
 				storage.Rollback();
-			}
-		}
-
-		public void Rollback(string savePointName)
-		{
-			Transaction.Rollback(savePointName);
-			foreach (ITransactionStorage storage in TransactionStorage) {
-				storage.Rollback(savePointName);
 			}
 		}
 

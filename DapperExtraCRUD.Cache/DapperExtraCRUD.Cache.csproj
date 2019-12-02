@@ -7,8 +7,8 @@
     <ProjectGuid>{3059BA7E-5590-4BBC-A38E-1AEDC7D8A8A1}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Dapper.Extra.Persistence</RootNamespace>
-    <AssemblyName>Dapper.ExtraCRUD.Persistence</AssemblyName>
+    <RootNamespace>Dapper.Extra.Cache</RootNamespace>
+    <AssemblyName>Dapper.ExtraCRUD.Cache</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>

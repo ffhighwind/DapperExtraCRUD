@@ -1,7 +1,7 @@
 # Description:
 
-A thread-safe Dapper extension that was inspired by Dapper.SimpleCRUD. Unique additions include 
-Bulk operations, AutoSync, new attributes (Versioning keys: MatchUpdate, MatchDelete), Distinct, 
+A thread-safe Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more. Unique additions
+include Bulk operations, AutoSync, new attributes (Versioning keys: MatchUpdate, MatchDelete), Distinct, 
 Top/Limit, Upsert, and Insert If Not Exists. It also exposes most of the underlying metadata to 
 allow customization and improved performance.
 
@@ -90,7 +90,7 @@ public class User
 }
 ```
 
-* User objects represent rows in the [Users] table. 
+* User objects represent rows in the [Users] table.
 * [IgnoreDelete] means nothing will occur when delete methods are invoked.
 * [Key(autoIncrement: false)] means the property is a primary key of the table. It is also not an identity (not auto-incrementing) key.
 * [IgnoreInsert(autoSync: true)] means that the property will receive the default value 'getdate()' on inserts. Autosync means that the property 

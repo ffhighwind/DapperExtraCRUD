@@ -28,6 +28,9 @@ using System.Data.SqlClient;
 
 namespace Dapper.Extra.Utilities
 {
+	/// <summary>
+	/// Interface for an object that interacts with a database.
+	/// </summary>
 	public interface IDataAccessConnection
 	{
 		/// <summary>
