@@ -48,7 +48,7 @@ namespace Dapper.Extra.Utilities
 			Queries = builder.Queries;
 		}
 
-		protected ISqlQueries<T> Queries { get; }
+		protected ISqlQueries<T> Queries { get; private set; }
 
 		public string ConnectionString { get; set; }
 

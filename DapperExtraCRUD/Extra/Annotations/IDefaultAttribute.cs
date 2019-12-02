@@ -24,7 +24,6 @@
 // SOFTWARE.
 #endregion
 
-
 namespace Dapper.Extra.Annotations
 {
 	/// <summary>

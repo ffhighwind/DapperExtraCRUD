@@ -51,12 +51,12 @@ namespace Dapper.Extra.Utilities
 			Queries = ExtraCrud.Queries<T>();
 		}
 
-		#region IDataAccessConnection
 		/// <summary>
 		/// The SQL commands for a given type.
 		/// </summary>
 		protected ISqlQueries<T> Queries { get; private set; }
 
+		#region IDataAccessConnection
 		/// <summary>
 		/// The connection used for queries. This will be temporarily opened it if is closed. 
 		/// This connection is not thread-safe because it is reused for all queries.
