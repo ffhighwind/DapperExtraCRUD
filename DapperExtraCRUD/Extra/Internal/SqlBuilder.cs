@@ -45,8 +45,18 @@ namespace Dapper.Extra.Internal
 	public sealed class SqlBuilder<T> : ISqlBuilder
 		where T : class
 	{
+		private readonly ConcurrentDictionary<Type, string> SelectMap = new ConcurrentDictionary<Type, string>();
+
 		/// <summary>
-		/// Constructs a builder which generates metadata and SQL commands for the given type.
+		/// Stores strings to reduce memory usage.
+		/// </summary>
+		/// <remarks> String.Intern could be used to cache these strings, but this would prevent clearing the caches.</remarks>
+		private readonly ConcurrentDictionary<string, string> StringCache = new ConcurrentDictionary<string, string>();
+
+		#region Constructors
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="SqlBuilder{T}"/> class.
 		/// </summary>
 		/// <param name="info"></param>
 		/// <param name="threadSafety"></param>
@@ -155,50 +165,97 @@ namespace Dapper.Extra.Internal
 			}
 		}
 
-		/// <summary>
-		/// The quoted table name or the class name.
-		/// </summary>
-		public string TableName => Info.TableName;
-		/// <summary>
-		/// The temporary table name for bulk operations.
-		/// </summary>
-		private string BulkStagingTable { get; set; }
-		/// <summary>
-		/// The temporary table name for bulk operations.
-		/// </summary>
-		private ISqlAdapter Adapter => Info.Adapter;
-		/// <summary>
-		/// The syntax used to generate SQL commands.
-		/// </summary>
-		public SqlSyntax Syntax => Info.Syntax;
-		/// <summary>
-		/// Stores metadata for for the given type.
-		/// </summary>
-		public SqlTypeInfo Info { get; private set; }
+		#endregion
+
+		#region Properties
+
 		/// <summary>
 		///  All valid columns for the given type.
 		/// </summary>
 		public IReadOnlyList<SqlColumn> Columns => Info.Columns;
-		/// <summary>
-		/// The columns that determine uniqueness. This is every column if there are no keys.
-		/// </summary>
-		public IReadOnlyList<SqlColumn> EqualityColumns => Info.EqualityColumns;
-		/// <summary>
-		/// The queries and commands for this type.
-		/// </summary>
-		public ISqlQueries<T> Queries { get; private set; }
-		/// <summary>
-		/// Compares two objects of the given type and determines if they are equal.
-		/// </summary>
-		public IEqualityComparer<T> EqualityComparer { get; private set; }
-		/// <summary>
-		/// Generates <see cref="DbDataReader"/> for this type.
-		/// </summary>
-		public DataReaderFactory DataReaderFactory { get; private set; }
+
 		/// <summary>
 		/// Creates an object from a single value key. This can be used by a dictionary where <typeparamref name="T"/> is the key.
 		/// </summary>
 		public Func<object, T> CreateFromKey { get; private set; }
+
+		/// <summary>
+		/// Generates <see cref="DbDataReader"/> for this type.
+		/// </summary>
+		public DataReaderFactory DataReaderFactory { get; private set; }
+
+		/// <summary>
+		/// The columns that determine uniqueness. This is every column if there are no keys.
+		/// </summary>
+		public IReadOnlyList<SqlColumn> EqualityColumns => Info.EqualityColumns;
+
+		/// <summary>
+		/// Compares two objects of the given type and determines if they are equal.
+		/// </summary>
+		public IEqualityComparer<T> EqualityComparer { get; private set; }
+
+		/// <summary>
+		/// Stores metadata for for the given type.
+		/// </summary>
+		public SqlTypeInfo Info { get; private set; }
+
+		/// <summary>
+		/// The queries and commands for this type.
+		/// </summary>
+		public ISqlQueries<T> Queries { get; private set; }
+
+		/// <summary>
+		/// The syntax used to generate SQL commands.
+		/// </summary>
+		public SqlSyntax Syntax => Info.Syntax;
+
+		/// <summary>
+		/// The quoted table name or the class name.
+		/// </summary>
+		public string TableName => Info.TableName;
+
+		/// <summary>
+		/// The temporary table name for bulk operations.
+		/// </summary>
+		private ISqlAdapter Adapter => Info.Adapter;
+
+		/// <summary>
+		/// The temporary table name for bulk operations.
+		/// </summary>
+		private string BulkStagingTable { get; set; }
+
+		#endregion
+
+		#region Methods
+
+		/// <summary>
+		/// Creates a function that syncs the given columns.
+		/// </summary>
+		/// <param name="columns">The columns that will be queried and updated.</param>
+		/// <returns>An auto-sync query.</returns>
+		public DbTVoid<T> CreateAutoSync(IEnumerable<SqlColumn> columns)
+		{
+			if (!columns.Any())
+				return null;
+			string paramsSelect = ParamsSelect(columns);
+			string whereEquals = WhereEquals(EqualityColumns);
+			MemberSetter[] setters = columns.Select(c => c.Setter).ToArray();
+			string[] names = columns.Select(c => c.Property.Name).ToArray();
+			return (connection, obj, transaction, commandTimeout) => {
+				string cmd = $"SELECT {paramsSelect}\nFROM {TableName}\nWHERE \t{whereEquals}";
+				IDictionary<string, object> value = connection.QueryFirstOrDefault(cmd, obj, transaction, commandTimeout);
+				if (value != null) {
+					for (int i = 0; i < setters.Length; i++) {
+						setters[i](obj, value[names[i]]);
+					}
+				}
+			};
+		}
+
+		internal string ColumnNames(IEnumerable<SqlColumn> columns)
+		{
+			return Store(string.Join(",", columns.Select(c => c.ColumnName)));
+		}
 
 		/// <summary>
 		/// Creates single key queries.
@@ -231,64 +288,24 @@ namespace Dapper.Extra.Internal
 			queries.DeleteKey = (connection, key, transaction, commandTimeout) => throw new InvalidOperationException(msg);
 		}
 
-		#region Filtered Selects
-		private readonly ConcurrentDictionary<Type, string> SelectMap = new ConcurrentDictionary<Type, string>();
-
-		private IEnumerable<SqlColumn> GetSharedColumns(Type type, IEnumerable<SqlColumn> columns)
-		{
-			if (type == typeof(T))
-				return columns;
-			IEnumerable<string> propNames = type.GetProperties(BindingFlags.Public | BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.DeclaredOnly).Select(p => p.Name);
-			HashSet<string> columnNames = new HashSet<string>(propNames);
-			List<SqlColumn> list = columns.Where(c => propNames.Contains(c.Property.Name)).ToList();
-			if (list.Count == 0)
-				throw new InvalidOperationException(type.FullName + " does not have any matching columns with " + typeof(T).FullName);
-			return list;
-		}
-
-		private string CreateParamsSelect(Type type)
-		{
-			IEnumerable<SqlColumn> columns = GetSharedColumns(type, Info.SelectColumns);
-			string paramsSelect = ParamsSelect(columns);
-			return SelectMap.GetOrAdd(type, paramsSelect);
-		}
-		#endregion Filtered Selects
-
-		#region StringCache
-		/// <summary>
-		/// Stores strings to reduce memory usage.
-		/// </summary>
-		/// <remarks> String.Intern could be used to cache these strings, but this would prevent clearing the caches.</remarks>
-		private readonly ConcurrentDictionary<string, string> StringCache = new ConcurrentDictionary<string, string>();
-
-		/// <summary>
-		/// Checks the cache for a string and returns it if it exists, otherwise it adds the string to the cache.
-		/// </summary>
-		/// <param name="str">The string to add/search for.</param>
-		/// <remarks> String.Intern could be used to cache these strings, but this would prevent clearing the caches.</remarks>
-		internal string Store(string str)
-		{
-			return StringCache.GetOrAdd(str, str);
-		}
-
-		internal string TruncateTableQuery()
-		{
-			return Store(Info.Adapter.TruncateTable(TableName));
-		}
-
 		internal string DeleteCmd()
 		{
 			return Store("DELETE FROM " + TableName + "\n");
 		}
 
-		internal string WhereEquals(IEnumerable<SqlColumn> columns)
-		{
-			return Store(SqlBuilderHelper.WhereEquals(columns));
-		}
-
 		internal string DropBulkTableCmd()
 		{
 			return Store(Info.Adapter.DropTempTableIfExists(BulkStagingTable));
+		}
+
+		internal string InsertedValues(IEnumerable<SqlColumn> columns)
+		{
+			return Store(SqlBuilderHelper.InsertedValues(columns));
+		}
+
+		internal string InsertIntoCmd()
+		{
+			return Store($"INSERT INTO {TableName} ({ColumnNames(Info.InsertColumns)})\n");
 		}
 
 		internal string ParamsSelect()
@@ -311,29 +328,34 @@ namespace Dapper.Extra.Internal
 			return Store(SqlBuilderHelper.SelectedColumns(Info.SelectColumns, TableName) + "\nFROM " + TableName + "\n");
 		}
 
+		internal string SelectAutoKey()
+		{
+			return Store(Info.Adapter.SelectIdentityQuery(Info.AutoKeyColumn.Type));
+		}
+
 		internal string SelectIntoStagingTable(IEnumerable<SqlColumn> columns)
 		{
 			return Store(SqlBuilderHelper.SelectIntoTableQuery(TableName, BulkStagingTable, columns));
 		}
 
-		internal string WhereEqualsTables(IEnumerable<SqlColumn> columns)
+		/// <summary>
+		/// Checks the cache for a string and returns it if it exists, otherwise it adds the string to the cache.
+		/// </summary>
+		/// <param name="str">The string to add/search for.</param>
+		/// <remarks> String.Intern could be used to cache these strings, but this would prevent clearing the caches.</remarks>
+		internal string Store(string str)
 		{
-			return Store(SqlBuilderHelper.WhereEqualsTables(BulkStagingTable, TableName, columns));
+			return StringCache.GetOrAdd(str, str);
 		}
 
-		internal string InsertedValues(IEnumerable<SqlColumn> columns)
+		internal string TruncateTableQuery()
 		{
-			return Store(SqlBuilderHelper.InsertedValues(columns));
+			return Store(Info.Adapter.TruncateTable(TableName));
 		}
 
-		internal string InsertIntoCmd()
+		internal string UpdateSet(IEnumerable<SqlColumn> columns)
 		{
-			return Store($"INSERT INTO {TableName} ({ColumnNames(Info.InsertColumns)})\n");
-		}
-
-		internal string ColumnNames(IEnumerable<SqlColumn> columns)
-		{
-			return Store(string.Join(",", columns.Select(c => c.ColumnName)));
+			return Store(SqlBuilderHelper.UpdateSet(columns));
 		}
 
 		internal string UpdateSetTables()
@@ -342,18 +364,20 @@ namespace Dapper.Extra.Internal
 			return Store(SqlBuilderHelper.UpdateSetTables(BulkStagingTable, TableName, Info.UpdateColumns));
 		}
 
-		internal string SelectAutoKey()
+		internal string WhereEquals(IEnumerable<SqlColumn> columns)
 		{
-			return Store(Info.Adapter.SelectIdentityQuery(Info.AutoKeyColumn.Type));
+			return Store(SqlBuilderHelper.WhereEquals(columns));
 		}
 
-		internal string UpdateSet(IEnumerable<SqlColumn> columns)
+		internal string WhereEqualsTables(IEnumerable<SqlColumn> columns)
 		{
-			return Store(SqlBuilderHelper.UpdateSet(columns));
+			return Store(SqlBuilderHelper.WhereEqualsTables(BulkStagingTable, TableName, columns));
 		}
-		#endregion StringCache
 
-		#region DoNothing
+		private static void DoNothing(IDbConnection connection, IDbTransaction transaction, int commandTimeout)
+		{
+		}
+
 		private static int DoNothing(IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction, int commandTimeout)
 		{
 			return 0;
@@ -364,12 +388,9 @@ namespace Dapper.Extra.Internal
 			return false;
 		}
 
-		private static void DoNothing(IDbConnection connection, IDbTransaction transaction, int commandTimeout)
+		private static int DoNothing(IDbConnection connection, string whereCondition, object param, IDbTransaction transaction, int commandTimeout)
 		{
-		}
-
-		private static void DoNothingList(IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction, int commandTimeout)
-		{
+			return 0;
 		}
 
 		private static bool DoNothing(IDbConnection connection, T obj, IDbTransaction transaction, int commandTimeout)
@@ -377,199 +398,12 @@ namespace Dapper.Extra.Internal
 			return false;
 		}
 
-		private static int DoNothing(IDbConnection connection, string whereCondition, object param, IDbTransaction transaction, int commandTimeout)
+		private static void DoNothingList(IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction, int commandTimeout)
 		{
-			return 0;
 		}
 
 		private static void DoNothingVoid(IDbConnection connection, T obj, IDbTransaction transaction, int commandTimeout)
 		{
-		}
-		#endregion DoNothing
-
-		#region Selects
-		private DbWhereInt<T> CreateRecordCount()
-		{
-			return (connection, whereCondition, param, transaction, commandTimeout) => {
-				string query = $"SELECT COUNT(*) FROM {TableName}\n{whereCondition}";
-				int count = connection.Query<int>(query, param, transaction, true, commandTimeout).First();
-				return count;
-			};
-		}
-
-		/// <summary>
-		/// Creates a function that syncs the given columns.
-		/// </summary>
-		/// <param name="columns">The columns that will be queried and updated.</param>
-		/// <returns>An auto-sync query.</returns>
-		public DbTVoid<T> CreateAutoSync(IEnumerable<SqlColumn> columns)
-		{
-			if (!columns.Any())
-				return null;
-			string paramsSelect = ParamsSelect(columns);
-			string whereEquals = WhereEquals(EqualityColumns);
-			MemberSetter[] setters = columns.Select(c => c.Setter).ToArray();
-			string[] names = columns.Select(c => c.Property.Name).ToArray();
-			return (connection, obj, transaction, commandTimeout) => {
-				string cmd = $"SELECT {paramsSelect}\nFROM {TableName}\nWHERE \t{whereEquals}";
-				IDictionary<string, object> value = connection.QueryFirstOrDefault(cmd, obj, transaction, commandTimeout);
-				if (value != null) {
-					for (int i = 0; i < setters.Length; i++) {
-						setters[i](obj, value[names[i]]);
-					}
-				}
-			};
-		}
-
-		private DbTypeWhereList<T> CreateGetFilterList()
-		{
-			return (connection, type, whereCondition, param, transaction, buffered, commandTimeout) => {
-				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
-					paramsSelect = CreateParamsSelect(type);
-				}
-				string query = $"SELECT {paramsSelect}\nFROM {TableName}\n{whereCondition}";
-				IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
-				return result;
-			};
-		}
-
-		private DbTT<T> CreateGet()
-		{
-			string paramsSelectFromTable = ParamsSelectFromTable();
-			string whereEquals = WhereEquals(EqualityColumns);
-			return (connection, obj, transaction, commandTimeout) => {
-				string query = $"SELECT {paramsSelectFromTable}WHERE \t{whereEquals}";
-				T val = connection.QueryFirstOrDefault<T>(query, obj, transaction, commandTimeout);
-				return val;
-			};
-		}
-
-		private DbWhereList<T> CreateGetKeys()
-		{
-			string paramsSelectKeys = ParamsSelect(EqualityColumns);
-			return (connection, whereCondition, param, transaction, buffered, commandTimeout) => {
-				string query = $"SELECT {paramsSelectKeys}\nFROM {TableName}\n{whereCondition}";
-				IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
-				return result;
-			};
-		}
-
-		private DbWhereList<T> CreateGetList()
-		{
-			string paramsSelectFromTable = ParamsSelectFromTable();
-			return (connection, whereCondition, param, transaction, buffered, commandTimeout) => {
-				string query = $"SELECT {paramsSelectFromTable}{whereCondition}";
-				IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
-				return result;
-			};
-		}
-
-		private DbTypeWhereList<T> CreateGetDistinct()
-		{
-			//string paramsSelectFromTable = ParamsSelectFromTable();
-			return (connection, type, whereCondition, param, transaction, buffered, commandTimeout) => {
-				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
-					paramsSelect = CreateParamsSelect(type);
-				}
-				string query = $"SELECT DISTINCT {paramsSelect}\nFROM {TableName}\n{whereCondition}";
-				IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
-				return result;
-			};
-		}
-
-		private DbLimitList<T> CreateGetLimit()
-		{
-			string paramsSelectFromTable = ParamsSelectFromTable();
-			string limitQuery = Info.Adapter.LimitQuery;
-			return (connection, limit, whereCondition, param, transaction, buffered, commandTimeout) => {
-				string subQuery = $"{paramsSelectFromTable}{whereCondition}";
-				string query = "SELECT " + string.Format(limitQuery, limit, subQuery);
-				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout);
-				return result;
-			};
-		}
-
-		private DbTypeLimitList<T> CreateGetFilterLimit()
-		{
-			string limitQuery = Info.Adapter.LimitQuery;
-			return (connection, type, limit, whereCondition, param, transaction, buffered, commandTimeout) => {
-				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
-					paramsSelect = CreateParamsSelect(type);
-				}
-				string subQuery = $"{paramsSelect}\nFROM {TableName}\n{whereCondition}";
-				string query = "SELECT " + string.Format(limitQuery, limit, subQuery);
-				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout);
-				return result;
-			};
-		}
-
-		private DbTypeLimitList<T> CreateGetDistinctLimit()
-		{
-			string limitQuery = Adapter.LimitQuery;
-			return (connection, type, limit, whereCondition, param, transaction, buffered, commandTimeout) => {
-				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
-					paramsSelect = CreateParamsSelect(type);
-				}
-				string subQuery = $"{paramsSelect}\nFROM {TableName}\n{whereCondition}";
-				string query = "SELECT " + string.Format(limitQuery, limit, subQuery);
-				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout);
-				return result;
-			};
-		}
-
-		private DbListList<T> CreateBulkGet()
-		{
-			string dropBulkTableCmd = DropBulkTableCmd();
-			string selectEqualityIntoStagingCmd = SelectIntoStagingTable(EqualityColumns);
-			string paramsSelectFromTableBulk = ParamsSelectFromTableBulk();
-			string equalsTables = WhereEqualsTables(EqualityColumns);
-			return (connection, objs, transaction, commandTimeout) => {
-				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
-				connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
-				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, EqualityColumns, commandTimeout,
-					SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
-				string bulkGetQuery = $"SELECT {paramsSelectFromTableBulk}\tINNER JOIN {BulkStagingTable} ON {equalsTables}";
-				IEnumerable<T> result = connection.Query<T>(bulkGetQuery, null, transaction, true, commandTimeout);
-				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
-				return result;
-			};
-		}
-		#endregion Selects
-
-		#region Deletes
-		private DbTBool<T> CreateDelete()
-		{
-			if (Info.DeleteKeyColumns.Count == 0) //	NoDeltesAttribute
-				return DoNothing;
-			string deleteCmd = DeleteCmd();
-			string deleteEquals = WhereEquals(Info.DeleteKeyColumns);
-			return (connection, obj, transaction, commandTimeout) => {
-				string cmd = deleteCmd + "WHERE \t" + deleteEquals;
-				int count = connection.Execute(cmd, obj, transaction, commandTimeout);
-				return count > 0;
-			};
-		}
-
-		private DbWhereInt<T> CreateDeleteList()
-		{
-			if (Info.DeleteKeyColumns.Count == 0) //	NoDeltesAttribute
-				return DoNothing;
-			string deleteCmd = DeleteCmd();
-			return (connection, whereCondition, param, transaction, commandTimeout) => {
-				string cmd = deleteCmd + whereCondition;
-				int count = connection.Execute(cmd, param, transaction, commandTimeout);
-				return count;
-			};
-		}
-
-		private DbVoid CreateTruncate()
-		{
-			if (Info.DeleteKeyColumns.Count == 0) // NoDeltesAttribute
-				return DoNothing;
-			string truncateCmd = Store(Info.Adapter.TruncateTable(TableName));
-			return (connection, transaction, commandTimeout) => {
-				int count = connection.Execute(truncateCmd, null, transaction, commandTimeout);
-			};
 		}
 
 		private DbListInt<T> CreateBulkDelete()
@@ -590,9 +424,316 @@ namespace Dapper.Extra.Internal
 				return count;
 			};
 		}
-		#endregion Deletes
 
-		#region Inserts
+		private DbKeysInt<T> CreateBulkDeleteKeys<KeyType>()
+		{
+			if (Info.DeleteKeyColumns.Count == 0) {
+				//	NoDeltesAttribute
+				return (connection, keys, transaction, commandTimeout) => {
+					return 0;
+				};
+			}
+			string deleteCmd = DeleteCmd();
+			string keyName = EqualityColumns[0].ColumnName;
+			return (connection, keys, transaction, commandTimeout) => {
+				int count = 0;
+				string bulkDeleteCmd = $"{deleteCmd}WHERE \t{keyName} in @Keys";
+				foreach (IEnumerable<KeyType> Keys in Extensions.UtilExtensions.Partition<KeyType>(keys.Select(k => (KeyType)k), 2000)) {
+					int deleted = connection.Execute(bulkDeleteCmd, new { Keys }, transaction, commandTimeout);
+					count += deleted;
+				}
+				return count;
+			};
+		}
+
+		private DbListList<T> CreateBulkGet()
+		{
+			string dropBulkTableCmd = DropBulkTableCmd();
+			string selectEqualityIntoStagingCmd = SelectIntoStagingTable(EqualityColumns);
+			string paramsSelectFromTableBulk = ParamsSelectFromTableBulk();
+			string equalsTables = WhereEqualsTables(EqualityColumns);
+			return (connection, objs, transaction, commandTimeout) => {
+				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+				connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
+				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, EqualityColumns, commandTimeout,
+					SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
+				string bulkGetQuery = $"SELECT {paramsSelectFromTableBulk}\tINNER JOIN {BulkStagingTable} ON {equalsTables}";
+				IEnumerable<T> result = connection.Query<T>(bulkGetQuery, null, transaction, true, commandTimeout);
+				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+				return result;
+			};
+		}
+
+		private DbKeysList<T> CreateBulkGetKeys<KeyType>()
+		{
+			string paramsSelectFromTableBulk = ParamsSelectFromTableBulk();
+			string keyName = EqualityColumns[0].ColumnName;
+			return (connection, keys, transaction, commandTimeout) => {
+				List<T> result = new List<T>();
+				string bulkGetKeysQuery = $"SELECT {paramsSelectFromTableBulk}WHERE \t{keyName} in @Keys";
+				foreach (IEnumerable<KeyType> Keys in Extensions.UtilExtensions.Partition<KeyType>(keys.Select(k => (KeyType)k), 2000)) {
+					IEnumerable<T> list = connection.Query<T>(bulkGetKeysQuery, new { Keys }, transaction, true, commandTimeout);
+					result.AddRange(list);
+				}
+				return result;
+			};
+		}
+
+		private DbListVoid<T> CreateBulkInsert()
+		{
+			if (!Info.InsertColumns.Any())
+				return DoNothingList;
+			return (connection, objs, transaction, commandTimeout) => {
+				Adapter.BulkInsert(connection, objs, transaction, TableName, DataReaderFactory, Info.InsertColumns, commandTimeout,
+					SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.CheckConstraints | SqlBulkCopyOptions.FireTriggers | SqlBulkCopyOptions.TableLock);
+			};
+		}
+
+		private DbListInt<T> CreateBulkInsertIfNotExists()
+		{
+			if (!Info.InsertColumns.Any())
+				return DoNothing;
+			string selectInsertIntoStagingCmd = SelectIntoStagingTable(Info.BulkInsertIfNotExistsColumns);
+			string dropBulkTableCmd = DropBulkTableCmd();
+			string equalsTables = WhereEqualsTables(EqualityColumns);
+			string insertColumns = ColumnNames(Info.InsertColumns);
+			string insertIntoCmd = InsertIntoCmd();
+			string insertedValues = InsertedValues(Info.InsertColumns);
+			return (connection, objs, transaction, commandTimeout) => {
+				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+				connection.Execute(selectInsertIntoStagingCmd, null, transaction, commandTimeout);
+				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.BulkInsertIfNotExistsColumns, commandTimeout,
+					SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
+				string bulkInsertIfNotExistsCmd = $"{insertIntoCmd}\nSELECT {insertColumns}\nFROM {BulkStagingTable}\nWHERE NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{equalsTables})";
+				int count = connection.Execute(bulkInsertIfNotExistsCmd, null, transaction, commandTimeout);
+				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+				return count;
+			};
+		}
+
+		private DbListInt<T> CreateBulkUpdate()
+		{
+			if (Info.UpdateKeyColumns.Count == 0) // NoUpdatesAttribute
+				return DoNothing;
+			string dropBulkTableCmd = DropBulkTableCmd();
+			string bulkUpdateSetParams = UpdateSetTables();
+			string selectEqualityIntoStagingCmd = SelectIntoStagingTable(Info.BulkUpdateColumns);
+			string updateEquals = WhereEqualsTables(Info.UpdateKeyColumns);
+			return (connection, objs, transaction, commandTimeout) => {
+				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+				connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
+				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.BulkUpdateColumns, commandTimeout,
+					SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
+				string bulkUpdateCmd = $"UPDATE {TableName}{bulkUpdateSetParams}\nFROM {BulkStagingTable}\nWHERE \t{updateEquals}";
+				int count = connection.Execute(bulkUpdateCmd, null, transaction, commandTimeout);
+				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+				return count;
+			};
+		}
+
+		private DbListInt<T> CreateBulkUpsert()
+		{
+			if (!Info.UpdateColumns.Any()) {
+				if (!Info.InsertColumns.Any())
+					return DoNothing;
+				// Insert if not exists
+				return Queries.BulkInsertIfNotExists;
+			}
+			DbListInt<T> bulkUpdate = Queries.BulkUpdate;
+			if (!Info.InsertColumns.Any()) {
+				// Update only
+				return (connection, objs, transaction, commandTimeout) => {
+					int count = bulkUpdate(connection, objs, transaction, commandTimeout);
+					return 0;
+				};
+			}
+			string dropBulkTableCmd = DropBulkTableCmd();
+			// Insert or Update
+			string bulkUpdateSetParams = UpdateSetTables();
+			string updateEquals = WhereEqualsTables(Info.UpdateKeyColumns);
+			string selectUpsertIntoStagingCmd = SelectIntoStagingTable(Info.UpsertColumns);
+			string equalsTables = WhereEqualsTables(EqualityColumns);
+			string insertIntoCmd = InsertIntoCmd();
+			string insertColumns = ColumnNames(Info.InsertColumns);
+			return (connection, objs, transaction, commandTimeout) => {
+				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+				connection.Execute(selectUpsertIntoStagingCmd, null, transaction, commandTimeout);
+				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.UpsertColumns, commandTimeout,
+					SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
+				string bulkUpdateCmd = $"UPDATE {TableName}{bulkUpdateSetParams}\nFROM {BulkStagingTable}\nWHERE \t{updateEquals}";
+				int countUpdate = connection.Execute(bulkUpdateCmd, null, transaction, commandTimeout);
+				string bulkInsertIfNotExistsCmd = $"{insertIntoCmd}\nSELECT {insertColumns}\nFROM {BulkStagingTable}\nWHERE NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{equalsTables})";
+				int countInsert = connection.Execute(bulkInsertIfNotExistsCmd, null, transaction, commandTimeout);
+				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+				return countInsert;
+			};
+		}
+
+		private DbTBool<T> CreateDelete()
+		{
+			if (Info.DeleteKeyColumns.Count == 0) //	NoDeltesAttribute
+				return DoNothing;
+			string deleteCmd = DeleteCmd();
+			string deleteEquals = WhereEquals(Info.DeleteKeyColumns);
+			return (connection, obj, transaction, commandTimeout) => {
+				string cmd = deleteCmd + "WHERE \t" + deleteEquals;
+				int count = connection.Execute(cmd, obj, transaction, commandTimeout);
+				return count > 0;
+			};
+		}
+
+		private DbKeyBool CreateDeleteKey()
+		{
+			if (Info.DeleteKeyColumns.Count == 0) {
+				//	NoDeltesAttribute
+				return (connection, obj, transaction, commandTimeout) => {
+					return false;
+				};
+			}
+			string deleteCmd = DeleteCmd();
+			string deleteEquals = WhereEquals(Info.DeleteKeyColumns);
+			string keyName = EqualityColumns[0].Property.Name;
+			return (connection, key, transaction, commandTimeout) => {
+				string cmd = $"{deleteCmd}WHERE \t{deleteEquals}";
+				IDictionary<string, object> obj = new ExpandoObject();
+				obj.Add(keyName, key);
+				int count = connection.Execute(cmd, obj, transaction, commandTimeout);
+				return count > 0;
+			};
+		}
+
+		private DbWhereInt<T> CreateDeleteList()
+		{
+			if (Info.DeleteKeyColumns.Count == 0) //	NoDeltesAttribute
+				return DoNothing;
+			string deleteCmd = DeleteCmd();
+			return (connection, whereCondition, param, transaction, commandTimeout) => {
+				string cmd = deleteCmd + whereCondition;
+				int count = connection.Execute(cmd, param, transaction, commandTimeout);
+				return count;
+			};
+		}
+
+		private DbTT<T> CreateGet()
+		{
+			string paramsSelectFromTable = ParamsSelectFromTable();
+			string whereEquals = WhereEquals(EqualityColumns);
+			return (connection, obj, transaction, commandTimeout) => {
+				string query = $"SELECT {paramsSelectFromTable}WHERE \t{whereEquals}";
+				T val = connection.QueryFirstOrDefault<T>(query, obj, transaction, commandTimeout);
+				return val;
+			};
+		}
+
+		private DbTypeWhereList<T> CreateGetDistinct()
+		{
+			//string paramsSelectFromTable = ParamsSelectFromTable();
+			return (connection, type, whereCondition, param, transaction, buffered, commandTimeout) => {
+				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
+					paramsSelect = CreateParamsSelect(type);
+				}
+				string query = $"SELECT DISTINCT {paramsSelect}\nFROM {TableName}\n{whereCondition}";
+				IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
+				return result;
+			};
+		}
+
+		private DbTypeLimitList<T> CreateGetDistinctLimit()
+		{
+			string limitQuery = Adapter.LimitQuery;
+			return (connection, type, limit, whereCondition, param, transaction, buffered, commandTimeout) => {
+				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
+					paramsSelect = CreateParamsSelect(type);
+				}
+				string subQuery = $"{paramsSelect}\nFROM {TableName}\n{whereCondition}";
+				string query = "SELECT " + string.Format(limitQuery, limit, subQuery);
+				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout);
+				return result;
+			};
+		}
+
+		private DbTypeLimitList<T> CreateGetFilterLimit()
+		{
+			string limitQuery = Info.Adapter.LimitQuery;
+			return (connection, type, limit, whereCondition, param, transaction, buffered, commandTimeout) => {
+				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
+					paramsSelect = CreateParamsSelect(type);
+				}
+				string subQuery = $"{paramsSelect}\nFROM {TableName}\n{whereCondition}";
+				string query = "SELECT " + string.Format(limitQuery, limit, subQuery);
+				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout);
+				return result;
+			};
+		}
+
+		private DbTypeWhereList<T> CreateGetFilterList()
+		{
+			return (connection, type, whereCondition, param, transaction, buffered, commandTimeout) => {
+				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
+					paramsSelect = CreateParamsSelect(type);
+				}
+				string query = $"SELECT {paramsSelect}\nFROM {TableName}\n{whereCondition}";
+				IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
+				return result;
+			};
+		}
+
+		private DbKeyObj<T> CreateGetKey()
+		{
+			string paramsSelectFromTable = ParamsSelectFromTable();
+			string whereEquals = WhereEquals(EqualityColumns);
+			string keyName = EqualityColumns[0].Property.Name;
+			return (connection, key, transaction, commandTimeout) => {
+				string query = $"SELECT {paramsSelectFromTable}WHERE \t{whereEquals}";
+				IDictionary<string, object> obj = new ExpandoObject();
+				obj.Add(keyName, key);
+				T val = connection.QueryFirstOrDefault<T>(query, obj, transaction, commandTimeout);
+				return val;
+			};
+		}
+
+		private DbWhereList<T> CreateGetKeys()
+		{
+			string paramsSelectKeys = ParamsSelect(EqualityColumns);
+			return (connection, whereCondition, param, transaction, buffered, commandTimeout) => {
+				string query = $"SELECT {paramsSelectKeys}\nFROM {TableName}\n{whereCondition}";
+				IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
+				return result;
+			};
+		}
+
+		private DbWhereKeys CreateGetKeysKeys<KeyType>()
+		{
+			string paramsSelectKeys = ParamsSelect(EqualityColumns);
+			return (connection, whereCondition, param, transaction, buffered, commandTimeout) => {
+				string query = $"SELECT {paramsSelectKeys}\nFROM {TableName}\n{whereCondition}";
+				IEnumerable<KeyType> result = connection.Query<KeyType>(query, param, transaction, buffered, commandTimeout);
+				return result.Select(r => (object)r);
+			};
+		}
+
+		private DbLimitList<T> CreateGetLimit()
+		{
+			string paramsSelectFromTable = ParamsSelectFromTable();
+			string limitQuery = Info.Adapter.LimitQuery;
+			return (connection, limit, whereCondition, param, transaction, buffered, commandTimeout) => {
+				string subQuery = $"{paramsSelectFromTable}{whereCondition}";
+				string query = "SELECT " + string.Format(limitQuery, limit, subQuery);
+				IEnumerable<T> result = connection.Query<T>(query, param, transaction, false, commandTimeout);
+				return result;
+			};
+		}
+
+		private DbWhereList<T> CreateGetList()
+		{
+			string paramsSelectFromTable = ParamsSelectFromTable();
+			return (connection, whereCondition, param, transaction, buffered, commandTimeout) => {
+				string query = $"SELECT {paramsSelectFromTable}{whereCondition}";
+				IEnumerable<T> result = connection.Query<T>(query, param, transaction, buffered, commandTimeout);
+				return result;
+			};
+		}
+
 		private DbTVoid<T> CreateInsert()
 		{
 			if (!Info.InsertColumns.Any()) // NoInsertsAttribute
@@ -685,40 +826,32 @@ namespace Dapper.Extra.Internal
 			}
 		}
 
-		private DbListVoid<T> CreateBulkInsert()
+		private string CreateParamsSelect(Type type)
 		{
-			if (!Info.InsertColumns.Any())
-				return DoNothingList;
-			return (connection, objs, transaction, commandTimeout) => {
-				Adapter.BulkInsert(connection, objs, transaction, TableName, DataReaderFactory, Info.InsertColumns, commandTimeout,
-					SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.CheckConstraints | SqlBulkCopyOptions.FireTriggers | SqlBulkCopyOptions.TableLock);
-			};
+			IEnumerable<SqlColumn> columns = GetSharedColumns(type, Info.SelectColumns);
+			string paramsSelect = ParamsSelect(columns);
+			return SelectMap.GetOrAdd(type, paramsSelect);
 		}
 
-		private DbListInt<T> CreateBulkInsertIfNotExists()
+		private DbWhereInt<T> CreateRecordCount()
 		{
-			if (!Info.InsertColumns.Any())
-				return DoNothing;
-			string selectInsertIntoStagingCmd = SelectIntoStagingTable(Info.BulkInsertIfNotExistsColumns);
-			string dropBulkTableCmd = DropBulkTableCmd();
-			string equalsTables = WhereEqualsTables(EqualityColumns);
-			string insertColumns = ColumnNames(Info.InsertColumns);
-			string insertIntoCmd = InsertIntoCmd();
-			string insertedValues = InsertedValues(Info.InsertColumns);
-			return (connection, objs, transaction, commandTimeout) => {
-				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
-				connection.Execute(selectInsertIntoStagingCmd, null, transaction, commandTimeout);
-				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.BulkInsertIfNotExistsColumns, commandTimeout,
-					SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
-				string bulkInsertIfNotExistsCmd = $"{insertIntoCmd}\nSELECT {insertColumns}\nFROM {BulkStagingTable}\nWHERE NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{equalsTables})";
-				int count = connection.Execute(bulkInsertIfNotExistsCmd, null, transaction, commandTimeout);
-				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+			return (connection, whereCondition, param, transaction, commandTimeout) => {
+				string query = $"SELECT COUNT(*) FROM {TableName}\n{whereCondition}";
+				int count = connection.Query<int>(query, param, transaction, true, commandTimeout).First();
 				return count;
 			};
 		}
-		#endregion Inserts
 
-		#region Updates
+		private DbVoid CreateTruncate()
+		{
+			if (Info.DeleteKeyColumns.Count == 0) // NoDeltesAttribute
+				return DoNothing;
+			string truncateCmd = Store(Info.Adapter.TruncateTable(TableName));
+			return (connection, transaction, commandTimeout) => {
+				int count = connection.Execute(truncateCmd, null, transaction, commandTimeout);
+			};
+		}
+
 		private DbTBool<T> CreateUpdate()
 		{
 			if (Info.UpdateKeyColumns.Count == 0) // NoUpdatesAttribute
@@ -763,28 +896,6 @@ namespace Dapper.Extra.Internal
 			};
 		}
 
-		private DbListInt<T> CreateBulkUpdate()
-		{
-			if (Info.UpdateKeyColumns.Count == 0) // NoUpdatesAttribute
-				return DoNothing;
-			string dropBulkTableCmd = DropBulkTableCmd();
-			string bulkUpdateSetParams = UpdateSetTables();
-			string selectEqualityIntoStagingCmd = SelectIntoStagingTable(Info.BulkUpdateColumns);
-			string updateEquals = WhereEqualsTables(Info.UpdateKeyColumns);
-			return (connection, objs, transaction, commandTimeout) => {
-				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
-				connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
-				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.BulkUpdateColumns, commandTimeout,
-					SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
-				string bulkUpdateCmd = $"UPDATE {TableName}{bulkUpdateSetParams}\nFROM {BulkStagingTable}\nWHERE \t{updateEquals}";
-				int count = connection.Execute(bulkUpdateCmd, null, transaction, commandTimeout);
-				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
-				return count;
-			};
-		}
-		#endregion Updates
-
-		#region Upserts
 		private DbTBool<T> CreateUpsert()
 		{
 			if (!Info.UpdateColumns.Any()) {
@@ -811,125 +922,18 @@ namespace Dapper.Extra.Internal
 			};
 		}
 
-		private DbListInt<T> CreateBulkUpsert()
+		private IEnumerable<SqlColumn> GetSharedColumns(Type type, IEnumerable<SqlColumn> columns)
 		{
-			if (!Info.UpdateColumns.Any()) {
-				if (!Info.InsertColumns.Any())
-					return DoNothing;
-				// Insert if not exists
-				return Queries.BulkInsertIfNotExists;
-			}
-			DbListInt<T> bulkUpdate = Queries.BulkUpdate;
-			if (!Info.InsertColumns.Any()) {
-				// Update only
-				return (connection, objs, transaction, commandTimeout) => {
-					int count = bulkUpdate(connection, objs, transaction, commandTimeout);
-					return 0;
-				};
-			}
-			string dropBulkTableCmd = DropBulkTableCmd();
-			// Insert or Update
-			string bulkUpdateSetParams = UpdateSetTables();
-			string updateEquals = WhereEqualsTables(Info.UpdateKeyColumns);
-			string selectUpsertIntoStagingCmd = SelectIntoStagingTable(Info.UpsertColumns);
-			string equalsTables = WhereEqualsTables(EqualityColumns);
-			string insertIntoCmd = InsertIntoCmd();
-			string insertColumns = ColumnNames(Info.InsertColumns);
-			return (connection, objs, transaction, commandTimeout) => {
-				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
-				connection.Execute(selectUpsertIntoStagingCmd, null, transaction, commandTimeout);
-				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.UpsertColumns, commandTimeout,
-					SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
-				string bulkUpdateCmd = $"UPDATE {TableName}{bulkUpdateSetParams}\nFROM {BulkStagingTable}\nWHERE \t{updateEquals}";
-				int countUpdate = connection.Execute(bulkUpdateCmd, null, transaction, commandTimeout);
-				string bulkInsertIfNotExistsCmd = $"{insertIntoCmd}\nSELECT {insertColumns}\nFROM {BulkStagingTable}\nWHERE NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{equalsTables})";
-				int countInsert = connection.Execute(bulkInsertIfNotExistsCmd, null, transaction, commandTimeout);
-				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
-				return countInsert;
-			};
-		}
-		#endregion Upserts
-
-		#region Keys
-		private DbWhereKeys CreateGetKeysKeys<KeyType>()
-		{
-			string paramsSelectKeys = ParamsSelect(EqualityColumns);
-			return (connection, whereCondition, param, transaction, buffered, commandTimeout) => {
-				string query = $"SELECT {paramsSelectKeys}\nFROM {TableName}\n{whereCondition}";
-				IEnumerable<KeyType> result = connection.Query<KeyType>(query, param, transaction, buffered, commandTimeout);
-				return result.Select(r => (object)r);
-			};
+			if (type == typeof(T))
+				return columns;
+			IEnumerable<string> propNames = type.GetProperties(BindingFlags.Public | BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.DeclaredOnly).Select(p => p.Name);
+			HashSet<string> columnNames = new HashSet<string>(propNames);
+			List<SqlColumn> list = columns.Where(c => propNames.Contains(c.Property.Name)).ToList();
+			if (list.Count == 0)
+				throw new InvalidOperationException(type.FullName + " does not have any matching columns with " + typeof(T).FullName);
+			return list;
 		}
 
-		private DbKeysInt<T> CreateBulkDeleteKeys<KeyType>()
-		{
-			if (Info.DeleteKeyColumns.Count == 0) {
-				//	NoDeltesAttribute
-				return (connection, keys, transaction, commandTimeout) => {
-					return 0;
-				};
-			}
-			string deleteCmd = DeleteCmd();
-			string keyName = EqualityColumns[0].ColumnName;
-			return (connection, keys, transaction, commandTimeout) => {
-				int count = 0;
-				string bulkDeleteCmd = $"{deleteCmd}WHERE \t{keyName} in @Keys";
-				foreach (IEnumerable<KeyType> Keys in Extensions.UtilExtensions.Partition<KeyType>(keys.Select(k => (KeyType)k), 2000)) {
-					int deleted = connection.Execute(bulkDeleteCmd, new { Keys }, transaction, commandTimeout);
-					count += deleted;
-				}
-				return count;
-			};
-		}
-
-		private DbKeyObj<T> CreateGetKey()
-		{
-			string paramsSelectFromTable = ParamsSelectFromTable();
-			string whereEquals = WhereEquals(EqualityColumns);
-			string keyName = EqualityColumns[0].Property.Name;
-			return (connection, key, transaction, commandTimeout) => {
-				string query = $"SELECT {paramsSelectFromTable}WHERE \t{whereEquals}";
-				IDictionary<string, object> obj = new ExpandoObject();
-				obj.Add(keyName, key);
-				T val = connection.QueryFirstOrDefault<T>(query, obj, transaction, commandTimeout);
-				return val;
-			};
-		}
-
-		private DbKeyBool CreateDeleteKey()
-		{
-			if (Info.DeleteKeyColumns.Count == 0) {
-				//	NoDeltesAttribute
-				return (connection, obj, transaction, commandTimeout) => {
-					return false;
-				};
-			}
-			string deleteCmd = DeleteCmd();
-			string deleteEquals = WhereEquals(Info.DeleteKeyColumns);
-			string keyName = EqualityColumns[0].Property.Name;
-			return (connection, key, transaction, commandTimeout) => {
-				string cmd = $"{deleteCmd}WHERE \t{deleteEquals}";
-				IDictionary<string, object> obj = new ExpandoObject();
-				obj.Add(keyName, key);
-				int count = connection.Execute(cmd, obj, transaction, commandTimeout);
-				return count > 0;
-			};
-		}
-
-		private DbKeysList<T> CreateBulkGetKeys<KeyType>()
-		{
-			string paramsSelectFromTableBulk = ParamsSelectFromTableBulk();
-			string keyName = EqualityColumns[0].ColumnName;
-			return (connection, keys, transaction, commandTimeout) => {
-				List<T> result = new List<T>();
-				string bulkGetKeysQuery = $"SELECT {paramsSelectFromTableBulk}WHERE \t{keyName} in @Keys";
-				foreach (IEnumerable<KeyType> Keys in Extensions.UtilExtensions.Partition<KeyType>(keys.Select(k => (KeyType)k), 2000)) {
-					IEnumerable<T> list = connection.Query<T>(bulkGetKeysQuery, new { Keys }, transaction, true, commandTimeout);
-					result.AddRange(list);
-				}
-				return result;
-			};
-		}
-		#endregion Keys
+		#endregion
 	}
 }

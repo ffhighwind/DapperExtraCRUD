@@ -34,20 +34,23 @@ namespace Dapper.Extra.Internal
 	public interface ISqlBuilder
 	{
 		/// <summary>
-		/// The quoted table name or the class name.
+		/// The valid columns for the given type.
 		/// </summary>
-		string TableName { get; }
-		/// <summary>
-		/// The syntax used to generate SQL commands.
-		/// </summary>
-		SqlSyntax Syntax { get; }
+		IReadOnlyList<SqlColumn> Columns { get; }
+
 		/// <summary>
 		/// Stores metadata for for the given type.
 		/// </summary>
 		SqlTypeInfo Info { get; }
+
 		/// <summary>
-		/// The valid columns for the given type.
+		/// The syntax used to generate SQL commands.
 		/// </summary>
-		IReadOnlyList<SqlColumn> Columns { get; }
+		SqlSyntax Syntax { get; }
+
+		/// <summary>
+		/// The quoted table name or the class name.
+		/// </summary>
+		string TableName { get; }
 	}
 }

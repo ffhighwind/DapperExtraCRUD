@@ -22,7 +22,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#endregion
+#endregion License
 
 using System;
 
@@ -35,8 +35,10 @@ namespace Dapper.Extra.Annotations
 	public class IgnoreDeleteAttribute : Attribute
 	{
 		/// <summary>
-		/// Prevents deletion.
+		/// Initializes a new instance of the <see cref="IgnoreDeleteAttribute"/> class.
 		/// </summary>
-		public IgnoreDeleteAttribute() { }
+		public IgnoreDeleteAttribute()
+		{
+		}
 	}
 }

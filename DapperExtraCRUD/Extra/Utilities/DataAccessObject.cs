@@ -27,8 +27,8 @@
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
 using Dapper.Extra.Internal;
+using System.Linq;
 
 namespace Dapper.Extra.Utilities
 {
@@ -40,10 +40,19 @@ namespace Dapper.Extra.Utilities
 	public class DataAccessObject<T> : IAccessObject<T>, IDataAccessConnection
 		where T : class
 	{
+		/// <summary>
+		/// Initializes a new instance of the <see cref="DataAccessObject{T}"/> class.
+		/// </summary>
+		/// <param name="buffered">The buffered<see cref="bool"/></param>
 		public DataAccessObject(bool buffered = true) : this(null, buffered)
 		{
 		}
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="DataAccessObject{T}"/> class.
+		/// </summary>
+		/// <param name="connectionString">The connectionString<see cref="string"/></param>
+		/// <param name="buffered">The buffered<see cref="bool"/></param>
 		public DataAccessObject(string connectionString, bool buffered = true)
 		{
 			Connection = new SqlConnection(connectionString);
@@ -52,27 +61,28 @@ namespace Dapper.Extra.Utilities
 		}
 
 		/// <summary>
-		/// The SQL commands for a given type.
+		/// Determines if the queries are buffered.
 		/// </summary>
-		protected ISqlQueries<T> Queries { get; private set; }
+		public bool Buffered { get; set; }
 
-		#region IDataAccessConnection
 		/// <summary>
 		/// The connection used for queries. This will be temporarily opened it if is closed. 
 		/// This connection is not thread-safe because it is reused for all queries.
 		/// </summary>
 		public SqlConnection Connection { get; set; }
+
 		/// <summary>
 		/// The transaction used for queries.
 		/// </summary>
 		public SqlTransaction Transaction { get; set; }
+
 		/// <summary>
-		/// Determines if the queries are buffered.
+		/// The SQL commands for a given type.
 		/// </summary>
-		public bool Buffered { get; set; }
-		#endregion IDataAccessConnection
+		protected ISqlQueries<T> Queries { get; private set; }
 
 		#region IAccessObjectSync<T>
+
 		/// <summary>
 		/// Deletes the rows with the given keys.
 		/// </summary>
@@ -82,6 +92,88 @@ namespace Dapper.Extra.Utilities
 		public override int BulkDelete(IEnumerable<object> keys, int commandTimeout = 30)
 		{
 			int count = Queries.BulkDeleteKeys(Connection, keys, Transaction, commandTimeout);
+			return count;
+		}
+
+		/// <summary>
+		/// Deletes the given rows.
+		/// </summary>
+		/// <param name="objs">The objects to delete.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		public override int BulkDelete(IEnumerable<T> objs, int commandTimeout = 30)
+		{
+			int count = Queries.BulkDelete(Connection, objs, Transaction, commandTimeout);
+			return count;
+		}
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <param name="keys">The keys of the rows to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows with the given keys.</returns>
+		public override IEnumerable<T> BulkGet(IEnumerable<object> keys, int commandTimeout = 30)
+		{
+			List<T> list = Queries.BulkGetKeys(Connection, keys, Transaction, commandTimeout).AsList();
+			return list;
+		}
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <param name="objs">The objects to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given keys.</returns>
+		public override IEnumerable<T> BulkGet(IEnumerable<T> objs, int commandTimeout = 30)
+		{
+			List<T> list = Queries.BulkGet(Connection, objs, Transaction, commandTimeout).AsList();
+			return list;
+		}
+
+		/// <summary>
+		/// Inserts the given rows.
+		/// </summary>
+		/// <param name="objs">The objects to insert.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		public override void BulkInsert(IEnumerable<T> objs, int commandTimeout = 30)
+		{
+			Queries.BulkInsert(Connection, objs, Transaction, commandTimeout);
+		}
+
+		/// <summary>
+		/// Inserts the given rows if they do not exist.
+		/// </summary>
+		/// <param name="objs">The objects to insert.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of rows inserted.</returns>
+		public override int BulkInsertIfNotExists(IEnumerable<T> objs, int commandTimeout = 30)
+		{
+			int count = Queries.BulkInsertIfNotExists(Connection, objs, Transaction, commandTimeout);
+			return count;
+		}
+
+		/// <summary>
+		/// Updates the given rows.
+		/// </summary>
+		/// <param name="objs">The objects to update.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of updated rows.</returns>
+		public override int BulkUpdate(IEnumerable<T> objs, int commandTimeout = 30)
+		{
+			int count = Queries.BulkUpdate(Connection, objs, Transaction, commandTimeout);
+			return count;
+		}
+
+		/// <summary>
+		/// Upserts the given rows.
+		/// </summary>
+		/// <param name="objs">The objects to upsert.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of upserted rows.</returns>
+		public override int BulkUpsert(IEnumerable<T> objs, int commandTimeout = 30)
+		{
+			int count = Queries.BulkUpsert(Connection, objs, Transaction, commandTimeout);
 			return count;
 		}
 
@@ -98,60 +190,6 @@ namespace Dapper.Extra.Utilities
 		}
 
 		/// <summary>
-		/// Selects the rows with the given keys.
-		/// </summary>
-		/// <param name="keys">The keys of the rows to select.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows with the given keys.</returns>
-		public override IEnumerable<T> BulkGet(IEnumerable<object> keys, int commandTimeout = 30)
-		{
-			List<T> list = Queries.BulkGetKeys(Connection, keys, Transaction, commandTimeout).AsList();
-			return list;
-		}
-
-		/// <summary>
-		/// Selects the row with the given key.
-		/// </summary>
-		/// <param name="key">The key of the row to select.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The row with the given key.</returns>
-		public override T Get(object key, int commandTimeout = 30)
-		{
-			T obj = Queries.GetKey(Connection, key, Transaction, commandTimeout);
-			return obj;
-		}
-
-		/// <summary>
-		/// Selects the rows with the given keys.
-		/// </summary>
-		/// <typeparam name="KeyType">The key type.</typeparam>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">This argument is ignored and will always be true.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The keys that match the given condition.</returns>
-		public override IEnumerable<KeyType> GetKeys<KeyType>(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
-		{
-			IEnumerable<object> keys = Queries.GetKeysKeys(Connection, whereCondition, param, Transaction, true, commandTimeout);
-			List<KeyType> castedKeys = keys.Select(k => (KeyType)k).AsList();
-			return castedKeys;
-		}
-
-		/// <summary>
-		/// Selects the keys that match the given condition.
-		/// </summary>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">This argument is ignored and will always be true.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The keys that match the given condition.</returns>
-		public override IEnumerable<T> GetKeys(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
-		{
-			IEnumerable<T> keys = Queries.GetKeys(Connection, whereCondition, param, Transaction, true, commandTimeout);
-			return keys;
-		}
-
-		/// <summary>
 		/// Deletes the given row.
 		/// </summary>
 		/// <param name="obj">The object to delete.</param>
@@ -161,18 +199,6 @@ namespace Dapper.Extra.Utilities
 		{
 			bool success = Queries.Delete(Connection, obj, Transaction, commandTimeout);
 			return success;
-		}
-
-		/// <summary>
-		/// Deletes the given rows.
-		/// </summary>
-		/// <param name="objs">The objects to delete.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The number of deleted rows.</returns>
-		public override int BulkDelete(IEnumerable<T> objs, int commandTimeout = 30)
-		{
-			int count = Queries.BulkDelete(Connection, objs, Transaction, commandTimeout);
-			return count;
 		}
 
 		/// <summary>
@@ -189,107 +215,15 @@ namespace Dapper.Extra.Utilities
 		}
 
 		/// <summary>
-		/// Inserts a row.
+		/// Selects the row with the given key.
 		/// </summary>
-		/// <param name="obj">The object to insert.</param>
+		/// <param name="key">The key of the row to select.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		public override void Insert(T obj, int commandTimeout = 30)
+		/// <returns>The row with the given key.</returns>
+		public override T Get(object key, int commandTimeout = 30)
 		{
-			Queries.Insert(Connection, obj, Transaction, commandTimeout);
-		}
-
-		/// <summary>
-		/// Inserts the given rows.
-		/// </summary>
-		/// <param name="objs">The objects to insert.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		public override void BulkInsert(IEnumerable<T> objs, int commandTimeout = 30)
-		{
-			Queries.BulkInsert(Connection, objs, Transaction, commandTimeout);
-		}
-
-		/// <summary>
-		/// Inserts a row if it does not exist.
-		/// </summary>
-		/// <param name="obj">The object to insert.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>True if the the row was inserted; false otherwise.</returns>
-		public override bool InsertIfNotExists(T obj, int commandTimeout = 30)
-		{
-			bool success = Queries.InsertIfNotExists(Connection, obj, Transaction, commandTimeout);
-			return success;
-		}
-
-		/// <summary>
-		/// Inserts the given rows if they do not exist.
-		/// </summary>
-		/// <param name="objs">The objects to insert.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The number of rows inserted.</returns>
-		public override int BulkInsertIfNotExists(IEnumerable<T> objs, int commandTimeout = 30)
-		{
-			int count = Queries.BulkInsertIfNotExists(Connection, objs, Transaction, commandTimeout);
-			return count;
-		}
-
-		/// <summary>
-		/// Updates a row.
-		/// </summary>
-		/// <param name="obj">The object to update.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>True if the row was updated; false otherwise.</returns>
-		public override bool Update(object obj, int commandTimeout = 30)
-		{
-			bool success = Queries.UpdateObj(Connection, obj, Transaction, commandTimeout);
-			return success;
-		}
-
-		/// <summary>
-		/// Updates a row.
-		/// </summary>
-		/// <param name="obj">The object to update.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>True if the row was updated; false otherwise.</returns>
-		public override bool Update(T obj, int commandTimeout = 30)
-		{
-			bool success = Queries.Update(Connection, obj, Transaction, commandTimeout);
-			return success;
-		}
-
-		/// <summary>
-		/// Updates the given rows.
-		/// </summary>
-		/// <param name="objs">The objects to update.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The number of updated rows.</returns>
-		public override int BulkUpdate(IEnumerable<T> objs, int commandTimeout = 30)
-		{
-			int count = Queries.BulkUpdate(Connection, objs, Transaction, commandTimeout);
-			return count;
-		}
-
-		/// <summary>
-		/// Upserts a row.
-		/// </summary>
-		/// <param name="obj">The object to upsert.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>True if the object was upserted; false otherwise.</returns>
-		public override bool Upsert(T obj, int commandTimeout = 30)
-		{
-			bool success = Queries.Upsert(Connection, obj, Transaction, commandTimeout);
-			return success;
-		}
-
-		/// <summary>
-		/// Upserts the given rows.
-		/// </summary>
-		/// <param name="objs">The objects to upsert.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The number of upserted rows.</returns>
-		public override int BulkUpsert(IEnumerable<T> objs, int commandTimeout = 30)
-		{
-			int count = Queries.BulkUpsert(Connection, objs, Transaction, commandTimeout);
-			return count;
+			T obj = Queries.GetKey(Connection, key, Transaction, commandTimeout);
+			return obj;
 		}
 
 		/// <summary>
@@ -302,78 +236,6 @@ namespace Dapper.Extra.Utilities
 		{
 			T result = Queries.Get(Connection, obj, Transaction, commandTimeout);
 			return result;
-		}
-
-		/// <summary>
-		/// Selects the rows with the given keys.
-		/// </summary>
-		/// <param name="objs">The objects to select.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows that match the given keys.</returns>
-		public override IEnumerable<T> BulkGet(IEnumerable<T> objs, int commandTimeout = 30)
-		{
-			List<T> list = Queries.BulkGet(Connection, objs, Transaction, commandTimeout).AsList();
-			return list;
-		}
-
-		/// <summary>
-		/// Selects the rows that match the given condition.
-		/// </summary>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">This argument is ignored and will always be true.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows that match the given condition.</returns>
-		public override IEnumerable<T> GetList(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
-		{
-			List<T> list = Queries.GetList(Connection, whereCondition, param, Transaction, true, commandTimeout).AsList();
-			return list;
-		}
-
-		/// <summary>
-		/// Selects the rows that match the given condition.
-		/// </summary>
-		/// <param name="columnFilter">The type whose properties will filter the result.</param>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">This argument is ignored and will always be true.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows that match the given condition.</returns>
-		public override IEnumerable<T> GetList(Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
-		{
-			List<T> list = Queries.GetFilter(Connection, columnFilter, whereCondition, param, Transaction, true, commandTimeout).AsList();
-			return list;
-		}
-
-		/// <summary>
-		/// Selects a limited number of rows that match the given condition.
-		/// </summary>
-		/// <param name="limit">The maximum number of rows.</param>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">This argument is ignored and will always be true.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The limited number of rows that match the given condition.</returns>
-		public override IEnumerable<T> GetLimit(int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
-		{
-			List<T> list = Queries.GetLimit(Connection, limit, whereCondition, param, Transaction, true, commandTimeout).AsList();
-			return list;
-		}
-
-		/// <summary>
-		/// Selects a limited number of rows that match the given condition.
-		/// </summary>
-		/// <param name="columnFilter">The type whose properties will filter the result.</param>
-		/// <param name="limit">The maximum number of rows.</param>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">This argument is ignored and will always be true.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>A limited number of rows that match the given condition.</returns>
-		public override IEnumerable<T> GetLimit(Type columnFilter, int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
-		{
-			List<T> list = Queries.GetFilterLimit(Connection, columnFilter, limit, whereCondition, param, Transaction, true, commandTimeout).AsList();
-			return list;
 		}
 
 		/// <summary>
@@ -437,6 +299,118 @@ namespace Dapper.Extra.Utilities
 		}
 
 		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="buffered">This argument is ignored and will always be true.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		public override IEnumerable<KeyType> GetKeys<KeyType>(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
+		{
+			IEnumerable<object> keys = Queries.GetKeysKeys(Connection, whereCondition, param, Transaction, true, commandTimeout);
+			List<KeyType> castedKeys = keys.Select(k => (KeyType)k).AsList();
+			return castedKeys;
+		}
+
+		/// <summary>
+		/// Selects the keys that match the given condition.
+		/// </summary>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="buffered">This argument is ignored and will always be true.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		public override IEnumerable<T> GetKeys(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
+		{
+			IEnumerable<T> keys = Queries.GetKeys(Connection, whereCondition, param, Transaction, true, commandTimeout);
+			return keys;
+		}
+
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition.
+		/// </summary>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="buffered">This argument is ignored and will always be true.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The limited number of rows that match the given condition.</returns>
+		public override IEnumerable<T> GetLimit(int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
+		{
+			List<T> list = Queries.GetLimit(Connection, limit, whereCondition, param, Transaction, true, commandTimeout).AsList();
+			return list;
+		}
+
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition.
+		/// </summary>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="buffered">This argument is ignored and will always be true.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>A limited number of rows that match the given condition.</returns>
+		public override IEnumerable<T> GetLimit(Type columnFilter, int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
+		{
+			List<T> list = Queries.GetFilterLimit(Connection, columnFilter, limit, whereCondition, param, Transaction, true, commandTimeout).AsList();
+			return list;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="buffered">This argument is ignored and will always be true.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public override IEnumerable<T> GetList(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
+		{
+			List<T> list = Queries.GetList(Connection, whereCondition, param, Transaction, true, commandTimeout).AsList();
+			return list;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="buffered">This argument is ignored and will always be true.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public override IEnumerable<T> GetList(Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
+		{
+			List<T> list = Queries.GetFilter(Connection, columnFilter, whereCondition, param, Transaction, true, commandTimeout).AsList();
+			return list;
+		}
+
+		/// <summary>
+		/// Inserts a row.
+		/// </summary>
+		/// <param name="obj">The object to insert.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		public override void Insert(T obj, int commandTimeout = 30)
+		{
+			Queries.Insert(Connection, obj, Transaction, commandTimeout);
+		}
+
+		/// <summary>
+		/// Inserts a row if it does not exist.
+		/// </summary>
+		/// <param name="obj">The object to insert.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the the row was inserted; false otherwise.</returns>
+		public override bool InsertIfNotExists(T obj, int commandTimeout = 30)
+		{
+			bool success = Queries.InsertIfNotExists(Connection, obj, Transaction, commandTimeout);
+			return success;
+		}
+
+		/// <summary>
 		/// Counts the number of rows that match the given condition.
 		/// </summary>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
@@ -457,6 +431,43 @@ namespace Dapper.Extra.Utilities
 		{
 			Queries.Truncate(Connection, Transaction, commandTimeout);
 		}
-		#endregion  IAccessObjectSync<T>
+
+		/// <summary>
+		/// Updates a row.
+		/// </summary>
+		/// <param name="obj">The object to update.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the row was updated; false otherwise.</returns>
+		public override bool Update(object obj, int commandTimeout = 30)
+		{
+			bool success = Queries.UpdateObj(Connection, obj, Transaction, commandTimeout);
+			return success;
+		}
+
+		/// <summary>
+		/// Updates a row.
+		/// </summary>
+		/// <param name="obj">The object to update.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the row was updated; false otherwise.</returns>
+		public override bool Update(T obj, int commandTimeout = 30)
+		{
+			bool success = Queries.Update(Connection, obj, Transaction, commandTimeout);
+			return success;
+		}
+
+		/// <summary>
+		/// Upserts a row.
+		/// </summary>
+		/// <param name="obj">The object to upsert.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the object was upserted; false otherwise.</returns>
+		public override bool Upsert(T obj, int commandTimeout = 30)
+		{
+			bool success = Queries.Upsert(Connection, obj, Transaction, commandTimeout);
+			return success;
+		}
+
+		#endregion IAccessObjectSync<T>
 	}
 }

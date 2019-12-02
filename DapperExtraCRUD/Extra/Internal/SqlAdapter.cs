@@ -24,7 +24,6 @@
 // SOFTWARE.
 #endregion
 
-using System;
 using Dapper.Extra.Internal.Adapters;
 
 namespace Dapper.Extra.Internal
@@ -35,21 +34,24 @@ namespace Dapper.Extra.Internal
 	public abstract class SqlAdapter
 	{
 		/// <summary>
-		/// An <see cref="SqlAdapter"/> that generates SQL commands for Microsoft SQL Server.
+		/// An <see cref="SqlAdapter"/> that generates SQL commands for MySQL.
 		/// </summary>
-		public static readonly ISqlAdapter SQLServer = new SqlServerAdapter();
+		public static readonly ISqlAdapter MySQL = new MySqlAdapter();
+
 		/// <summary>
 		/// An <see cref="SqlAdapter"/> that generates SQL commands for PostgreSQL.
 		/// </summary>
 		public static readonly ISqlAdapter PostgreSQL = new PostgreSqlAdapter();
+
 		/// <summary>
 		/// An <see cref="SqlAdapter"/> that generates SQL commands for SQLite.
 		/// </summary>
 		public static readonly ISqlAdapter SQLite = new SqlLiteAdapter();
+
 		/// <summary>
-		/// An <see cref="SqlAdapter"/> that generates SQL commands for MySQL.
+		/// An <see cref="SqlAdapter"/> that generates SQL commands for Microsoft SQL Server.
 		/// </summary>
-		public static readonly ISqlAdapter MySQL = new MySqlAdapter();
+		public static readonly ISqlAdapter SQLServer = new SqlServerAdapter();
 
 		/// <summary>
 		/// Gets the <see cref="SqlAdapter"/> that matches a given <see cref="SqlSyntax"/>.

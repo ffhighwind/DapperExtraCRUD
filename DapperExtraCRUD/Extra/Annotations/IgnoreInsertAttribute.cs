@@ -22,7 +22,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#endregion
+#endregion License
 
 using System;
 
@@ -35,14 +35,14 @@ namespace Dapper.Extra.Annotations
 	public class IgnoreInsertAttribute : Attribute, IDefaultAttribute
 	{
 		/// <summary>
-		/// Ignores the property for inserts.
+		/// Initializes a new instance of the <see cref="IgnoreInsertAttribute"/> class.
 		/// </summary>
 		public IgnoreInsertAttribute()
 		{
 		}
 
 		/// <summary>
-		/// Ignores the property for inserts.
+		/// Initializes a new instance of the <see cref="IgnoreInsertAttribute"/> class.
 		/// </summary>
 		/// <param name="value">A string that is substituted for the column's value on insert.
 		/// If this is <see langword="null"/> then the database's default value will be inserted instead.</param>
@@ -56,17 +56,19 @@ namespace Dapper.Extra.Annotations
 		}
 
 		/// <summary>
-		/// A string that is substituted for the column's value on insert.
-		/// If this is <see langword="null"/> then the database's default value will be inserted instead.
+		/// Determines if this column will be automatically selected after an insert.
 		/// </summary>
-		public string Value { get; }
+		public bool AutoSync { get; }
+
 		/// <summary>
 		/// Checks if the value is <see langword="null"/>.
 		/// </summary>
 		public bool HasValue => Value != null;
+
 		/// <summary>
-		/// Determines if this column will be automatically selected after an insert.
+		/// A string that is substituted for the column's value on insert.
+		/// If this is <see langword="null"/> then the database's default value will be inserted instead.
 		/// </summary>
-		public bool AutoSync { get; }
+		public string Value { get; }
 	}
 }

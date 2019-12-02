@@ -46,48 +46,21 @@ namespace Dapper.Extra.Internal
 		}
 
 		/// <summary>
-		/// Creates a SELECT INTO command.
+		/// Creates the VALUES section for insert commands.<para />
+		/// VALUES (@a,@b,getdate())
 		/// </summary>
-		/// <param name="sourceTable">The source table.</param>
-		/// <param name="destinationTable">The name of the table to create.</param>
-		/// <param name="columns">The columns to copy from the source table.</param>
-		/// <param name="whereCondition">The condition that determines which rows to copy.</param>
-		public static string SelectIntoTableQuery(string sourceTable, string destinationTable, IEnumerable<SqlColumn> columns, string whereCondition = "WHERE 1=0")
+		/// <param name="columns">The columns to insert.</param>
+		public static string InsertedValues(IEnumerable<SqlColumn> columns)
 		{
-			string sql = $"SELECT {string.Join(",", columns.Select(c => c.ColumnName))} INTO {destinationTable} FROM {sourceTable} " + whereCondition;
-			return sql;
-		}
-
-		/// <summary>
-		/// Creates the WHERE section for bulk operations.<para></para>
-		/// Source.[x] = TableName.[x] AND Source.[y] = TableName.[y]
-		/// </summary>
-		/// <param name="sourceTable">The source table that is used to modify the destination.</param>
-		/// <param name="destinationTable">The destination table that is modified.</param>
-		/// <param name="columns">The columns to set.</param>
-		public static string WhereEqualsTables(string sourceTable, string destinationTable, IEnumerable<SqlColumn> columns)
-		{
-			StringBuilder sb = new StringBuilder();
-			foreach (SqlColumn column in columns) {
-				sb.Append($"{sourceTable}.{column.ColumnName} = {destinationTable}.{column.ColumnName}\n\tAND ");
+			StringBuilder sb = new StringBuilder("VALUES (");
+			foreach (var column in columns) {
+				if (column.InsertValue != null)
+					sb.Append(column.InsertValue).Append(',');
+				else if (!column.Attributes.HasFlag(SqlColumnAttributes.IgnoreInsert))
+					sb.Append($"@{column.Property.Name},");
 			}
-			sb.Remove(sb.Length - 6, 6); // remove "\n\tAND "
-			string result = sb.ToString();
-			return result;
-		}
-
-		/// <summary>
-		/// Creates the WHERE section for commands.<para />
-		/// x = @x AND y = @y
-		/// </summary>
-		/// <param name="columns">The columns to compare.</param>
-		public static string WhereEquals(IEnumerable<SqlColumn> columns)
-		{
-			StringBuilder sb = new StringBuilder();
-			foreach (SqlColumn column in columns) {
-				sb.Append($"{column.ColumnName} = @{column.Property.Name}\n\tAND ");
-			}
-			string result = sb.Remove(sb.Length - 6, 6).ToString(); // remove "\n\tAND "
+			sb.Remove(sb.Length - 1, 1); // remove ','
+			string result = sb.Append(')').ToString();
 			return result;
 		}
 
@@ -133,24 +106,16 @@ namespace Dapper.Extra.Internal
 		}
 
 		/// <summary>
-		/// Creates the SET section for bulk update commands.<para></para>
-		/// TableName.[x] = Source.[x], TableName.[y] = getdate()
+		/// Creates a SELECT INTO command.
 		/// </summary>
-		/// <param name="tableSource">The source table that is used to modify the destination.</param>
-		/// <param name="tableDestination">The destination table that is modified.</param>
-		/// <param name="columns">The columns to set.</param>
-		public static string UpdateSetTables(string tableSource, string tableDestination, IEnumerable<SqlColumn> columns)
+		/// <param name="sourceTable">The source table.</param>
+		/// <param name="destinationTable">The name of the table to create.</param>
+		/// <param name="columns">The columns to copy from the source table.</param>
+		/// <param name="whereCondition">The condition that determines which rows to copy.</param>
+		public static string SelectIntoTableQuery(string sourceTable, string destinationTable, IEnumerable<SqlColumn> columns, string whereCondition = "WHERE 1=0")
 		{
-			StringBuilder sb = new StringBuilder("\nSET \t");
-			foreach (SqlColumn column in columns) {
-				if (column.UpdateValue != null)
-					sb.Append($"{tableDestination}.{column.ColumnName} = {column.UpdateValue},\n\t");
-				else if (!column.Attributes.HasFlag(SqlColumnAttributes.IgnoreUpdate | SqlColumnAttributes.MatchUpdate))
-					sb.Append($"{tableDestination}.{column.ColumnName} = {tableSource}.{column.ColumnName},\n\t");
-			}
-			sb.Remove(sb.Length - 3, 3); // remove ",\n\t"
-			string result = sb.ToString();
-			return result;
+			string sql = $"SELECT {string.Join(",", columns.Select(c => c.ColumnName))} INTO {destinationTable} FROM {sourceTable} " + whereCondition;
+			return sql;
 		}
 
 		/// <summary>
@@ -173,21 +138,56 @@ namespace Dapper.Extra.Internal
 		}
 
 		/// <summary>
-		/// Creates the VALUES section for insert commands.<para />
-		/// VALUES (@a,@b,getdate())
+		/// Creates the SET section for bulk update commands.<para></para>
+		/// TableName.[x] = Source.[x], TableName.[y] = getdate()
 		/// </summary>
-		/// <param name="columns">The columns to insert.</param>
-		public static string InsertedValues(IEnumerable<SqlColumn> columns)
+		/// <param name="tableSource">The source table that is used to modify the destination.</param>
+		/// <param name="tableDestination">The destination table that is modified.</param>
+		/// <param name="columns">The columns to set.</param>
+		public static string UpdateSetTables(string tableSource, string tableDestination, IEnumerable<SqlColumn> columns)
 		{
-			StringBuilder sb = new StringBuilder("VALUES (");
-			foreach (var column in columns) {
-				if (column.InsertValue != null)
-					sb.Append(column.InsertValue).Append(',');
-				else if (!column.Attributes.HasFlag(SqlColumnAttributes.IgnoreInsert))
-					sb.Append($"@{column.Property.Name},");
+			StringBuilder sb = new StringBuilder("\nSET \t");
+			foreach (SqlColumn column in columns) {
+				if (column.UpdateValue != null)
+					sb.Append($"{tableDestination}.{column.ColumnName} = {column.UpdateValue},\n\t");
+				else if (!column.Attributes.HasFlag(SqlColumnAttributes.IgnoreUpdate | SqlColumnAttributes.MatchUpdate))
+					sb.Append($"{tableDestination}.{column.ColumnName} = {tableSource}.{column.ColumnName},\n\t");
 			}
-			sb.Remove(sb.Length - 1, 1); // remove ','
-			string result = sb.Append(')').ToString();
+			sb.Remove(sb.Length - 3, 3); // remove ",\n\t"
+			string result = sb.ToString();
+			return result;
+		}
+
+		/// <summary>
+		/// Creates the WHERE section for commands.<para />
+		/// x = @x AND y = @y
+		/// </summary>
+		/// <param name="columns">The columns to compare.</param>
+		public static string WhereEquals(IEnumerable<SqlColumn> columns)
+		{
+			StringBuilder sb = new StringBuilder();
+			foreach (SqlColumn column in columns) {
+				sb.Append($"{column.ColumnName} = @{column.Property.Name}\n\tAND ");
+			}
+			string result = sb.Remove(sb.Length - 6, 6).ToString(); // remove "\n\tAND "
+			return result;
+		}
+
+		/// <summary>
+		/// Creates the WHERE section for bulk operations.<para></para>
+		/// Source.[x] = TableName.[x] AND Source.[y] = TableName.[y]
+		/// </summary>
+		/// <param name="sourceTable">The source table that is used to modify the destination.</param>
+		/// <param name="destinationTable">The destination table that is modified.</param>
+		/// <param name="columns">The columns to set.</param>
+		public static string WhereEqualsTables(string sourceTable, string destinationTable, IEnumerable<SqlColumn> columns)
+		{
+			StringBuilder sb = new StringBuilder();
+			foreach (SqlColumn column in columns) {
+				sb.Append($"{sourceTable}.{column.ColumnName} = {destinationTable}.{column.ColumnName}\n\tAND ");
+			}
+			sb.Remove(sb.Length - 6, 6); // remove "\n\tAND "
+			string result = sb.ToString();
 			return result;
 		}
 	}

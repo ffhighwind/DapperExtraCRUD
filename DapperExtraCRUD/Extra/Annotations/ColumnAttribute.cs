@@ -22,7 +22,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#endregion
+#endregion License
 
 using System;
 
@@ -34,7 +34,7 @@ namespace Dapper.Extra.Annotations
 	public class ColumnAttribute : Attribute
 	{
 		/// <summary>
-		/// A named column in a database table.
+		/// Initializes a new instance of the <see cref="ColumnAttribute"/> class.
 		/// </summary>
 		/// <param name="name">The name of the column.</param>
 		/// <param name="ordinal">The zero-based ordinal of the column.</param>

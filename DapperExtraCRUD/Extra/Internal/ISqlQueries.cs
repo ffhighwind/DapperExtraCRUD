@@ -33,124 +33,153 @@ namespace Dapper.Extra.Internal
 	public interface ISqlQueries<T> where T : class
 	{
 		/// <summary>
-		/// Select command for a single key.
+		/// Bulk delete command for any key type.
 		/// </summary>
-		DbKeyObj<T> GetKey { get; }
-		/// <summary>
-		/// Bulk select command for single-value keys.
-		/// </summary>
-		DbKeysList<T> BulkGetKeys { get; }
+		DbListInt<T> BulkDelete { get; }
+
 		/// <summary>
 		/// Bulk delete command for single-value keys.
 		/// </summary>
 		DbKeysInt<T> BulkDeleteKeys { get; }
-		/// <summary>
-		/// Delete command for a single key.
-		/// </summary>
-		DbKeyBool DeleteKey { get; }
-		/// <summary>
-		/// Select command for a given condition which returns single-value keys.
-		/// </summary>
-		DbWhereKeys GetKeysKeys { get; }
+
 		/// <summary>
 		/// Bulk select command for any key type.
 		/// </summary>
 		DbListList<T> BulkGet { get; }
+
 		/// <summary>
-		/// Bulk delete command for any key type.
+		/// Bulk select command for single-value keys.
 		/// </summary>
-		DbListInt<T> BulkDelete { get; }
+		DbKeysList<T> BulkGetKeys { get; }
+
 		/// <summary>
 		/// Bulk insert command for any key type.
 		/// </summary>
 		DbListVoid<T> BulkInsert { get; }
-		/// <summary>
-		/// Bulk update command for any key type.
-		/// </summary>
-		DbListInt<T> BulkUpdate { get; }
-		/// <summary>
-		/// Bulk upsert (insert or update) command.
-		/// </summary>
-		DbListInt<T> BulkUpsert { get; }
+
 		/// <summary>
 		/// Bulk insert-if-not-exists command.
 		/// </summary>
 		DbListInt<T> BulkInsertIfNotExists { get; }
+
+		/// <summary>
+		/// Bulk update command for any key type.
+		/// </summary>
+		DbListInt<T> BulkUpdate { get; }
+
+		/// <summary>
+		/// Bulk upsert (insert or update) command.
+		/// </summary>
+		DbListInt<T> BulkUpsert { get; }
+
 		/// <summary>
 		/// Delete command for any key type.
 		/// </summary>
 		DbTBool<T> Delete { get; }
+
+		/// <summary>
+		/// Delete command for a single key.
+		/// </summary>
+		DbKeyBool DeleteKey { get; }
+
 		/// <summary>
 		/// Delete command for a given condition.
 		/// </summary>
 		DbWhereInt<T> DeleteList { get; }
-		/// <summary>
-		/// Truncate command.
-		/// </summary>
-		DbVoid Truncate { get; }
+
 		/// <summary>
 		/// Select command for any key type.
 		/// </summary>
 		DbTT<T> Get { get; }
-		/// <summary>
-		/// Select command for a given condition.
-		/// </summary>
-		DbWhereList<T> GetKeys { get; }
-		/// <summary>
-		/// Select command for a given condition.
-		/// </summary>
-		DbWhereList<T> GetList { get; }
-		/// <summary>
-		/// Select command which is filtered to a subset of columns.
-		/// </summary>
-		DbTypeWhereList<T> GetFilter { get; }
+
 		/// <summary>
 		/// Select distinct command which is filtered to a subset of columns.
 		/// </summary>
 		DbTypeWhereList<T> GetDistinct { get; }
-		/// <summary>
-		/// Select command which is limited to a certain number of rows.
-		/// </summary>
-		DbLimitList<T> GetLimit { get; }
-		/// <summary>
-		/// Select command which is filtered to a subset of columns.
-		/// </summary>
-		DbTypeLimitList<T> GetFilterLimit { get; }
+
 		/// <summary>
 		/// Select distinct command which is filtered to a subset of columns and limited to a certain number of rows.
 		/// </summary>
 		DbTypeLimitList<T> GetDistinctLimit { get; }
+
+		/// <summary>
+		/// Select command which is filtered to a subset of columns.
+		/// </summary>
+		DbTypeWhereList<T> GetFilter { get; }
+
+		/// <summary>
+		/// Select command which is filtered to a subset of columns.
+		/// </summary>
+		DbTypeLimitList<T> GetFilterLimit { get; }
+
+		/// <summary>
+		/// Select command for a single key.
+		/// </summary>
+		DbKeyObj<T> GetKey { get; }
+
+		/// <summary>
+		/// Select command for a given condition.
+		/// </summary>
+		DbWhereList<T> GetKeys { get; }
+
+		/// <summary>
+		/// Select command for a given condition which returns single-value keys.
+		/// </summary>
+		DbWhereKeys GetKeysKeys { get; }
+
+		/// <summary>
+		/// Select command which is limited to a certain number of rows.
+		/// </summary>
+		DbLimitList<T> GetLimit { get; }
+
+		/// <summary>
+		/// Select command for a given condition.
+		/// </summary>
+		DbWhereList<T> GetList { get; }
+
 		/// <summary>
 		/// Insert command.
 		/// </summary>
 		DbTVoid<T> Insert { get; }
-		/// <summary>
-		/// Count command for a given condition.
-		/// </summary>
-		DbWhereInt<T> RecordCount { get; }
-		/// <summary>
-		/// Update command.
-		/// </summary>
-		DbTBool<T> Update { get; }
-		/// <summary>
-		/// Update command for a subset of columns.
-		/// </summary>
-		DbObjBool<T> UpdateObj { get; }
-		/// <summary>
-		/// Upsert (insert or update) command.
-		/// </summary>
-		DbTBool<T> Upsert { get; }
-		/// <summary>
-		/// Insert-if-not-exists command.
-		/// </summary>
-		DbTBool<T> InsertIfNotExists { get; }
+
 		/// <summary>
 		/// Auto-sync command for inserts.
 		/// </summary>
 		DbTVoid<T> InsertAutoSync { get; }
+
+		/// <summary>
+		/// Insert-if-not-exists command.
+		/// </summary>
+		DbTBool<T> InsertIfNotExists { get; }
+
+		/// <summary>
+		/// Count command for a given condition.
+		/// </summary>
+		DbWhereInt<T> RecordCount { get; }
+
+		/// <summary>
+		/// Truncate command.
+		/// </summary>
+		DbVoid Truncate { get; }
+
+		/// <summary>
+		/// Update command.
+		/// </summary>
+		DbTBool<T> Update { get; }
+
 		/// <summary>
 		/// Auto-sync command for updates.
 		/// </summary>
 		DbTVoid<T> UpdateAutoSync { get; }
+
+		/// <summary>
+		/// Update command for a subset of columns.
+		/// </summary>
+		DbObjBool<T> UpdateObj { get; }
+
+		/// <summary>
+		/// Upsert (insert or update) command.
+		/// </summary>
+		DbTBool<T> Upsert { get; }
 	}
 }

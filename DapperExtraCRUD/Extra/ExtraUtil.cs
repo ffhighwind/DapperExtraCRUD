@@ -110,6 +110,27 @@ namespace Dapper.Extra
 		}
 
 		/// <summary>
+		/// Checks if the input string qualifies as a basic identifier. This will return false if 
+		/// the string does not match the following regular expression: [a-zA-Z_][a-zA-Z0-9_]*
+		/// </summary>
+		/// <param name="identifier">The identifier.</param>
+		/// <returns>True if input qualifies as a basic identifier; otherwise false.</returns>
+		public static bool IsSqlIdentifier(string identifier)
+		{
+			char c = identifier[0];
+			if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'))
+				return false;
+			for (int i = 1; i < identifier.Length; i++) {
+				c = identifier[i];
+				if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9' || c == '_')) {
+					continue;
+				}
+				return false;
+			}
+			return true;
+		}
+
+		/// <summary>
 		/// Returns the SQL string and <see cref="DbType"/> that represent an object.
 		/// </summary>
 		/// <param name="value">The object to obtain the SQL value of.</param>
@@ -179,27 +200,6 @@ namespace Dapper.Extra
 					throw new InvalidOperationException("Unknown DbType: " + dbType.ToString());
 			}
 			return dbType;
-		}
-
-		/// <summary>
-		/// Checks if the input string qualifies as a basic identifier. This will return false if 
-		/// the string does not match the following regular expression: [a-zA-Z_][a-zA-Z0-9_]*
-		/// </summary>
-		/// <param name="identifier">The identifier.</param>
-		/// <returns>True if input qualifies as a basic identifier; otherwise false.</returns>
-		public static bool IsSqlIdentifier(string identifier)
-		{
-			char c = identifier[0];
-			if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'))
-				return false;
-			for (int i = 1; i < identifier.Length; i++) {
-				c = identifier[i];
-				if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9' || c == '_')) {
-					continue;
-				}
-				return false;
-			}
-			return true;
 		}
 	}
 }

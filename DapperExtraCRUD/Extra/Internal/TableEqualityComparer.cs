@@ -30,48 +30,13 @@ using Fasterflect;
 
 namespace Dapper.Extra.Internal
 {
-	internal class TableKeyEqualityComparer<T> : IEqualityComparer<T>
-	{
-		public TableKeyEqualityComparer(string tableName, SqlColumn equalityColumn)
-		{
-			Getter = equalityColumn.Getter;
-			InitialHash = tableName.GetHashCode() * 31619117;
-		}
-
-		private MemberGetter Getter { get; set; }
-		private int InitialHash { get; set; }
-
-		/// <summary>
-		/// Determines whether the specified object is equal to the current object.
-		/// </summary>
-		/// <param name="x">The first object to compare.</param>
-		/// <param name="y">The object to compare with the current object.</param>
-		/// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
-		public bool Equals(T x, T y)
-		{
-			bool success = object.Equals(Getter(x), Getter(y));
-			return success;
-		}
-
-		/// <summary>
-		/// Generates a hash code for the current object.
-		/// </summary>
-		/// <param name="obj">The <see cref="object"/> for which a hash code is to be returned.</param>
-		/// <returns>A hash code for the current object.</returns>
-		public int GetHashCode(T obj)
-		{
-			int hashCode = InitialHash;
-			object value = Getter(obj);
-			if (value != null) {
-				hashCode ^= value.GetHashCode();
-			}
-			return hashCode;
-		}
-	}
-
-
 	internal class TableEqualityComparer<T> : IEqualityComparer<T>
 	{
+		/// <summary>
+		/// Initializes a new instance of the <see cref="TableEqualityComparer{T}"/> class.
+		/// </summary>
+		/// <param name="tableName">The tableName<see cref="string"/></param>
+		/// <param name="equalityColumns">The equalityColumns<see cref="IReadOnlyList{SqlColumn}"/></param>
 		public TableEqualityComparer(string tableName, IReadOnlyList<SqlColumn> equalityColumns)
 		{
 			Getters = equalityColumns.Select(c => c.Getter).ToArray();
@@ -79,6 +44,7 @@ namespace Dapper.Extra.Internal
 		}
 
 		private IReadOnlyList<MemberGetter> Getters { get; set; }
+
 		private int InitialHash { get; set; }
 
 		/// <summary>
@@ -110,6 +76,51 @@ namespace Dapper.Extra.Internal
 				if (value != null) {
 					hashCode ^= value.GetHashCode();
 				}
+			}
+			return hashCode;
+		}
+	}
+
+	internal class TableKeyEqualityComparer<T> : IEqualityComparer<T>
+	{
+		/// <summary>
+		/// Initializes a new instance of the <see cref="TableKeyEqualityComparer{T}"/> class.
+		/// </summary>
+		/// <param name="tableName">The tableName<see cref="string"/></param>
+		/// <param name="equalityColumn">The equalityColumn<see cref="SqlColumn"/></param>
+		public TableKeyEqualityComparer(string tableName, SqlColumn equalityColumn)
+		{
+			Getter = equalityColumn.Getter;
+			InitialHash = tableName.GetHashCode() * 31619117;
+		}
+
+		private MemberGetter Getter { get; set; }
+
+		private int InitialHash { get; set; }
+
+		/// <summary>
+		/// Determines whether the specified object is equal to the current object.
+		/// </summary>
+		/// <param name="x">The first object to compare.</param>
+		/// <param name="y">The object to compare with the current object.</param>
+		/// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
+		public bool Equals(T x, T y)
+		{
+			bool success = object.Equals(Getter(x), Getter(y));
+			return success;
+		}
+
+		/// <summary>
+		/// Generates a hash code for the current object.
+		/// </summary>
+		/// <param name="obj">The <see cref="object"/> for which a hash code is to be returned.</param>
+		/// <returns>A hash code for the current object.</returns>
+		public int GetHashCode(T obj)
+		{
+			int hashCode = InitialHash;
+			object value = Getter(obj);
+			if (value != null) {
+				hashCode ^= value.GetHashCode();
 			}
 			return hashCode;
 		}

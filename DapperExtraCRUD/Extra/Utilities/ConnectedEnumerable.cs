@@ -37,14 +37,20 @@ namespace Dapper.Extra.Utilities
 	/// <typeparam name="T">The type returned by the query.</typeparam>
 	public class ConnectedEnumerable<T> : IEnumerable<T>
 	{
-		public IEnumerable<T> List { get; private set; }
-		public IDbConnection Connection { get; private set; }
-
+		/// <summary>
+		/// Initializes a new instance of the <see cref="ConnectedEnumerable{T}"/> class.
+		/// </summary>
+		/// <param name="list">The list<see cref="IEnumerable{T}"/></param>
+		/// <param name="connection">The connection<see cref="IDbConnection"/></param>
 		public ConnectedEnumerable(IEnumerable<T> list, IDbConnection connection)
 		{
 			List = list;
 			Connection = connection;
 		}
+
+		public IDbConnection Connection { get; private set; }
+
+		public IEnumerable<T> List { get; private set; }
 
 		public IEnumerator<T> GetEnumerator()
 		{
@@ -58,9 +64,17 @@ namespace Dapper.Extra.Utilities
 
 		internal class Enumerator : IEnumerator<T>
 		{
-			private IDbConnection conn;
 			private readonly IEnumerator<T> enumerator;
 
+			private IDbConnection conn;
+
+			private bool disposedValue = false;// To detect redundant calls
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="Enumerator"/> class.
+			/// </summary>
+			/// <param name="conn">The conn<see cref="IDbConnection"/></param>
+			/// <param name="enumerator">The enumerator<see cref="IEnumerator{T}"/></param>
 			public Enumerator(IDbConnection conn, IEnumerator<T> enumerator)
 			{
 				this.conn = conn;
@@ -70,6 +84,20 @@ namespace Dapper.Extra.Utilities
 			public T Current => enumerator.Current;
 
 			object IEnumerator.Current => enumerator.Current;
+
+
+			// TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+			// ~Enumerator() {
+			//   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+			//   Dispose(false);
+			// }
+
+			// This code added to correctly implement the disposable pattern.
+			public void Dispose()
+			{
+				// Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+				Dispose(true);
+			}
 
 			public bool MoveNext()
 			{
@@ -85,9 +113,6 @@ namespace Dapper.Extra.Utilities
 				enumerator.Reset();
 			}
 
-			#region IDisposable Support
-			private bool disposedValue = false; // To detect redundant calls
-
 			protected virtual void Dispose(bool disposing)
 			{
 				if (!disposedValue) {
@@ -99,22 +124,6 @@ namespace Dapper.Extra.Utilities
 					disposedValue = true;
 				}
 			}
-
-			// TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-			// ~Enumerator() {
-			//   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-			//   Dispose(false);
-			// }
-
-			// This code added to correctly implement the disposable pattern.
-			public void Dispose()
-			{
-				// Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-				Dispose(true);
-				// TODO: uncomment the following line if the finalizer is overridden above.
-				// GC.SuppressFinalize(this);
-			}
-			#endregion
 		}
 	}
 }

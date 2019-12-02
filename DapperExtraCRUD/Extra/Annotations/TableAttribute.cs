@@ -36,7 +36,7 @@ namespace Dapper.Extra.Annotations
 	public class TableAttribute : Attribute
 	{
 		/// <summary>
-		/// The table name.
+		/// Initializes a new instance of the <see cref="TableAttribute"/> class.
 		/// </summary>
 		/// <param name="name">The name of the table.</param>
 		/// <param name="schema">The schema of the table. This is only for user reference and is completely ignored.</param>
@@ -53,24 +53,28 @@ namespace Dapper.Extra.Annotations
 		}
 
 		/// <summary>
-		/// The name of the table.
+		/// Determines if only top-level properties are used. Subclass properties are ignored if this is true.
 		/// </summary>
-		public string Name { get; }
-		/// <summary>
-		/// The schema of the table. This is
-		/// </summary>
-		public string Schema { get; }
-		/// <summary>
-		/// The syntax used to generate SQL commands.
-		/// </summary>
-		public SqlSyntax Syntax { get; }
+		public bool DeclaredOnly { get; }
+
 		/// <summary>
 		/// Determines if property attributes are inherited.
 		/// </summary>
 		public bool InheritAttributes { get; }
+
 		/// <summary>
-		/// Determines if only top-level properties are used. Subclass properties are ignored if this is true.
+		/// The name of the table.
 		/// </summary>
-		public bool DeclaredOnly { get; }
+		public string Name { get; }
+
+		/// <summary>
+		/// The schema of the table. This is
+		/// </summary>
+		public string Schema { get; }
+
+		/// <summary>
+		/// The syntax used to generate SQL commands.
+		/// </summary>
+		public SqlSyntax Syntax { get; }
 	}
 }

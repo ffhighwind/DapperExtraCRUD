@@ -22,7 +22,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#endregion
+#endregion License
 
 using System;
 
@@ -35,14 +35,14 @@ namespace Dapper.Extra.Annotations
 	public class MatchUpdateAttribute : Attribute, IDefaultAttribute
 	{
 		/// <summary>
-		/// Turns the property into a pseudo key for updates and sets the value to the string input if specified.
+		/// Initializes a new instance of the <see cref="MatchUpdateAttribute"/> class.
 		/// </summary>
 		public MatchUpdateAttribute()
 		{
 		}
 
 		/// <summary>
-		/// Turns the property into a pseudo key for updates and sets the value to the string input if specified.
+		/// Initializes a new instance of the <see cref="MatchUpdateAttribute"/> class.
 		/// </summary>
 		/// <param name="value">A string that is substituted for the column's value on insert.
 		/// If this is <see langword="null"/> then the column will not be updated.</param>
@@ -54,18 +54,21 @@ namespace Dapper.Extra.Annotations
 				Value = "(" + value.Trim() + ")";
 			}
 		}
+
+		/// <summary>
+		/// Determines if this column will be automatically selected after an update.
+		/// </summary>
+		public bool AutoSync { get; }
+
+		/// <summary>
+		/// Checks if the value is <see langword="null"/>.
+		/// </summary>
+		public bool HasValue => Value != null;
+
 		/// <summary>
 		/// A string that is substituted for the column's value on insert.
 		/// If this is <see langword="null"/> then the column will not be updated.
 		/// </summary>
 		public string Value { get; }
-		/// <summary>
-		/// Checks if the value is <see langword="null"/>.
-		/// </summary>
-		public bool HasValue => Value != null;
-		/// <summary>
-		/// Determines if this column will be automatically selected after an update.
-		/// </summary>
-		public bool AutoSync { get; }
 	}
 }

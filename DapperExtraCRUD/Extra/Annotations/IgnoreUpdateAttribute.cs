@@ -22,7 +22,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#endregion
+#endregion License
 
 using System;
 
@@ -35,17 +35,17 @@ namespace Dapper.Extra.Annotations
 	public class IgnoreUpdateAttribute : Attribute, IDefaultAttribute
 	{
 		/// <summary>
-		/// Ignores the property for updates.
+		/// Initializes a new instance of the <see cref="IgnoreUpdateAttribute"/> class.
 		/// </summary>
 		public IgnoreUpdateAttribute()
 		{
 		}
 
 		/// <summary>
-		/// Ignores the property for updates.
+		/// Initializes a new instance of the <see cref="IgnoreUpdateAttribute"/> class.
 		/// </summary>
-		/// <param name="value">A string that is injected into the update statement as the column's value. 
-		/// If this is <see langword="null"/> then the column cannot be updated.</param>
+		/// <param name="value">A string that is substituted for the column's value on update.
+		/// If this is <see langword="null"/> then the column will not be updated.</param>
 		/// <param name="autoSync">Determines if the property should be selected to match the database after an update.</param>
 		public IgnoreUpdateAttribute(string value, bool autoSync = false)
 		{
@@ -56,17 +56,19 @@ namespace Dapper.Extra.Annotations
 		}
 
 		/// <summary>
-		/// A string that is substituted for the column's value on insert.
-		/// If this is <see langword="null"/> then the column will not be updated.
+		/// Determines if this column will be automatically selected after an update.
 		/// </summary>
-		public string Value { get; }
+		public bool AutoSync { get; }
+
 		/// <summary>
 		/// Checks if the value is <see langword="null"/>.
 		/// </summary>
 		public bool HasValue => Value != null;
+
 		/// <summary>
-		/// Determines if this column will be automatically selected after an update.
+		/// A string that is substituted for the column's value on update.
+		/// If this is <see langword="null"/> then the column will not be updated.
 		/// </summary>
-		public bool AutoSync { get; }
+		public string Value { get; }
 	}
 }

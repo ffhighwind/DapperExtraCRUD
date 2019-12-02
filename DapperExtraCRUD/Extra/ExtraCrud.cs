@@ -39,22 +39,26 @@ namespace Dapper.Extra
 	/// </summary>
 	public static class ExtraCrud
 	{
+		internal static readonly IReadOnlyCollection<Type> ValidAutoKeyTypes = new List<Type>()
+		{
+			typeof(int),
+			typeof(long),
+			typeof(short),
+			typeof(byte),
+			typeof(uint),
+			typeof(ulong),
+			typeof(ushort),
+			typeof(sbyte),
+		};
+
+		private static readonly ConcurrentDictionary<Type, object> BuilderCache = new ConcurrentDictionary<Type, object>();
+
+		private static readonly ConcurrentDictionary<Type, object> QueriesCache = new ConcurrentDictionary<Type, object>();
+
 		/// <summary>
 		/// The default syntax for tables without a <see cref="Dapper.Extra.Annotations.TableAttribute"/>.
 		/// </summary>
 		public static SqlSyntax Syntax { get; set; } = SqlSyntax.SQLServer;
-		private static readonly ConcurrentDictionary<Type, object> BuilderCache = new ConcurrentDictionary<Type, object>();
-		private static readonly ConcurrentDictionary<Type, object> QueriesCache = new ConcurrentDictionary<Type, object>();
-
-		/// <summary>
-		/// Creates or gets a cached <see cref="SqlTypeInfo"/>.
-		/// </summary>
-		/// <typeparam name="T">The table type.</typeparam>
-		/// <returns>The <see cref="SqlTypeInfo"/>.</returns>
-		public static SqlTypeInfo TypeInfo<T>() where T : class
-		{
-			return Builder<T>().Info;
-		}
 
 		/// <summary>
 		/// Creates or gets a cached <see cref="SqlBuilder{T}"/>.
@@ -73,50 +77,6 @@ namespace Dapper.Extra
 		}
 
 		/// <summary>
-		/// Creates or gets the queries and commands for a given type.
-		/// </summary>
-		/// <typeparam name="T">The table type.</typeparam>
-		/// <returns>The queries for the given type.</returns>
-		public static ISqlQueries<T> Queries<T>() where T : class
-		{
-			Type type = typeof(T);
-			if (QueriesCache.TryGetValue(type, out object obj)) {
-				return (SqlQueries<T>)obj;
-			}
-			ISqlQueries<T> queries = Builder<T>().Queries;
-			return (ISqlQueries<T>)QueriesCache.GetOrAdd(type, queries);
-		}
-
-		/// <summary>
-		/// Compares two objects of the given type and determines if they are equal.
-		/// </summary>
-		/// <typeparam name="T">The table type.</typeparam>
-		public static IEqualityComparer<T> EqualityComparer<T>() where T : class
-		{
-			return Builder<T>().EqualityComparer;
-		}
-
-		/// <summary>
-		/// Clears the cache of queries and builders. This is not recommended unless you run out of memory.
-		/// </summary>
-		public static void PurgeCache()
-		{
-			BuilderCache.Clear();
-			QueriesCache.Clear();
-		}
-
-		/// <summary>
-		/// Clears the cache of queries and builders for the given type.
-		/// </summary>
-		/// <typeparam name="T">The table type.</typeparam>
-		public static void Purge<T>() where T : class
-		{
-			Type type = typeof(T);
-			BuilderCache.TryRemove(type, out _);
-			QueriesCache.TryRemove(type, out _);
-		}
-
-		/// <summary>
 		/// Returns the syntax of the connected database.
 		/// </summary>
 		/// <param name="conn">The connection to use.</param>
@@ -130,6 +90,26 @@ namespace Dapper.Extra
 			if (notOpen)
 				conn.Close();
 			return syntax;
+		}
+
+		/// <summary>
+		/// Compares two objects of the given type and determines if they are equal.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		public static IEqualityComparer<T> EqualityComparer<T>() where T : class
+		{
+			return Builder<T>().EqualityComparer;
+		}
+
+		/// <summary>
+		/// Returns whether the given type is valid for an autoincrement key.
+		/// </summary>
+		/// <param name="type">The type to check.</param>
+		/// <returns>True if the type is valid for an autoincrement key; false otherwise.</returns>
+		public static bool IsValidAutoIncrementType(Type type)
+		{
+			bool success = ValidAutoKeyTypes.Contains(type) || type.IsEnum;
+			return success;
 		}
 
 		/// <summary>
@@ -165,27 +145,49 @@ namespace Dapper.Extra
 			return success;
 		}
 
-		internal static readonly IReadOnlyCollection<Type> ValidAutoKeyTypes = new List<Type>()
+		/// <summary>
+		/// Clears the cache of queries and builders for the given type.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		public static void Purge<T>() where T : class
 		{
-			typeof(int),
-			typeof(long),
-			typeof(short),
-			typeof(byte),
-			typeof(uint),
-			typeof(ulong),
-			typeof(ushort),
-			typeof(sbyte),
-		};
+			Type type = typeof(T);
+			BuilderCache.TryRemove(type, out _);
+			QueriesCache.TryRemove(type, out _);
+		}
 
 		/// <summary>
-		/// Returns whether the given type is valid for an autoincrement key.
+		/// Clears the cache of queries and builders. This is not recommended unless you run out of memory.
 		/// </summary>
-		/// <param name="type">The type to check.</param>
-		/// <returns>True if the type is valid for an autoincrement key; false otherwise.</returns>
-		public static bool IsValidAutoIncrementType(Type type)
+		public static void PurgeCache()
 		{
-			bool success = ValidAutoKeyTypes.Contains(type) || type.IsEnum;
-			return success;
+			BuilderCache.Clear();
+			QueriesCache.Clear();
+		}
+
+		/// <summary>
+		/// Creates or gets the queries and commands for a given type.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <returns>The queries for the given type.</returns>
+		public static ISqlQueries<T> Queries<T>() where T : class
+		{
+			Type type = typeof(T);
+			if (QueriesCache.TryGetValue(type, out object obj)) {
+				return (SqlQueries<T>)obj;
+			}
+			ISqlQueries<T> queries = Builder<T>().Queries;
+			return (ISqlQueries<T>)QueriesCache.GetOrAdd(type, queries);
+		}
+
+		/// <summary>
+		/// Creates or gets a cached <see cref="SqlTypeInfo"/>.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <returns>The <see cref="SqlTypeInfo"/>.</returns>
+		public static SqlTypeInfo TypeInfo<T>() where T : class
+		{
+			return Builder<T>().Info;
 		}
 
 		private static SqlSyntax _DetectSyntax(IDbConnection conn)

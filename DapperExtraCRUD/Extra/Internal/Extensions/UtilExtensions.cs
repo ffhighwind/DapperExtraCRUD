@@ -41,10 +41,12 @@ namespace Dapper.Extra.Internal.Extensions
 		/// <param name="source">The list to partition.</param>
 		/// <param name="size">The maximum objects per partition.</param>
 		/// <returns>Partitions of the list.</returns>
-		public static IEnumerable<List<T>> Partition<T>(this IList<T> source, int size)
+		public static IEnumerable<IEnumerable<T>> Partition<T>(this IEnumerable<T> source, int size)
 		{
-			for (int i = 0; i < source.Count; i += size)
-				yield return new List<T>(source.Skip(i).Take(size));
+			while (source.Any()) {
+				yield return source.Take(size);
+				source = source.Skip(size);
+			}
 		}
 
 		/// <summary>
@@ -54,12 +56,10 @@ namespace Dapper.Extra.Internal.Extensions
 		/// <param name="source">The list to partition.</param>
 		/// <param name="size">The maximum objects per partition.</param>
 		/// <returns>Partitions of the list.</returns>
-		public static IEnumerable<IEnumerable<T>> Partition<T>(this IEnumerable<T> source, int size)
+		public static IEnumerable<List<T>> Partition<T>(this IList<T> source, int size)
 		{
-			while (source.Any()) {
-				yield return source.Take(size);
-				source = source.Skip(size);
-			}
+			for (int i = 0; i < source.Count; i += size)
+				yield return new List<T>(source.Skip(i).Take(size));
 		}
 	}
 }

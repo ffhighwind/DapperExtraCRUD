@@ -41,22 +41,21 @@ namespace Dapper.Extra.Utilities
 	public sealed class WhereConditionGenerator<T> : ExpressionVisitor
 		where T : class
 	{
-		private readonly string TableName;
-		private readonly StringBuilder Results = new StringBuilder(150);
-		private ParameterExpression InputParam;
 		private readonly IDictionary<string, object> OutputParam = new ExpandoObject();
 
+		private readonly StringBuilder Results = new StringBuilder(150);
+
+		private readonly string TableName;
+
+		private ParameterExpression InputParam;
+
+		/// <summary>
+		/// Prevents a default instance of the <see cref="WhereConditionGenerator{T}"/> class from being created.
+		/// </summary>
 		private WhereConditionGenerator() : base()
 		{
 			SqlTypeInfo typeInfo = ExtraCrud.TypeInfo<T>();
 			TableName = typeInfo.TableName;
-		}
-
-		private void Visit(Expression<Predicate<T>> predicate, out IDictionary<string, object> param)
-		{
-			InputParam = predicate.Parameters[0];
-			base.Visit(predicate.Body);
-			param = OutputParam;
 		}
 
 		/// <summary>
@@ -72,6 +71,8 @@ namespace Dapper.Extra.Utilities
 			return obj.Results.ToString();
 		}
 
+		#region Methods
+
 		/// <summary>
 		/// Dispatches the <see cref="System.Linq.Expressions.Expression"/> to one of the more specialized visit methods in this class.
 		/// </summary>
@@ -80,7 +81,6 @@ namespace Dapper.Extra.Utilities
 		public override Expression Visit(Expression node)
 		{
 			throw new InvalidOperationException("Cannot access directly. Use Create().");
-			//call base.Visit(expr) instead
 		}
 
 		/// <summary>
@@ -179,6 +179,52 @@ namespace Dapper.Extra.Utilities
 		}
 
 		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.BlockExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitBlock(BlockExpression node)
+		{
+			InvalidExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.CatchBlock"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override CatchBlock VisitCatchBlock(CatchBlock node)
+		{
+			InvalidExpression(node.ToString());
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.ConditionalExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitConditional(ConditionalExpression node)
+		{
+			// a ? b : c
+			if (node.CanReduce) {
+				base.Visit(node.Reduce());
+				return null;
+			}
+			else {
+				Results.Append(" (SELECT CASE WHEN (");
+				base.Visit(node.Test);
+				Results.Append(") THEN (");
+				base.Visit(node.IfTrue);
+				Results.Append(") ELSE (");
+				base.Visit(node.IfFalse);
+				Results.Append(") END) ");
+			}
+			return null;
+		}
+
+		/// <summary>
 		/// Visits the <see cref="System.Linq.Expressions.ConstantExpression"/>.
 		/// </summary>
 		/// <param name="node">The expression to visit.</param>
@@ -186,6 +232,17 @@ namespace Dapper.Extra.Utilities
 		protected override Expression VisitConstant(ConstantExpression node)
 		{
 			CompileValueExpression(node, node.Type, node.Value);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the <see cref="System.Linq.Expressions.DebugInfoExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitDebugInfo(DebugInfoExpression node)
+		{
+			InvalidExpression(node);
 			return null;
 		}
 
@@ -202,6 +259,392 @@ namespace Dapper.Extra.Utilities
 				Results.Append(str);
 			else
 				AddParam(value);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.DynamicExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitDynamic(DynamicExpression node)
+		{
+			// (a, b) => { return c; }
+			InvalidExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.ElementInit"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override ElementInit VisitElementInit(ElementInit node)
+		{
+			// always part of IReadOnlyCollection<ElementInit>
+			// a.Add(5, b)
+			InvalidExpression(node.ToString());
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the extension <see cref="System.Linq.Expressions.Expression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitExtension(Expression node)
+		{
+			// custom user expressions (not Extension methods)
+			InvalidExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.GotoExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitGoto(GotoExpression node)
+		{
+			InvalidExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.IndexExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitIndex(IndexExpression node)
+		{
+			// a[index]
+			CompileExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.InvocationExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitInvocation(InvocationExpression node)
+		{
+			// (a, b) => { return c; )(1,2)
+			CompileExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.LabelExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitLabel(LabelExpression node)
+		{
+			InvalidExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the <see cref="System.Linq.Expressions.LabelTarget"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override LabelTarget VisitLabelTarget(LabelTarget node)
+		{
+			InvalidExpression(node.ToString());
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.Expression"/>.
+		/// </summary>
+		/// <typeparam name="Ty">The type of the lambda expression.</typeparam>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitLambda<Ty>(Expression<Ty> node)
+		{
+			CompileExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.ListInitExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitListInit(ListInitExpression node)
+		{
+			// new Dictionary() { Add(5, a), Add(6, c) }
+			InvalidExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.LoopExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitLoop(LoopExpression node)
+		{
+			InvalidExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.MemberExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitMember(MemberExpression node)
+		{
+			// a.b
+			if (node.Expression.NodeType == ExpressionType.MemberAccess) {
+				string msg = node.ToString();
+				if (msg.StartsWith("value(")) {
+					int index = msg.LastIndexOf(").");
+					msg = msg.Substring(index + 2);
+				}
+				throw new InvalidOperationException("Invalid expression: " + msg.ToString());
+			}
+			else if (node.Expression.NodeType == ExpressionType.Parameter) {
+				base.Visit(node.Expression);
+				Results.Append(".");
+				Results.Append(node.Member.Name);
+				return null;
+			}
+			CompileExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.MemberAssignment"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
+		{
+			// a.b = c
+			InvalidExpression(node.ToString());
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref=" System.Linq.Expressions.MemberBinding"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override MemberBinding VisitMemberBinding(MemberBinding node)
+		{
+			// new a() { b = x }
+			InvalidExpression(node.ToString());
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.MemberInitExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitMemberInit(MemberInitExpression node)
+		{
+			// new a() { b = x, d = y }
+			InvalidExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.MemberListBinding"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override MemberListBinding VisitMemberListBinding(MemberListBinding node)
+		{
+			// { a, b, c }
+			InvalidExpression(node.ToString());
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.MemberMemberBinding"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override MemberMemberBinding VisitMemberMemberBinding(MemberMemberBinding node)
+		{
+			// new a() { b = x, c = y }
+			InvalidExpression(node.ToString());
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.MethodCallExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitMethodCall(MethodCallExpression node)
+		{
+			// a.b(c, d)
+			if (node.Method.Name == "Equals" && node.Arguments.Count == 1) {
+				Results.Append('(');
+				base.Visit(node.Object);
+				Results.Append(" = ");
+				base.Visit(node.Arguments[0]);
+				Results.Append(')');
+				return null;
+			}
+			else if (node.Method.Name == "Contains") {
+				if (node.Arguments.Count > 1) {
+					if (node.Arguments[0] is NewArrayExpression newExp) {
+						base.Visit(node.Arguments[1]);
+						Results.Append(" IN ");
+						// new a[] { b, c, d }
+						CompileListExpression(newExp.Type.GetElementType(), newExp, newExp.Expressions);
+						return null;
+					}
+				}
+				else if (node.Arguments.Count == 1) {
+					base.Visit(node.Arguments[0]);
+					Results.Append(" IN ");
+					CompileExpression(node.Object);
+					return null;
+				}
+			}
+			InvalidExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.NewExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitNew(NewExpression node)
+		{
+			// new a(b, c)
+			InvalidExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.NewArrayExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitNewArray(NewArrayExpression node)
+		{
+			CompileListExpression(node.Type.GetElementType(), node, node.Expressions);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the <see cref="System.Linq.Expressions.ParameterExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitParameter(ParameterExpression node)
+		{
+			// x
+			if (node.Name != InputParam.Name) {
+				throw new InvalidOperationException("Variable '" + node.Name + "' is out of scope. Only allowed to access variable " + InputParam.Name + ".");
+			}
+			Results.Append(TableName);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.RuntimeVariablesExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitRuntimeVariables(RuntimeVariablesExpression node)
+		{
+			// Required for "eval" in dynamic languages and results in an IList<T>
+			// Not used in C#
+			InvalidExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.SwitchExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitSwitch(SwitchExpression node)
+		{
+			InvalidExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.SwitchCase"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override SwitchCase VisitSwitchCase(SwitchCase node)
+		{
+			InvalidExpression(node.ToString());
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.TryExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitTry(TryExpression node)
+		{
+			InvalidExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		/// Visits the children of the <see cref="System.Linq.Expressions.TypeBinaryExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitTypeBinary(TypeBinaryExpression node)
+		{
+			// a is b
+			CompileExpression(node);
+			return null;
+		}
+
+		/// <summary>
+		///  Visits the children of the <see cref="System.Linq.Expressions.UnaryExpression"/>.
+		/// </summary>
+		/// <param name="node">The expression to visit.</param>
+		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
+		protected override Expression VisitUnary(UnaryExpression node)
+		{
+			if (node.CanReduce)
+				base.Visit(node.Reduce());
+			else {
+				string op;
+				switch (node.NodeType) {
+					case ExpressionType.Negate: // -a
+					case ExpressionType.NegateChecked: // -a (overflow checked)
+						op = "-";
+						break;
+					case ExpressionType.Not: // !a (boolean), ~a (integral)
+						op = " NOT ";
+						break;
+					case ExpressionType.Convert: // (b) a
+					case ExpressionType.ConvertChecked: // (b) a
+					case ExpressionType.ArrayLength: // a.Length
+					case ExpressionType.TypeAs: // a as b
+						CompileExpression(node);
+						return null;
+					case ExpressionType.Quote: // Expression<a>
+					case ExpressionType.UnaryPlus: // +a
+						base.Visit(node.Operand);
+						return null;
+					default:
+						throw new InvalidOperationException("Unknown NodeType " + node.NodeType.ToString());
+				}
+				Results.Append(op);
+				base.Visit(node.Operand);
+			}
 			return null;
 		}
 
@@ -248,105 +691,27 @@ namespace Dapper.Extra.Utilities
 			throw new InvalidOperationException("Invalid default type: " + type.FullName);
 		}
 
-		/// <summary>
-		///  Visits the children of the <see cref="System.Linq.Expressions.UnaryExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitUnary(UnaryExpression node)
+		private void AddParam(object obj)
 		{
-			if (node.CanReduce)
-				base.Visit(node.Reduce());
+			string name = "P" + OutputParam.Count;
+			OutputParam.Add(name, obj);
+			name = "@" + name;
+			Results.Append(name);
+		}
+
+		private void CompileExpression(Expression expr)
+		{
+			object obj;
+			Type type;
+			if (expr is ConstantExpression c) {
+				obj = c.Value;
+				type = c.Type;
+			}
 			else {
-				string op;
-				switch (node.NodeType) {
-					case ExpressionType.Negate: // -a
-					case ExpressionType.NegateChecked: // -a (overflow checked)
-						op = "-";
-						break;
-					case ExpressionType.Not: // !a (boolean), ~a (integral)
-						op = " NOT ";
-						break;
-					case ExpressionType.Convert: // (b) a
-					case ExpressionType.ConvertChecked: // (b) a
-					case ExpressionType.ArrayLength: // a.Length
-					case ExpressionType.TypeAs: // a as b
-						CompileExpression(node);
-						return null;
-					case ExpressionType.Quote: // Expression<a>
-					case ExpressionType.UnaryPlus: // +a
-						base.Visit(node.Operand);
-						return null;
-					default:
-						throw new InvalidOperationException("Unknown NodeType " + node.NodeType.ToString());
-				}
-				Results.Append(op);
-				base.Visit(node.Operand);
+				obj = Expression.Lambda(expr).Compile().DynamicInvoke();
+				type = obj.GetType();
 			}
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.MemberExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitMember(MemberExpression node)
-		{
-			// a.b
-			if (node.Expression.NodeType == ExpressionType.MemberAccess) {
-				string msg = node.ToString();
-				if (msg.StartsWith("value(")) {
-					int index = msg.LastIndexOf(").");
-					msg = msg.Substring(index + 2);
-				}
-				throw new InvalidOperationException("Invalid expression: " + msg.ToString());
-			}
-			else if (node.Expression.NodeType == ExpressionType.Parameter) {
-				base.Visit(node.Expression);
-				Results.Append(".");
-				Results.Append(node.Member.Name);
-				return null;
-			}
-			CompileExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.MethodCallExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitMethodCall(MethodCallExpression node)
-		{
-			// a.b(c, d)
-			if (node.Method.Name == "Equals" && node.Arguments.Count == 1) {
-				Results.Append('(');
-				base.Visit(node.Object);
-				Results.Append(" = ");
-				base.Visit(node.Arguments[0]);
-				Results.Append(')');
-				return null;
-			}
-			else if (node.Method.Name == "Contains") {
-				if (node.Arguments.Count > 1) {
-					if (node.Arguments[0] is NewArrayExpression newExp) {
-						base.Visit(node.Arguments[1]);
-						Results.Append(" IN ");
-						// new a[] { b, c, d }
-						CompileListExpression(newExp.Type.GetElementType(), newExp, newExp.Expressions);
-						return null;
-					}
-				}
-				else if (node.Arguments.Count == 1) {
-					base.Visit(node.Arguments[0]);
-					Results.Append(" IN ");
-					CompileExpression(node.Object);
-					return null;
-				}
-			}
-			InvalidExpression(node);
-			return null;
+			CompileValueExpression(expr, type, obj);
 		}
 
 		private void CompileListExpression(Type type, Expression node, IEnumerable<Expression> exprs)
@@ -388,21 +753,6 @@ namespace Dapper.Extra.Utilities
 		private object CompileValueExpression(Expression expr)
 		{
 			return expr is ConstantExpression c ? c.Value : Expression.Lambda(expr).Compile().DynamicInvoke();
-		}
-
-		private void CompileExpression(Expression expr)
-		{
-			object obj;
-			Type type;
-			if (expr is ConstantExpression c) {
-				obj = c.Value;
-				type = c.Type;
-			}
-			else {
-				obj = Expression.Lambda(expr).Compile().DynamicInvoke();
-				type = obj.GetType();
-			}
-			CompileValueExpression(expr, type, obj);
 		}
 
 		private void CompileValueExpression(Expression expr, Type type, object obj)
@@ -447,356 +797,12 @@ namespace Dapper.Extra.Utilities
 			Results.Append(value);
 		}
 
-		private void AddParam(object obj)
+		private void InvalidExpression(Expression exp)
 		{
-			string name = "P" + OutputParam.Count;
-			OutputParam.Add(name, obj);
-			name = "@" + name;
-			Results.Append(name);
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.NewArrayExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitNewArray(NewArrayExpression node)
-		{
-			CompileListExpression(node.Type.GetElementType(), node, node.Expressions);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the <see cref="System.Linq.Expressions.ParameterExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitParameter(ParameterExpression node)
-		{
-			// x
-			if (node.Name != InputParam.Name) {
-				throw new InvalidOperationException("Variable '" + node.Name + "' is out of scope. Only allowed to access variable " + InputParam.Name + ".");
-			}
-			Results.Append(TableName);
-			return null;
-		}
-
-		#region Invalid Expressions
-		/// <summary>
-		/// Visits the children of the extension <see cref="System.Linq.Expressions.Expression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitExtension(Expression node)
-		{
-			// custom user expressions (not Extension methods)
-			InvalidExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.NewExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitNew(NewExpression node)
-		{
-			// new a(b, c)
-			InvalidExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.InvocationExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitInvocation(InvocationExpression node)
-		{
-			// (a, b) => { return c; )(1,2)
-			CompileExpression(node);
-			return null;
-			//throw InvalidExpression(node);
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.DynamicExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitDynamic(DynamicExpression node)
-		{
-			// (a, b) => { return c; }
-			InvalidExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.TypeBinaryExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitTypeBinary(TypeBinaryExpression node)
-		{
-			// a is b
-			CompileExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.ConditionalExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitConditional(ConditionalExpression node)
-		{
-			// a ? b : c
-			if (node.CanReduce) {
-				base.Visit(node.Reduce());
-				return null;
-			}
-			else {
-				Results.Append(" (SELECT CASE WHEN (");
-				base.Visit(node.Test);
-				Results.Append(") THEN (");
-				base.Visit(node.IfTrue);
-				Results.Append(") ELSE (");
-				base.Visit(node.IfFalse);
-				Results.Append(") END) ");
-			}
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.ListInitExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitListInit(ListInitExpression node)
-		{
-			// new Dictionary() { Add(5, a), Add(6, c) }
-			InvalidExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.IndexExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitIndex(IndexExpression node)
-		{
-			// a[index]
-			CompileExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.CatchBlock"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override CatchBlock VisitCatchBlock(CatchBlock node)
-		{
-			InvalidExpression(node.ToString());
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.ElementInit"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override ElementInit VisitElementInit(ElementInit node)
-		{
-			// always part of IReadOnlyCollection<ElementInit>
-			// a.Add(5, b)
-			InvalidExpression(node.ToString());
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the <see cref="System.Linq.Expressions.LabelTarget"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override LabelTarget VisitLabelTarget(LabelTarget node)
-		{
-			InvalidExpression(node.ToString());
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.MemberAssignment"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
-		{
-			// a.b = c
-			InvalidExpression(node.ToString());
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref=" System.Linq.Expressions.MemberBinding"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override MemberBinding VisitMemberBinding(MemberBinding node)
-		{
-			// new a() { b = x }
-			InvalidExpression(node.ToString());
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.MemberListBinding"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override MemberListBinding VisitMemberListBinding(MemberListBinding node)
-		{
-			// { a, b, c }
-			InvalidExpression(node.ToString());
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.MemberMemberBinding"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override MemberMemberBinding VisitMemberMemberBinding(MemberMemberBinding node)
-		{
-			// new a() { b = x, c = y }
-			InvalidExpression(node.ToString());
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.SwitchCase"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override SwitchCase VisitSwitchCase(SwitchCase node)
-		{
-			InvalidExpression(node.ToString());
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.BlockExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitBlock(BlockExpression node)
-		{
-			InvalidExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the <see cref="System.Linq.Expressions.DebugInfoExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitDebugInfo(DebugInfoExpression node)
-		{
-			InvalidExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.GotoExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitGoto(GotoExpression node)
-		{
-			InvalidExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.LabelExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitLabel(LabelExpression node)
-		{
-			InvalidExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.Expression"/>.
-		/// </summary>
-		/// <typeparam name="Ty">The type of the lambda expression.</typeparam>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitLambda<Ty>(Expression<Ty> node)
-		{
-			CompileExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.LoopExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitLoop(LoopExpression node)
-		{
-			InvalidExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.MemberInitExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitMemberInit(MemberInitExpression node)
-		{
-			// new a() { b = x, d = y }
-			InvalidExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.RuntimeVariablesExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitRuntimeVariables(RuntimeVariablesExpression node)
-		{
-			// Required for "eval" in dynamic languages and results in an IList<T>
-			// Not used in C#
-			InvalidExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.SwitchExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitSwitch(SwitchExpression node)
-		{
-			InvalidExpression(node);
-			return null;
-		}
-
-		/// <summary>
-		/// Visits the children of the <see cref="System.Linq.Expressions.TryExpression"/>.
-		/// </summary>
-		/// <param name="node">The expression to visit.</param>
-		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
-		protected override Expression VisitTry(TryExpression node)
-		{
-			InvalidExpression(node);
-			return null;
+			if (exp.CanReduce)
+				base.Visit(exp.Reduce());
+			else
+				InvalidExpression(exp.ToString());
 		}
 
 		private void InvalidExpression(string msg)
@@ -806,13 +812,13 @@ namespace Dapper.Extra.Utilities
 			throw new InvalidOperationException("Invalid expression: " + msg);
 		}
 
-		private void InvalidExpression(Expression exp)
+		private void Visit(Expression<Predicate<T>> predicate, out IDictionary<string, object> param)
 		{
-			if (exp.CanReduce)
-				base.Visit(exp.Reduce());
-			else
-				InvalidExpression(exp.ToString());
+			InputParam = predicate.Parameters[0];
+			base.Visit(predicate.Body);
+			param = OutputParam;
 		}
-		#endregion Invalid Expressions
+
+		#endregion
 	}
 }

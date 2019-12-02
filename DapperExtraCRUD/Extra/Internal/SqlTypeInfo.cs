@@ -38,8 +38,10 @@ namespace Dapper.Extra.Internal
 	/// </summary>
 	public sealed class SqlTypeInfo
 	{
+		#region Constructors
+
 		/// <summary>
-		/// Constructs a <see cref="SqlTypeInfo"/> for the given table type.
+		/// Initializes a new instance of the <see cref="SqlTypeInfo"/> class.
 		/// </summary>
 		/// <param name="type">The table type.</param>
 		public SqlTypeInfo(Type type)
@@ -224,102 +226,130 @@ namespace Dapper.Extra.Internal
 			DeleteKeyColumns = Columns == EqualityColumns ? Columns : Columns.Where(c => c.IsKey || c.MatchDelete).ToArray();
 		}
 
+		#endregion
+
+		#region Properties
+
 		/// <summary>
-		/// The class type that represents the table.
+		/// Generates SQL commands using a given syntax.
 		/// </summary>
-		public Type Type { get; private set; }
+		public ISqlAdapter Adapter { get; private set; }
+
 		/// <summary>
 		/// The table attributes.
 		/// </summary>
 		public SqlTableAttributes Attributes { get; private set; }
+
+		/// <summary>
+		/// The column auto increment key if one exists.
+		/// </summary>
+		public SqlColumn AutoKeyColumn { get; private set; }
+
+		/// <summary>
+		/// The columns that are inserted on insert-if-not-exists commands. If this is an empty list then no inserts are allowed.
+		/// </summary>
+		public IEnumerable<SqlColumn> BulkInsertIfNotExistsColumns => Columns.Where(c => !c.IgnoreInsert || c.InsertValue != null);
+
+		/// <summary>
+		/// The columns that should be copied to a temporary staging table when performing bulk updates.
+		/// </summary>
+		public IEnumerable<SqlColumn> BulkUpdateColumns => Columns.Where(c => !c.IgnoreUpdate || c.UpdateValue != null);
+
+		/// <summary>
+		///  All valid columns for the given type.
+		/// </summary>
+		public IReadOnlyList<SqlColumn> Columns { get; private set; }
+
 		/// <summary>
 		/// Determines if the properties are declared-only (top-level).
 		/// </summary>
 		public bool DeclaredOnly => Attributes.HasFlag(SqlTableAttributes.DeclaredOnly);
+
+		/// <summary>
+		/// The columns that determine equality when performing deletes.
+		/// </summary>
+		public IReadOnlyList<SqlColumn> DeleteKeyColumns { get; private set; }
+
+		/// <summary>
+		/// The columns that determine uniqueness. This is every column if there are no keys.
+		/// </summary>
+		public IReadOnlyList<SqlColumn> EqualityColumns { get; private set; }
+
 		/// <summary>
 		/// Determines if deletes are ignored.
 		/// </summary>
 		public bool IgnoreDelete => Attributes.HasFlag(SqlTableAttributes.IgnoreDelete);
+
 		/// <summary>
 		/// Determines if inserts are ignored.
 		/// </summary>
 		public bool IgnoreInsert => Attributes.HasFlag(SqlTableAttributes.IgnoreInsert);
+
 		/// <summary>
 		/// Determines if updates are ignored.
 		/// </summary>
 		public bool IgnoreUpdate => Attributes.HasFlag(SqlTableAttributes.IgnoreUpdate);
 
 		/// <summary>
-		/// The name of the table.
-		/// </summary>
-		public string TableName { get; private set; }
-		/// <summary>
-		/// The schema of the table.
-		/// </summary>
-		public string Schema { get; private set; }
-		/// <summary>
-		/// The syntax used to generate SQL commands.
-		/// </summary>
-		public SqlSyntax Syntax => Adapter.Syntax;
-		/// <summary>
-		/// Generates SQL commands using a given syntax.
-		/// </summary>
-		public ISqlAdapter Adapter { get; private set; }
-		/// <summary>
-		///  All valid columns for the given type.
-		/// </summary>
-		public IReadOnlyList<SqlColumn> Columns { get; private set; }
-		/// <summary>
-		/// The columns that determine uniqueness. This is every column if there are no keys.
-		/// </summary>
-		public IReadOnlyList<SqlColumn> EqualityColumns { get; private set; }
-		/// <summary>
-		/// The columns that determine uniqueness.
-		/// </summary>
-		public IReadOnlyList<SqlColumn> KeyColumns { get; private set; }
-		/// <summary>
-		/// The column auto increment key if one exists.
-		/// </summary>
-		public SqlColumn AutoKeyColumn { get; private set; }
-		/// <summary>
-		/// The columns that are returned on select commands.
-		/// </summary>
-		public IEnumerable<SqlColumn> SelectColumns => Columns.Where(c => !c.IgnoreSelect);
-		/// <summary>
-		/// The columns that are modified on update commands. If this is an empty list then no updates are allowed.
-		/// </summary>
-		public IEnumerable<SqlColumn> UpdateColumns => Columns.Where(c => !c.IsKey && (!c.IgnoreUpdate || c.UpdateValue != null));
-		/// <summary>
 		/// The columns that need to be synchronized after inserts.
 		/// </summary>
 		public IEnumerable<SqlColumn> InsertAutoSyncColumns => Columns.Where(c => c.InsertAutoSync);
-		/// <summary>
-		/// The columns that need to be synchronized after updates.
-		/// </summary>
-		public IEnumerable<SqlColumn> UpdateAutoSyncColumns => Columns.Where(c => c.UpdateAutoSync);
+
 		/// <summary>
 		/// The columns that are inserted on insert commands. If this is an empty list then no inserts are allowed.
 		/// </summary>
 		public IEnumerable<SqlColumn> InsertColumns => Columns.Where(c => !c.IsAutoKey && (!c.IgnoreInsert || c.InsertValue != null));
+
 		/// <summary>
-		/// The columns that are inserted on insert commands. If this is an empty list then no inserts are allowed.
+		/// The columns that determine uniqueness.
 		/// </summary>
-		public IEnumerable<SqlColumn> UpsertColumns => Columns.Where(c => !c.IgnoreInsert || !c.IgnoreUpdate || c.InsertValue != null || c.UpdateValue != null);
+		public IReadOnlyList<SqlColumn> KeyColumns { get; private set; }
+
+		/// <summary>
+		/// The schema of the table.
+		/// </summary>
+		public string Schema { get; private set; }
+
+		/// <summary>
+		/// The columns that are returned on select commands.
+		/// </summary>
+		public IEnumerable<SqlColumn> SelectColumns => Columns.Where(c => !c.IgnoreSelect);
+
+		/// <summary>
+		/// The syntax used to generate SQL commands.
+		/// </summary>
+		public SqlSyntax Syntax => Adapter.Syntax;
+
+		/// <summary>
+		/// The name of the table.
+		/// </summary>
+		public string TableName { get; private set; }
+
+		/// <summary>
+		/// The class type that represents the table.
+		/// </summary>
+		public Type Type { get; private set; }
+
+		/// <summary>
+		/// The columns that need to be synchronized after updates.
+		/// </summary>
+		public IEnumerable<SqlColumn> UpdateAutoSyncColumns => Columns.Where(c => c.UpdateAutoSync);
+
+		/// <summary>
+		/// The columns that are modified on update commands. If this is an empty list then no updates are allowed.
+		/// </summary>
+		public IEnumerable<SqlColumn> UpdateColumns => Columns.Where(c => !c.IsKey && (!c.IgnoreUpdate || c.UpdateValue != null));
+
 		/// <summary>
 		/// The columns that determine equality when performing updates.
 		/// </summary>
 		public IReadOnlyList<SqlColumn> UpdateKeyColumns { get; private set; }
+
 		/// <summary>
-		/// The columns that determine equality when performing deletes.
+		/// The columns that are inserted on insert commands. If this is an empty list then no inserts are allowed.
 		/// </summary>
-		public IReadOnlyList<SqlColumn> DeleteKeyColumns { get; private set; }
-		/// <summary>
-		/// The columns that should be copied to a temporary staging table when performing bulk updates.
-		/// </summary>
-		public IEnumerable<SqlColumn> BulkUpdateColumns => Columns.Where(c => !c.IgnoreUpdate || c.UpdateValue != null);
-		/// <summary>
-		/// The columns that are inserted on insert-if-not-exists commands. If this is an empty list then no inserts are allowed.
-		/// </summary>
-		public IEnumerable<SqlColumn> BulkInsertIfNotExistsColumns => Columns.Where(c => !c.IgnoreInsert || c.InsertValue != null);
+		public IEnumerable<SqlColumn> UpsertColumns => Columns.Where(c => !c.IgnoreInsert || !c.IgnoreUpdate || c.InsertValue != null || c.UpdateValue != null);
+
+		#endregion
 	}
 }

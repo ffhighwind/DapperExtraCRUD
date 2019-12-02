@@ -30,62 +30,106 @@ namespace Dapper.Extra.Internal
 {
 	internal class SqlQueries<T> : ISqlQueries<T> where T : class
 	{
-		public DbTBool<T> Delete { get; internal set; }
-		public DbTT<T> Get { get; internal set; }
-		public DbWhereList<T> GetList { get; internal set; }
-		public DbTVoid<T> Insert { get; internal set; }
-		public DbTBool<T> Update { get; internal set; }
+		public DbListInt<T> BulkDelete => LazyBulkDelete.Value;
 
-		public DbKeyObj<T> GetKey { get; internal set; }
-		public DbKeyBool DeleteKey { get; internal set; }
-		public DbKeysList<T> BulkGetKeys => LazyBulkGetKeys.Value;
 		public DbKeysInt<T> BulkDeleteKeys => LazyBulkDeleteKeys.Value;
-		public DbWhereKeys GetKeysKeys => LazyGetKeysKeys.Value;
 
 		public DbListList<T> BulkGet => LazyBulkGet.Value;
-		public DbListInt<T> BulkDelete => LazyBulkDelete.Value;
+
+		public DbKeysList<T> BulkGetKeys => LazyBulkGetKeys.Value;
+
 		public DbListVoid<T> BulkInsert => LazyBulkInsert.Value;
-		public DbListInt<T> BulkUpdate => LazyBulkUpdate.Value;
-		public DbListInt<T> BulkUpsert => LazyBulkUpsert.Value;
+
 		public DbListInt<T> BulkInsertIfNotExists => LazyBulkInsertIfNotExists.Value;
+
+		public DbListInt<T> BulkUpdate => LazyBulkUpdate.Value;
+
+		public DbListInt<T> BulkUpsert => LazyBulkUpsert.Value;
+
+		public DbTBool<T> Delete { get; internal set; }
+
+		public DbKeyBool DeleteKey { get; internal set; }
+
 		public DbWhereInt<T> DeleteList => LazyDeleteList.Value;
-		public DbVoid Truncate => LazyTruncate.Value;
-		public DbWhereList<T> GetKeys => LazyGetKeys.Value;
+
+		public DbTT<T> Get { get; internal set; }
+
 		public DbTypeWhereList<T> GetDistinct => LazyGetDistinct.Value;
-		public DbLimitList<T> GetLimit => LazyGetLimit.Value;
+
 		public DbTypeLimitList<T> GetDistinctLimit => LazyGetDistinctLimit.Value;
-		public DbWhereInt<T> RecordCount => LazyRecordCount.Value;
-		public DbObjBool<T> UpdateObj => LazyUpdateObj.Value;
-		public DbTBool<T> Upsert => LazyUpsert.Value;
-		public DbTBool<T> InsertIfNotExists => LazyInsertIfNotExists.Value;
+
 		public DbTypeWhereList<T> GetFilter => LazyGetFilter.Value;
+
 		public DbTypeLimitList<T> GetFilterLimit => LazyGetFilterLimit.Value;
+
+		public DbKeyObj<T> GetKey { get; internal set; }
+
+		public DbWhereList<T> GetKeys => LazyGetKeys.Value;
+
+		public DbWhereKeys GetKeysKeys => LazyGetKeysKeys.Value;
+
+		public DbLimitList<T> GetLimit => LazyGetLimit.Value;
+
+		public DbWhereList<T> GetList { get; internal set; }
+
+		public DbTVoid<T> Insert { get; internal set; }
+
 		public DbTVoid<T> InsertAutoSync { get; internal set; }
+
+		public DbTBool<T> InsertIfNotExists => LazyInsertIfNotExists.Value;
+
+		public DbWhereInt<T> RecordCount => LazyRecordCount.Value;
+
+		public DbVoid Truncate => LazyTruncate.Value;
+
+		public DbTBool<T> Update { get; internal set; }
+
 		public DbTVoid<T> UpdateAutoSync { get; internal set; }
 
-		#region Lazy Internal
-		internal Lazy<DbListList<T>> LazyBulkGet { get; set; }
+		public DbObjBool<T> UpdateObj => LazyUpdateObj.Value;
+
+		public DbTBool<T> Upsert => LazyUpsert.Value;
+
 		internal Lazy<DbListInt<T>> LazyBulkDelete { get; set; }
-		internal Lazy<DbListVoid<T>> LazyBulkInsert { get; set; }
-		internal Lazy<DbListInt<T>> LazyBulkUpdate { get; set; }
-		internal Lazy<DbListInt<T>> LazyBulkUpsert { get; set; }
-		internal Lazy<DbListInt<T>> LazyBulkInsertIfNotExists { get; set; }
-		internal Lazy<DbWhereInt<T>> LazyDeleteList { get; set; }
-		internal Lazy<DbTypeWhereList<T>> LazyGetFilter { get; set; }
-		internal Lazy<DbTypeLimitList<T>> LazyGetFilterLimit { get; set; }
-		internal Lazy<DbVoid> LazyTruncate { get; set; }
-		internal Lazy<DbWhereList<T>> LazyGetKeys { get; set; }
-		internal Lazy<DbTypeWhereList<T>> LazyGetDistinct { get; set; }
-		internal Lazy<DbLimitList<T>> LazyGetLimit { get; set; }
-		internal Lazy<DbTypeLimitList<T>> LazyGetDistinctLimit { get; set; }
-		internal Lazy<DbWhereInt<T>> LazyRecordCount { get; set; }
-		internal Lazy<DbObjBool<T>> LazyUpdateObj { get; set; }
-		internal Lazy<DbTBool<T>> LazyUpsert { get; set; }
-		internal Lazy<DbTBool<T>> LazyInsertIfNotExists { get; set; }
-		// Keys
-		internal Lazy<DbKeysList<T>> LazyBulkGetKeys { get; set; }
+
 		internal Lazy<DbKeysInt<T>> LazyBulkDeleteKeys { get; set; }
+
+		internal Lazy<DbListList<T>> LazyBulkGet { get; set; }
+
+		internal Lazy<DbKeysList<T>> LazyBulkGetKeys { get; set; }
+
+		internal Lazy<DbListVoid<T>> LazyBulkInsert { get; set; }
+
+		internal Lazy<DbListInt<T>> LazyBulkInsertIfNotExists { get; set; }
+
+		internal Lazy<DbListInt<T>> LazyBulkUpdate { get; set; }
+
+		internal Lazy<DbListInt<T>> LazyBulkUpsert { get; set; }
+
+		internal Lazy<DbWhereInt<T>> LazyDeleteList { get; set; }
+
+		internal Lazy<DbTypeWhereList<T>> LazyGetDistinct { get; set; }
+
+		internal Lazy<DbTypeLimitList<T>> LazyGetDistinctLimit { get; set; }
+
+		internal Lazy<DbTypeWhereList<T>> LazyGetFilter { get; set; }
+
+		internal Lazy<DbTypeLimitList<T>> LazyGetFilterLimit { get; set; }
+
+		internal Lazy<DbWhereList<T>> LazyGetKeys { get; set; }
+
 		internal Lazy<DbWhereKeys> LazyGetKeysKeys { get; set; }
-		#endregion Lazy Internal
+
+		internal Lazy<DbLimitList<T>> LazyGetLimit { get; set; }
+
+		internal Lazy<DbTBool<T>> LazyInsertIfNotExists { get; set; }
+
+		internal Lazy<DbWhereInt<T>> LazyRecordCount { get; set; }
+
+		internal Lazy<DbVoid> LazyTruncate { get; set; }
+
+		internal Lazy<DbObjBool<T>> LazyUpdateObj { get; set; }
+
+		internal Lazy<DbTBool<T>> LazyUpsert { get; set; }
 	}
 }

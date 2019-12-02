@@ -22,7 +22,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#endregion
+#endregion License
 
 namespace Dapper.Extra.Annotations
 {
@@ -32,16 +32,18 @@ namespace Dapper.Extra.Annotations
 	public interface IDefaultAttribute
 	{
 		/// <summary>
-		/// The value to be substituted for the property's value.
+		/// Determines if the column should be automatically synchronized with the database.
 		/// </summary>
-		string Value { get; }
+		bool AutoSync { get; }
+
 		/// <summary>
 		/// Determines if the property has a value.
 		/// </summary>
 		bool HasValue { get; }
+
 		/// <summary>
-		/// Determines if the column should be automatically synchronized with the database.
+		/// The value to be substituted for the property's value.
 		/// </summary>
-		bool AutoSync { get; }
+		string Value { get; }
 	}
 }
