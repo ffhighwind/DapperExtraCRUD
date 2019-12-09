@@ -177,7 +177,7 @@ namespace Dapper.Extra.Internal
 		/// <summary>
 		/// Creates an object from a single value key. This can be used by a dictionary where <typeparamref name="T"/> is the key.
 		/// </summary>
-		public Func<object, T> CreateFromKey { get; private set; }
+		public Func<object, T> ObjectFromKey { get; private set; }
 
 		/// <summary>
 		/// Generates <see cref="DbDataReader"/> for this type.
@@ -266,7 +266,7 @@ namespace Dapper.Extra.Internal
 		{
 			SqlQueries<T> queries = (SqlQueries<T>)Queries;
 			MemberSetter setter = EqualityColumns[0].Setter;
-			CreateFromKey = (key) => {
+			ObjectFromKey = (key) => {
 				object result = System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(T));
 				setter(result, key);
 				return (T)result;

@@ -30,13 +30,9 @@ namespace Dapper.Extra.Cache
 	public class CacheItem<T>
 		where T : class
 	{
-		protected CacheItem()
-		{
-		}
-
 		/// <summary>
 		/// Null if deleted.
 		/// </summary>
-		public T CacheValue { get; internal set; }
+		protected internal T CacheValue { get; internal set; }
 	}
 }

@@ -26,10 +26,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using Dapper.Extra.Internal;
 
-namespace Dapper.Extra.Cache.Interfaces
+namespace Dapper.Extra.Cache
 {
 	public interface ICacheTable
 	{
@@ -40,12 +39,12 @@ namespace Dapper.Extra.Cache.Interfaces
 
 	public interface ICacheTable<T, R>
 		where T : class
-		where R : CacheItem<T>
+		where R : CacheItem<T>, new()
 	{
 		ICacheStorage<T, R> Storage { get; }
 
-		R Find(T obj, int commandTimeout = 30);
-		R Find(object key, int commandTimeout = 30);
+		R this[object key, int commandTimeout = 30] { get; }
+		R this[T obj, int commandTimeout = 30] { get; }
 
 		#region Bulk
 
@@ -79,7 +78,7 @@ namespace Dapper.Extra.Cache.Interfaces
 		/// <param name="objs">The objects to select.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given keys.</returns>
-		IEnumerable<T> BulkGet(IEnumerable<T> objs, int commandTimeout = 30);
+		IEnumerable<R> BulkGet(IEnumerable<T> objs, int commandTimeout = 30);
 
 		/// <summary>
 		/// Inserts the given rows.
@@ -162,10 +161,9 @@ namespace Dapper.Extra.Cache.Interfaces
 		/// </summary>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<R> GetDistinct(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<R> GetDistinct(string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows that match the given condition.
@@ -173,10 +171,9 @@ namespace Dapper.Extra.Cache.Interfaces
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<T> GetDistinct(Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<R> GetDistinct(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows that match the given condition.
@@ -184,10 +181,9 @@ namespace Dapper.Extra.Cache.Interfaces
 		/// <param name="limit">The maximum number of rows.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<R> GetDistinctLimit(int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<R> GetDistinctLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows that match the given condition.
@@ -196,10 +192,9 @@ namespace Dapper.Extra.Cache.Interfaces
 		/// <param name="limit">The maximum number of rows.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<T> GetDistinctLimit(Type columnFilter, int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<R> GetDistinctLimit(Type columnFilter, int limit, string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows with the given keys.
@@ -207,20 +202,18 @@ namespace Dapper.Extra.Cache.Interfaces
 		/// <typeparam name="KeyType">The key type.</typeparam>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The keys that match the given condition.</returns>
-		IEnumerable<KeyType> GetKeys<KeyType>(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<KeyType> GetKeys<KeyType>(string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the keys that match the given condition.
 		/// </summary>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The keys that match the given condition.</returns>
-		IEnumerable<T> GetKeys(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<T> GetKeys(string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects a limited number of rows that match the given condition.
@@ -228,10 +221,9 @@ namespace Dapper.Extra.Cache.Interfaces
 		/// <param name="limit">The maximum number of rows.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The limited number of rows that match the given condition.</returns>
-		IEnumerable<R> GetLimit(int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<R> GetLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects a limited number of rows that match the given condition.
@@ -240,20 +232,18 @@ namespace Dapper.Extra.Cache.Interfaces
 		/// <param name="limit">The maximum number of rows.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>A limited number of rows that match the given condition.</returns>
-		IEnumerable<T> GetLimit(Type columnFilter, int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<R> GetLimit(Type columnFilter, int limit, string whereCondition = "", object param = null,  int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows that match the given condition.
 		/// </summary>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<R> GetList(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<R> GetList(string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows that match the given condition.
@@ -261,10 +251,9 @@ namespace Dapper.Extra.Cache.Interfaces
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<T> GetList(Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<R> GetList(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		/// <summary>
 		/// Inserts a row.

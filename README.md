@@ -147,7 +147,7 @@ public static void Main(string[] args)
 	// Access query delegates
 	SqlQueries<User> queries = ExtraCrud.Queries<User>();
 
-	// Clear metadata to allow garbage collection. This will increase memory usage if keep a reference 
+	// Clear metadata to allow garbage collection. This will increase memory usage if you keep a reference 
 	// to purged metadata. I recommend only doing this if are having problems with OutOfMemoryExceptions.
 	ExtraCrud.Purge<User>();
 	ExtraCrud.Purge();

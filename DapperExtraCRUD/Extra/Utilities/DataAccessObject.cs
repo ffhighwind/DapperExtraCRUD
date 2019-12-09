@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using Dapper.Extra.Internal;
 using System.Linq;
+using System.Data;
 
 namespace Dapper.Extra.Utilities
 {
@@ -69,12 +70,12 @@ namespace Dapper.Extra.Utilities
 		/// The connection used for queries. This will be temporarily opened it if is closed. 
 		/// This connection is not thread-safe because it is reused for all queries.
 		/// </summary>
-		public SqlConnection Connection { get; set; }
+		public IDbConnection Connection { get; set; }
 
 		/// <summary>
 		/// The transaction used for queries.
 		/// </summary>
-		public SqlTransaction Transaction { get; set; }
+		public IDbTransaction Transaction { get; set; }
 
 		/// <summary>
 		/// The SQL commands for a given type.

@@ -24,7 +24,7 @@
 // SOFTWARE.
 #endregion
 
-using System.Data.SqlClient;
+using System.Data;
 
 namespace Dapper.Extra.Utilities
 {
@@ -42,11 +42,11 @@ namespace Dapper.Extra.Utilities
 		/// The connection used for queries. This will be temporarily opened it if is closed. 
 		/// This connection is not thread-safe because it is reused for all queries.
 		/// </summary>
-		SqlConnection Connection { get; set; }
+		IDbConnection Connection { get; set; }
 
 		/// <summary>
 		/// The transaction used for queries.
 		/// </summary>
-		SqlTransaction Transaction { get; set; }
+		IDbTransaction Transaction { get; set; }
 	}
 }

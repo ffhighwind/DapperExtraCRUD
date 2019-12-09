@@ -48,13 +48,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Interfaces\ICacheTable.cs" />
-    <Compile Include="Internal\ITransactionStorage.cs" />
+    <Compile Include="ICacheTable.cs" />
     <Compile Include="Internal\CacheAutoStorage.cs" />
     <Compile Include="Internal\CacheTransactionStorage.cs" />
     <Compile Include="DbCacheTransaction.cs" />
     <Compile Include="CacheItem.cs" />
-    <Compile Include="Interfaces\ICacheStorage.cs" />
+    <Compile Include="ICacheStorage.cs" />
     <Compile Include="DbCacheTable.cs" />
     <Compile Include="DbCache.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -68,5 +67,6 @@
       <Name>DapperExtraCRUD</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

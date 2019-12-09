@@ -26,230 +26,88 @@
 
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using Dapper.Extra.Cache.Interfaces;
+using System.Data;
 
 namespace Dapper.Extra.Cache.Internal
 {
-	internal class CacheTransactionStorage<T, R> : ICacheStorage<T, R>, ITransactionStorage
+	internal class CacheTransactionStorage<T, R> : ICacheStorage<T, R>, IDbTransaction
 		where T : class
-		where R : CacheItem<T>
+		where R : CacheItem<T>, new()
 	{
-		private IDictionary<T, CacheItem<T>> Cache;
-		private readonly List<Dictionary<T, CacheItem<T>>> SavePoints = new List<Dictionary<T, CacheItem<T>>>();
-		private readonly List<string> SavePointNames = new List<string>();
-		private Dictionary<T, CacheItem<T>> SavePoint;
+		/// <summary>
+		/// The current state.
+		/// </summary>
+		private ConcurrentDictionary<T, R> Cache { get; set; }
+		/// <summary>
+		///  A backup of what was changed in the Cache in case a rollback is needed. A CacheValue will be null if an item was added
+		///  during the transaction and needs to be removed on a rollback.
+		/// </summary>
+		private ConcurrentDictionary<T, R> SavePoint { get; set; } = new ConcurrentDictionary<T, R>();
+		/// <summary>
+		/// Resets the state of the DbCacheTable that created this object. The AccessObject will be changed back to the 
+		/// <see cref="Utilities.AutoAccessObject{T}"/> and the <see cref="ICacheStorage{T, R}"/> will be changed back to 
+		/// the <see cref="CacheAutoStorage{T, R}"/>.
+		/// </summary>
 		private readonly Action OnClose;
+		/// <summary>
+		/// The transaction for the current connection.
+		/// </summary>
+		private readonly IDbTransaction Transaction;
+		/// <summary>
+		/// Creates an object from a single value.
+		/// </summary>
+		private readonly Func<object, T> CreateFromKey;
 
-		internal CacheTransactionStorage(IDictionary<T, CacheItem<T>> cache, Action onClose)
+		public CacheTransactionStorage(ConcurrentDictionary<T, R> cache, IDbTransaction transaction, Func<object, T> createFromKey, Action onClose)
 		{
 			Cache = cache;
+			Transaction = transaction;
 			OnClose = onClose;
-			Save(null);
+			CreateFromKey = createFromKey;
 		}
 
-		#region ITransactionStorage
-		public void Commit()
+		private R UpdateValueFactory(T t, R r)
 		{
-			if (Cache != null) {
-				foreach (var savePoint in SavePoints) {
-					savePoint.Clear();
-				}
-				SavePoint = null;
-				Cache = null;
-				OnClose();
-			}
+			r.CacheValue = t;
+			return r;
 		}
 
-		public void Rollback()
+		private R AddValueFactory(T t)
 		{
-			Rollback(null);
+			R item = new R();
+			item.CacheValue = t;
+			return item;
 		}
 
-		public void Rollback(string savePointName)
-		{
-			int index = SavePointNames.IndexOf(savePointName);
-			if (index < 0)
-				throw new InvalidOperationException("Unknown save point: " + savePointName);
-			for (int i = SavePointNames.Count; i >= index; i--) {
-				SavePoint = SavePoints[i - 1];
-				foreach (var kv in SavePoint) {
-					if (kv.Value.Item == null)
-						Cache.Remove(kv.Key);
-					else if (Cache.TryGetValue(kv.Value.Item, out CacheItem<T> item))
-						item.Item = kv.Value.Item;
-					else
-						Cache.Add(kv.Key, kv.Value);
-				}
-				SavePoint.Clear();
-			}
-			SavePoints.RemoveRange(index, SavePoints.Count - index);
-			SavePointNames.RemoveRange(index, SavePoints.Count - index);
-		}
+		public IDbConnection Connection => Transaction.Connection;
 
-		public void Save(string savePointName)
-		{
-			int index = SavePointNames.IndexOf(savePointName);
-			if (index >= 0)
-				throw new InvalidOperationException("Save point already exists: " + savePointName);
-			SavePoint = new Dictionary<T, CacheItem<T>>(ExtraCrud.EqualityComparer<T>());
-			SavePointNames.Add(savePointName);
-			SavePoints.Add(SavePoint);
-		}
-		#endregion ITransactionStorage
+		public IsolationLevel IsolationLevel => Transaction.IsolationLevel;
 
-		#region IReadOnlyDictionary<Key, T>
-		public CacheItem<T> this[T key] => Cache[key];
+		public ICollection<T> Keys => Cache.Keys;
 
-		public IEnumerable<T> Keys => Cache.Keys;
-
-		public IEnumerable<CacheItem<T>> Values => Cache.Values;
+		public ICollection<R> Values => Cache.Values;
 
 		public int Count => Cache.Count;
 
-		public CacheItem<T> Add(T key, T value)
-		{
-			CacheItem<T> item = Add(value);
-			return item;
-		}
+		public bool IsReadOnly => false;
 
-		public bool TryGetValue(T key, out CacheItem<T> value)
-		{
-			bool success = Cache.TryGetValue(key, out value);
-			return success;
-		}
+		IEnumerable<T> IReadOnlyDictionary<T, R>.Keys => Cache.Keys;
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			IEnumerator<KeyValuePair<T, CacheItem<T>>> enumerator = GetEnumerator();
-			return enumerator;
-		}
-		#endregion IReadOnlyDictionary<Key, T>
+		IEnumerable<R> IReadOnlyDictionary<T, R>.Values => Cache.Values;
 
-		#region ICacheStorage<KeyType, T>
-		public CacheItem<T> Add(T value)
-		{
-			if (SavePoint.ContainsKey(value))
-				SavePoint.Add(value, null); // force exception to be thrown
-			CacheItem<T> item = new CacheItem<T>();
-			item.Item = value;
-			Cache.Add(value, item);
-			return item;
-		}
+		R IReadOnlyDictionary<T, R>.this[T key] => this[key];
 
-		public List<CacheItem<T>> Add(IEnumerable<T> values)
-		{
-			List<CacheItem<T>> list = new List<CacheItem<T>>();
-			foreach (T value in values) {
-				CacheItem<T> item = Add(value);
-				list.Add(item);
-			}
-			return list;
-		}
-
-		public CacheItem<T> AddOrUpdate(T value)
-		{
-			if (!Cache.TryGetValue(value, out CacheItem<T> item)) {
-				// keep item.Item as null for SavePoint
-				item = new CacheItem<T>();
-				Cache.Add(value, item);
-			}
-			if (!SavePoint.ContainsKey(value)) {
-				CacheItem<T> removed = new CacheItem<T>();
-				removed.Item = item.Item;
-				SavePoint.Add(removed.Item, removed);
-			}
-			item.Item = value;
-			return item;
-		}
-
-		public List<CacheItem<T>> AddOrUpdate(IEnumerable<T> values)
-		{
-			List<CacheItem<T>> list = new List<CacheItem<T>>();
-			foreach (T value in values) {
-				CacheItem<T> item = AddOrUpdate(value);
-				list.Add(item);
-			}
-			return list;
-		}
-
-		public void Clear()
-		{
-			foreach (CacheItem<T> value in Cache.Values) {
-				value.Item = null;
-			}
-			Cache.Clear();
-			foreach (Dictionary<T, CacheItem<T>> savePoint in SavePoints) {
-				savePoint.Clear();
-			}
-			SavePoint = SavePoints[0];
-			SavePointNames.Clear();
-			SavePoints.Clear();
-			SavePoints.Add(SavePoint);
-			SavePointNames.Add(null);
-		}
-
-		public bool Contains(T value)
-		{
-			bool success = Cache.ContainsKey(value);
-			return success;
-		}
-
-		public bool ContainsKey<KeyType>(KeyType key)
-		{
-			T obj = TableData<T>.CreateObject<KeyType>(key);
-			bool success = Cache.ContainsKey(obj);
-			return success;
-		}
-
-		public bool ContainsKey(T key)
-		{
-			bool success = Cache.ContainsKey(key);
-			return success;
-		}
-
-		public IEnumerator<KeyValuePair<T, CacheItem<T>>> GetEnumerator()
-		{
-			IEnumerator<KeyValuePair<T, CacheItem<T>>> enumerator = Cache.AsEnumerable().GetEnumerator();
-			return enumerator;
-		}
-
-		public CacheItem<T> Remove(T value)
-		{
-			if (Cache.TryGetValue(value, out CacheItem<T> item)) {
-				if (!SavePoint.ContainsKey(value)) {
-					CacheItem<T> removed = new CacheItem<T>();
-					removed.Item = item.Item;
-					SavePoint.Add(value, removed);
-				}
-				Cache.Remove(item.Item);
-				item.Item = null;
-			}
-			return item;
-		}
-
-		public void Remove(IEnumerable<T> values)
-		{
-			foreach (T value in values) {
-				CacheItem<T> item = RemoveKey(value);
+		public R this[T key] {
+			get => Cache[key];
+			set {
+				if (value == null)
+					_ = Remove(key);
+				else
+					_ = Add(key);
 			}
 		}
-
-		public CacheItem<T> RemoveKey<KeyType>(KeyType key)
-		{
-			T obj = TableData<T>.CreateObject<KeyType>(key);
-			CacheItem<T> item = Remove(obj);
-			return item;
-		}
-
-		public void RemoveKeys<KeyType>(IEnumerable<KeyType> keys)
-		{
-			foreach (KeyType key in keys) {
-				CacheItem<T> item = RemoveKey(key);
-			}
-		}
-		#endregion ICacheStorage<KeyType, T>
 
 		#region IDisposable Support
 		private bool disposedValue = false; // To detect redundant calls
@@ -258,19 +116,19 @@ namespace Dapper.Extra.Cache.Internal
 		{
 			if (!disposedValue) {
 				if (disposing) {
-					// TODO: dispose managed state (managed objects).
+					// dispose managed state (managed objects).
 					OnClose();
 					Rollback();
-					Cache = null;
 				}
-				// TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-				// TODO: set large fields to null.
+				// free unmanaged resources (unmanaged objects) and override a finalizer below.
+				// set large fields to null.
 				disposedValue = true;
 			}
 		}
 
 		// TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-		// ~CacheTransactionStorage() {
+		// ~CacheTransactionStorage()
+		// {
 		//   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
 		//   Dispose(false);
 		// }
@@ -280,9 +138,166 @@ namespace Dapper.Extra.Cache.Internal
 		{
 			// Do not change this code. Put cleanup code in Dispose(bool disposing) above.
 			Dispose(true);
-			// TODO: uncomment the following line if the finalizer is overridden above.
+			// uncomment the following line if the finalizer is overridden above.
 			// GC.SuppressFinalize(this);
 		}
-		#endregion
+		#endregion IDisposable
+
+		public void Commit()
+		{
+			if (SavePoint != null) {
+				SavePoint = null;
+				Cache = null;
+				OnClose();
+			}
+		}
+
+		public void Rollback()
+		{
+			if (SavePoint == null)
+				return;
+			foreach (var kv in SavePoint) {
+				if (kv.Value.CacheValue == null)
+					Cache.TryRemove(kv.Key, out R item);
+				else
+					Cache.AddOrUpdate(kv.Key, AddValueFactory, UpdateValueFactory);
+			}
+			SavePoint.Clear();
+			SavePoint = null;
+			Cache = null;
+		}
+
+		public R Add(T value)
+		{
+			if (!Cache.TryGetValue(value, out R item))
+				item = new R();
+			SavePoint.TryAdd(value, item);
+			item = Cache.AddOrUpdate(value, AddValueFactory, UpdateValueFactory);
+			return item;
+		}
+
+		public List<R> Add(IEnumerable<T> values)
+		{
+			List<R> list = new List<R>();
+			foreach (T value in values) {
+				R item = Add(value);
+				list.Add(item);
+			}
+			return list;
+		}
+
+		public void Remove(IEnumerable<T> values)
+		{
+			foreach (T value in values) {
+				_ = RemoveKey(value);
+			}
+		}
+
+		public bool RemoveKey(object key)
+		{
+			T obj = CreateFromKey(key);
+			bool success = Remove(obj);
+			return success;
+		}
+
+		public void RemoveKeys(IEnumerable<object> keys)
+		{
+			foreach (object key in keys) {
+				_ = RemoveKey(key);
+			}
+		}
+
+		public bool Contains(T value)
+		{
+			bool success = Cache.ContainsKey(value);
+			return success;
+		}
+
+		public bool ContainsKey(object key)
+		{
+			T obj = CreateFromKey(key);
+			bool success = Contains(obj);
+			return success;
+		}
+
+		public bool ContainsKey(T key)
+		{
+			bool success = Cache.ContainsKey(key);
+			return success;
+		}
+
+		public void Add(T key, R value)
+		{
+			if (!Cache.TryGetValue(key, out R item))
+				item = new R();
+			SavePoint.TryAdd(key, item);
+			item = Cache.AddOrUpdate(key, value, UpdateValueFactory);
+		}
+
+		public bool Remove(T key)
+		{
+			if (Cache.TryRemove(key, out R item)) {
+				SavePoint.TryAdd(key, item);
+				return true;
+			}
+			return false;
+		}
+
+		public bool TryGetValue(T key, out R value)
+		{
+			bool success = Cache.TryGetValue(key, out value);
+			return success;
+		}
+
+		public void Add(KeyValuePair<T, R> item)
+		{
+			((IDictionary<T, R>)Cache).Add(item);
+		}
+
+		public void Clear()
+		{
+			Cache.Clear();
+			SavePoint.Clear();
+		}
+
+		public bool Contains(KeyValuePair<T, R> item)
+		{
+			return ((IDictionary<T, R>)Cache).Contains(item);
+		}
+
+		public void CopyTo(KeyValuePair<T, R>[] array, int arrayIndex)
+		{
+			((IDictionary<T, R>)Cache).CopyTo(array, arrayIndex);
+		}
+
+		public bool Remove(KeyValuePair<T, R> item)
+		{
+			return ((IDictionary<T, R>)Cache).Remove(item);
+		}
+
+		public IEnumerator<KeyValuePair<T, R>> GetEnumerator()
+		{
+			return Cache.GetEnumerator();
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return Cache.GetEnumerator();
+		}
+
+		public bool TryAdd(T value)
+		{
+			bool success = GetOrAdd(value).CacheValue == value;
+			return success;
+		}
+
+		public R GetOrAdd(T value)
+		{
+			if (Cache.TryGetValue(value, out R item)) {
+				return item;
+			}
+			item = Cache.GetOrAdd(value, AddValueFactory);
+			return item;
+		}
 	}
 }

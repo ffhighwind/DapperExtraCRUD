@@ -26,10 +26,6 @@
 
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
-using Dapper.Extra.Cache.Interfaces;
-using Dapper.Extra.Cache.Internal;
-
 namespace Dapper.Extra.Cache
 {
 	public class DbCacheTransaction : IDbTransaction
@@ -39,18 +35,14 @@ namespace Dapper.Extra.Cache
 			Transaction = transaction;
 		}
 
-		internal readonly List<ITransactionStorage> TransactionStorage = new List<ITransactionStorage>();
+		internal readonly List<IDbTransaction> TransactionStorage = new List<IDbTransaction>();
 
-		public void Add(ICacheTable table)
-		{
-			table.BeginTransaction(this);
-		}
-
-		public void Add(params ICacheTable[] tables)
+		public DbCacheTransaction Add(params ICacheTable[] tables)
 		{
 			foreach (ICacheTable table in tables) {
 				table.BeginTransaction(this);
 			}
+			return this;
 		}
 
 		internal readonly IDbTransaction Transaction;
@@ -60,7 +52,7 @@ namespace Dapper.Extra.Cache
 		public void Commit()
 		{
 			Transaction.Commit();
-			foreach (ITransactionStorage storage in TransactionStorage) {
+			foreach (IDbTransaction storage in TransactionStorage) {
 				storage.Commit();
 				storage.Dispose();
 			}
@@ -69,10 +61,10 @@ namespace Dapper.Extra.Cache
 
 		public void Rollback()
 		{
-			Transaction.Rollback();
-			foreach (ITransactionStorage storage in TransactionStorage) {
+			foreach (IDbTransaction storage in TransactionStorage) {
 				storage.Rollback();
 			}
+			Transaction.Rollback();
 		}
 
 		#region IDisposable Support

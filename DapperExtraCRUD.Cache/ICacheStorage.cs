@@ -24,13 +24,22 @@
 // SOFTWARE.
 #endregion
 
-using System;
+using System.Collections.Generic;
 
-namespace Dapper.Extra.Cache.Internal
+namespace Dapper.Extra.Cache
 {
-	internal interface ITransactionStorage : IDisposable
+	public interface ICacheStorage<T, R> : IEnumerable<KeyValuePair<T, R>>, IDictionary<T, R>, IReadOnlyDictionary<T, R>
+		where T : class
+		where R : CacheItem<T>, new()
 	{
-		void Commit();
-		void Rollback();
+		R Add(T value);
+		List<R> Add(IEnumerable<T> values);
+		bool RemoveKey(object key);
+		void Remove(IEnumerable<T> values);
+		void RemoveKeys(IEnumerable<object> keys);
+		bool Contains(T value);
+		bool ContainsKey(object key);
+		bool TryAdd(T value);
+		R GetOrAdd(T value);
 	}
 }

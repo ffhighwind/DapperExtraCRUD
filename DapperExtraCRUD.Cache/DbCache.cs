@@ -25,13 +25,14 @@
 #endregion
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace Dapper.Extra.Cache
 {
 	public class DbCache
 	{
-		protected internal IDictionary<Type, object> Map = new Dictionary<Type, object>();
+		protected internal ConcurrentDictionary<Type, object> Map = new ConcurrentDictionary<Type, object>();
 		protected internal string ConnectionString { get; set; }
 
 		public DbCache(string connectionString)
@@ -39,21 +40,17 @@ namespace Dapper.Extra.Cache
 			ConnectionString = connectionString;
 		}
 
-		public DbCacheTable<T> CreateTable<T>()
+		public DbCacheTable<T, CacheItem<T>> CreateTable<T>()
 			where T : class
 		{
-			return DbCacheTable<T, CacheItem<T>>();
+			return CreateTable<T, CacheItem<T>>();
 		}
 
 		public DbCacheTable<T, R> CreateTable<T, R>()
 			where T : class
-			where R : CacheItem<T>
+			where R : CacheItem<T>, new()
 		{
-			if (!Map.TryGetValue(typeof(T), out object cache)) {
-				cache = new DbCacheTable<T, R>(ConnectionString);
-				Map[typeof(T)] = cache;
-			}
-			return (DbCacheTable<T>)cache;
+			return (DbCacheTable<T, R>)Map.GetOrAdd(typeof(T), (type) => new DbCacheTable<T, R>(ConnectionString));
 		}
 	}
 }

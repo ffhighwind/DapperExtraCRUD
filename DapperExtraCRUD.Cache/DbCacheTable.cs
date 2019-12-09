@@ -25,87 +25,83 @@
 #endregion
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Dapper.Extra.Internal;
-using Dapper.Extra.Cache.Interfaces;
 using Dapper.Extra.Cache.Internal;
 using Dapper.Extra.Utilities;
+using Fasterflect;
+using System.Collections.Concurrent;
+using System.Linq;
 
 namespace Dapper.Extra.Cache
 {
-	public sealed class DbCacheTable<T> : ICacheTable<T, CacheItem<T>>, ICacheTable, IReadOnlyDictionary<T, CacheItem<T>>
+	public sealed class DbCacheTable<T, R> : ICacheTable<T, R>, ICacheTable
 		where T : class
+		where R : CacheItem<T>, new()
 	{
 		internal DbCacheTable(string connectionString)
 		{
-			var info = ExtraCrud.TypeInfo<T>();
-			if (info.KeyColumns.Count == 0)
-				throw new InvalidOperationException(typeof(T).FullName + " is not usable with " + nameof(DbCache) + " without a valid key.");
-			Cache = new Dictionary<T, CacheItem<T>>(ExtraCrud.EqualityComparer<T>());
+			Builder = ExtraCrud.Builder<T>();
+			if (Builder.Info.KeyColumns.Count == 0)
+				throw new InvalidOperationException(typeof(T).FullName + " is not usable without a valid key.");
 			DAO = new DataAccessObject<T>(connectionString);
 			AAO = new AutoAccessObject<T>(connectionString);
 			Access = AAO;
-			AutoCache = new CacheAutoStorage<T>(Cache);
+			AutoCache = new CacheAutoStorage<T, R>();
 			Storage = AutoCache;
-			CreateFromKey = Builder.CreateFromKey;
+			CreateFromKey = Builder.ObjectFromKey;
+			AutoKeyColumn = Builder.Info.AutoKeyColumn;
+			AutoSyncInsert = Builder.Queries.InsertAutoSync == null;
+			AutoSyncUpdate = Builder.Queries.UpdateAutoSync != null;
 		}
 
 		private readonly Func<object, T> CreateFromKey;
 
-		private readonly IDictionary<T, CacheItem<T>> Cache;
-		private ICacheStorage<T> Storage;
-		private readonly CacheAutoStorage<T> AutoCache;
+		public ICacheStorage<T, R> Storage { get; private set; }
+		private readonly CacheAutoStorage<T, R> AutoCache;
 		private IAccessObjectSync<T> Access;
 		private readonly DataAccessObject<T> DAO;
 		private readonly AutoAccessObject<T> AAO;
 		private readonly SqlBuilder<T> Builder;
+		private readonly SqlColumn AutoKeyColumn;
+		private readonly bool AutoSyncInsert;
+		private readonly bool AutoSyncUpdate;
 
-		public CacheItem<T> Find(T key, int commandTimeout = 30)
+		public SqlTypeInfo Info => Builder.Info;
+
+		private long MaxAutoKey()
 		{
-			if (!Storage.TryGetValue(key, out CacheItem<T> value)) {
-				T obj = Access.Get(key, commandTimeout);
-				if (obj != null) {
-					value = Storage.AddOrUpdate(obj);
+			long max = Access.GetKeys<long?>("WHERE " + AutoKeyColumn.ColumnName + " = (SELECT MAX(" + AutoKeyColumn.ColumnName + ") FROM " + Info.TableName + ")").FirstOrDefault() ?? int.MinValue;
+			return max;
+		}
+
+		public R this[T key, int commandTimeout = 30] {
+			get {
+				if (!((IDictionary<T, R>)Storage).TryGetValue(key, out R value)) {
+					value = Get(key, commandTimeout);
 				}
+				return value;
 			}
-			return value;
 		}
 
-		public CacheItem<T> Find(object key, int commandTimeout = 30)
-		{
-			T obj = CreateFromKey(key);
-			CacheItem<T> ret = Find(obj, commandTimeout);
-			return ret;
-		}
-
-		public CacheItem<T> Remove(object key)
-		{
-			T obj = CreateFromKey(key);
-			CacheItem<T> ret = Remove(obj);
-			return ret;
-		}
-
-		public void Remove(IEnumerable<object> keys)
-		{
-			IEnumerable<T> objs = keys.Select(key => CreateFromKey(key));
-			foreach (T obj in objs) {
-				Remove(obj);
+		public R this[object key, int commandTimeout = 30] {
+			get {
+				T obj = CreateFromKey(key);
+				R ret = this[obj, commandTimeout];
+				return ret;
 			}
 		}
 
 		#region ICacheTable
 		public DbCacheTransaction BeginTransaction()
 		{
-			if (Access != AutoCache) {
-				throw new InvalidOperationException("Cache is already part of another transaction.");
-			}
+			if (Access != AutoCache)
+				throw new InvalidOperationException("Cache is already part of a transaction.");
 			try {
 				DAO.Connection.Open();
 				DAO.Transaction = DAO.Connection.BeginTransaction();
 				DbCacheTransaction transaction = new DbCacheTransaction(DAO.Transaction);
-				CacheTransactionStorage<T> storage = new CacheTransactionStorage<T>(Cache, CloseTransaction);
+				CacheTransactionStorage<T, R> storage = new CacheTransactionStorage<T, R>(AutoCache.Cache, transaction, CreateFromKey, CloseTransaction);
 				Storage = storage;
 				transaction.TransactionStorage.Add(storage);
 				Access = DAO;
@@ -122,12 +118,11 @@ namespace Dapper.Extra.Cache
 
 		public void BeginTransaction(DbCacheTransaction transaction)
 		{
-			if (Access != AutoCache) {
-				throw new InvalidOperationException("Cache is already part of another transaction.");
-			}
+			if (Access != AutoCache)
+				throw new InvalidOperationException("Cache is already part of a transaction.");
 			DAO.Connection = transaction.Transaction.Connection;
 			DAO.Transaction = transaction.Transaction;
-			Storage = new CacheTransactionStorage<T>(Cache, CloseTransaction);
+			Storage = new CacheTransactionStorage<T, R>(AutoCache.Cache, transaction, CreateFromKey, CloseTransaction);
 			Access = DAO;
 		}
 
@@ -135,278 +130,486 @@ namespace Dapper.Extra.Cache
 		{
 			if (DAO.Transaction != null) {
 				DAO.Transaction.Dispose();
-				DAO.Transaction = null;
 				DAO.Connection.Close();
+				DAO.Transaction = null;
+				Storage = AutoCache;
+				Access = AAO;
 			}
-			Storage = AutoCache;
-			Access = AAO;
 		}
-
-		public Type CachedType => typeof(T);
-
-		Type ICacheTable.KeyType => typeof(T);
 		#endregion ICacheTable
 
-		#region IReadOnlyDictionary<T, CacheItem<T>>
-		public IEnumerable<T> Keys => Storage.Keys;
+		#region Bulk
 
-		public IEnumerable<CacheItem<T>> Values => Storage.Values;
-
-		public int Count => Storage.Count;
-
-		public CacheItem<T> this[T key] => Storage[key];
-
-		public bool ContainsKey(T key)
+		/// <summary>
+		/// Deletes the rows with the given keys.
+		/// </summary>
+		/// <param name="keys">The keys for the rows to delete.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		public int BulkDelete(IEnumerable<object> keys, int commandTimeout = 30)
 		{
-			return Storage.ContainsKey(key);
-		}
-
-		public bool TryGetValue(T key, out CacheItem<T> value)
-		{
-			return Storage.TryGetValue(key, out value);
-		}
-
-		IEnumerator<KeyValuePair<T, CacheItem<T>>> IEnumerable<KeyValuePair<T, CacheItem<T>>>.GetEnumerator()
-		{
-			return Storage.GetEnumerator();
-		}
-
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return Storage.GetEnumerator();
-		}
-		#endregion IReadOnlyDictionary<T, CacheItem<T>>
-
-		#region ICacheStorage<T, T>
-		internal CacheItem<T> AddOrUpdate(T value)
-		{
-			CacheItem<T> item = Storage.AddOrUpdate(value);
-			return item;
-		}
-
-		internal List<CacheItem<T>> AddOrUpdate(IEnumerable<T> values)
-		{
-			List<CacheItem<T>> list = Storage.AddOrUpdate(values);
-			return list;
-		}
-
-		internal CacheItem<T> Add(T value)
-		{
-			CacheItem<T> item = Storage.Add(value);
-			return item;
-		}
-
-		internal List<CacheItem<T>> Add(IEnumerable<T> values)
-		{
-			List<CacheItem<T>> list = Storage.Add(values);
-			return list;
-		}
-		#endregion ICacheStorage<T, T>
-
-		#region ICacheTable<T, CacheItem<T>>
-		public void Remove(IEnumerable<T> values)
-		{
-			Storage.Remove(values);
-		}
-
-		public void RemoveKeys(IEnumerable<object> keys)
-		{
+			int count = Access.BulkDelete(keys, commandTimeout);
 			Storage.RemoveKeys(keys);
+			return count;
 		}
 
-		public bool Contains(T value)
+		/// <summary>
+		/// Deletes the given rows.
+		/// </summary>
+		/// <param name="objs">The objects to delete.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		public int BulkDelete(IEnumerable<T> objs, int commandTimeout = 30)
 		{
-			bool success = Storage.Contains(value);
-			return success;
+			int count = Access.BulkDelete(objs, commandTimeout);
+			Storage.Remove(objs);
+			return count;
 		}
 
-		public CacheItem<T> Remove(T obj)
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <param name="keys">The keys of the rows to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows with the given keys.</returns>
+		public IEnumerable<R> BulkGet(IEnumerable<object> keys, int commandTimeout = 30)
 		{
-			CacheItem<T> item = Storage.RemoveKey(obj);
-			return item;
+			IEnumerable<T> list = Access.BulkGet(keys, commandTimeout);
+			IEnumerable<R> result = Storage.Add(list);
+			return result;
 		}
 
-		public CacheItem<T> RemoveKey(object key)
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <param name="objs">The objects to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given keys.</returns>
+		public IEnumerable<R> BulkGet(IEnumerable<T> objs, int commandTimeout = 30)
 		{
-			CacheItem<T> item = Storage.RemoveKey(key);
-			return item;
+			IEnumerable<T> list = Access.BulkGet(objs, commandTimeout);
+			IEnumerable<R> result = Storage.Add(list);
+			return result;
 		}
 
-		public void Clear()
+		/// <summary>
+		/// Inserts the given rows.
+		/// </summary>
+		/// <param name="objs">The objects to insert.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		public void BulkInsert(IEnumerable<T> objs, int commandTimeout = 30)
 		{
-			Storage.Clear();
+			if(AutoKeyColumn != null) {
+				long maxAutoKey = MaxAutoKey();
+				Access.BulkInsert(objs, commandTimeout);
+				GetList("WHERE " + AutoKeyColumn.ColumnName + " > " + maxAutoKey, commandTimeout);
+			}
+			else {
+				Access.BulkInsert(objs, commandTimeout);
+				if(AutoSyncInsert)
+					BulkGet(objs);
+				else
+					Storage.Add(objs);
+			}
 		}
 
-		public IEnumerable<T> GetKeys(string whereCondition = "", object param = null, int commandTimeout = 30)
+		/// <summary>
+		/// Inserts the given rows if they do not exist.
+		/// </summary>
+		/// <param name="objs">The objects to insert.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of rows inserted.</returns>
+		public int BulkInsertIfNotExists(IEnumerable<T> objs, int commandTimeout = 30)
 		{
-			IEnumerable<T> keys = Access.GetKeys(whereCondition, param, commandTimeout);
-			return keys;
+			int count;
+			if (AutoKeyColumn != null) {
+				long maxAutoKey = MaxAutoKey();
+				count = Access.BulkInsertIfNotExists(objs, commandTimeout);
+				GetList("WHERE " + AutoKeyColumn.ColumnName + " > " + maxAutoKey, commandTimeout);
+			}
+			else {
+				count = Access.BulkInsertIfNotExists(objs, commandTimeout);
+				BulkGet(objs);
+			}
+			return count;
 		}
 
-		public bool Delete(T key, int commandTimeout = 30)
+		/// <summary>
+		/// Updates the given rows.
+		/// </summary>
+		/// <param name="objs">The objects to update.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of updated rows.</returns>
+		public int BulkUpdate(IEnumerable<T> objs, int commandTimeout = 30)
+		{
+			int count = Access.BulkUpdate(objs, commandTimeout);
+			if (AutoSyncUpdate)
+				BulkGet(objs);
+			else {
+				foreach (T obj in objs) {
+					if (((IDictionary<T, R>)Storage).TryGetValue(obj, out R item)) {
+						item.CacheValue = obj;
+					}
+				}
+			}
+			return count;
+		}
+
+		/// <summary>
+		/// Upserts the given rows.
+		/// </summary>
+		/// <param name="objs">The objects to upsert.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of upserted rows.</returns>
+		public int BulkUpsert(IEnumerable<T> objs, int commandTimeout = 30)
+		{
+			int count;
+			if(AutoKeyColumn != null) {
+				long maxAutoKey = MaxAutoKey();
+				Storage.Add(objs);
+				count = Access.BulkUpsert(objs, commandTimeout);
+				GetList("WHERE " + AutoKeyColumn.ColumnName + " > " + maxAutoKey, commandTimeout);
+			}
+			else {
+				count = Access.BulkUpsert(objs, commandTimeout);
+				if (AutoSyncInsert || AutoSyncUpdate) {
+					BulkGet(objs, commandTimeout);
+				}
+				else {
+					Storage.Add(objs);
+				}
+			}
+			return count;
+		}
+
+		#endregion Bulk
+
+		#region Other Methods
+
+		/// <summary>
+		/// Deletes the row with the given key.
+		/// </summary>
+		/// <param name="key">The key of the row to delete.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the row was deleted; false otherwise.</returns>
+		public bool Delete(object key, int commandTimeout = 30)
 		{
 			bool success = Access.Delete(key, commandTimeout);
 			Storage.RemoveKey(key);
 			return success;
 		}
 
-		public int BulkDelete(IEnumerable<T> keys, int commandTimeout = 30)
+		/// <summary>
+		/// Deletes the given row.
+		/// </summary>
+		/// <param name="obj">The object to delete.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the row was deleted; false otherwise.</returns>
+		public bool Delete(T obj, int commandTimeout = 30)
 		{
-			int count = Access.BulkDelete(keys, commandTimeout);
-			Storage.RemoveKeys(keys);
+			bool success = Access.Delete(obj, commandTimeout);
+			Storage.RemoveKey(obj);
+			return success;
+		}
+
+		/// <summary>
+		/// Deletes the rows that match the given condition.
+		/// </summary>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		public int DeleteList(string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			List<T> list = Access.GetList(whereCondition, param, true, commandTimeout).AsList();
+			int count = Access.DeleteList(whereCondition, param, commandTimeout);
+			Storage.Remove(list);
 			return count;
 		}
 
-		public IEnumerable<T> DeleteList(string whereCondition = "", object param = null, int commandTimeout = 30)
+		/// <summary>
+		/// Selects the row with the given key.
+		/// </summary>
+		/// <param name="key">The key of the row to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The row with the given key.</returns>
+		public R Get(object key, int commandTimeout = 30)
 		{
-			IEnumerable<T> keys = Access.GetKeys<T>(whereCondition, param, commandTimeout);
-			_ = Access.Delete(whereCondition, param, commandTimeout);
-			Storage.RemoveKeys(keys);
+			T obj = Access.Get(key, commandTimeout);
+			R item = Storage.Add(obj);
+			return item;
+		}
+
+		/// <summary>
+		/// Selects a row.
+		/// </summary>
+		/// <param name="obj">The object to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The selected row if it exists; otherwise null.</returns>
+		public R Get(T obj, int commandTimeout = 30)
+		{
+			obj = Access.Get(obj, commandTimeout);
+			R item = Storage.Add(obj);
+			return item;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public IEnumerable<R> GetDistinct(string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			List<T> list = Access.GetDistinct(whereCondition, param, true, commandTimeout).AsList();
+			List<R> result = Storage.Add(list);
+			return result;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public IEnumerable<R> GetDistinct(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			List<T> list = Access.GetDistinct(columnFilter, whereCondition, param, true, commandTimeout).AsList();
+			List<R> result = Storage.Add(list);
+			return result;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public IEnumerable<R> GetDistinctLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			List<T> list = Access.GetDistinctLimit(limit, whereCondition, param, true, commandTimeout).AsList();
+			List<R> result = Storage.Add(list);
+			return result;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public IEnumerable<R> GetDistinctLimit(Type columnFilter, int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			List<T> list = Access.GetDistinctLimit(limit, whereCondition, param, true, commandTimeout).AsList();
+			List<R> result = Storage.Add(list);
+			return result;
+		}
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		public IEnumerable<KeyType> GetKeys<KeyType>(string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			List<KeyType> keys = Access.GetKeys<KeyType>(whereCondition, param, true, commandTimeout).AsList();
 			return keys;
 		}
 
-		public CacheItem<T> Get(T key, int commandTimeout = 30)
+		/// <summary>
+		/// Selects the keys that match the given condition.
+		/// </summary>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		public IEnumerable<T> GetKeys(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			T obj = Access.Get(key, commandTimeout);
-			if (obj == null) {
-				_ = Storage.RemoveKey(obj);
-				return null;
-			}
-			CacheItem<T> value = Storage.AddOrUpdate(obj);
-			return value;
+			List<T> keys = Access.GetKeys(whereCondition, param, true, commandTimeout).AsList();
+			return keys;
 		}
 
-		public int Delete(string whereCondition = "", object param = null, int commandTimeout = 30)
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition.
+		/// </summary>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The limited number of rows that match the given condition.</returns>
+		public IEnumerable<R> GetLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			IEnumerable<T> keys = DeleteList(whereCondition, param, commandTimeout);
-			Storage.RemoveKeys(keys);
-			return keys.Count();
+			List<T> list = Access.GetLimit(limit, whereCondition, param, true, commandTimeout).AsList();
+			List<R> result = Storage.Add(list);
+			return result;
 		}
 
-		public CacheItem<T> Insert(T obj, int commandTimeout = 30)
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition.
+		/// </summary>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>A limited number of rows that match the given condition.</returns>
+		public IEnumerable<R> GetLimit(Type columnFilter, int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			List<T> list = Access.GetLimit(columnFilter, limit, whereCondition, param, true, commandTimeout).AsList();
+			List<R> result = Storage.Add(list);
+			return result;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public IEnumerable<R> GetList(string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			List<T> list = Access.GetList(whereCondition, param, true, commandTimeout).AsList();
+			List<R> result = Storage.Add(list);
+			return result;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public IEnumerable<R> GetList(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			List<T> list = Access.GetList(columnFilter, whereCondition, param, true, commandTimeout).AsList();
+			List<R> result = Storage.Add(list);
+			return result;
+		}
+
+		/// <summary>
+		/// Inserts a row.
+		/// </summary>
+		/// <param name="obj">The object to insert.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		public R Insert(T obj, int commandTimeout = 30)
 		{
 			Access.Insert(obj, commandTimeout);
-			CacheItem<T> value = Storage.Add(obj);
-			return value;
+			R item = Storage.Add(obj);
+			return item;
 		}
 
-		public bool Update(T obj, int commandTimeout = 30)
+		/// <summary>
+		/// Inserts a row if it does not exist.
+		/// </summary>
+		/// <param name="obj">The object to insert.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the the row was inserted; false otherwise.</returns>
+		public R InsertIfNotExists(T obj, int commandTimeout = 30)
 		{
-			if (!Access.Update(obj, commandTimeout)) {
-				Storage.AddOrUpdate(obj);
-				return true;
+			if (!Access.InsertIfNotExists(obj, commandTimeout)) {
+				return null;
 			}
-			_ = Storage.RemoveKey(obj);
-			return false;
+			R item = Storage.Add(obj);
+			return item;
 		}
 
-		public int BulkUpdate(IEnumerable<T> objs, int commandTimeout = 30)
-		{
-			int count = Access.BulkUpdate(objs, commandTimeout);
-			Storage.AddOrUpdate(objs);
-			return count;
-		}
-
-		public CacheItem<T> Upsert(T obj, int commandTimeout = 30)
-		{
-			_ = Access.Upsert(obj, commandTimeout);
-			CacheItem<T> ret = Storage.AddOrUpdate(obj);
-			return ret;
-		}
-
-		public IEnumerable<CacheItem<T>> GetList(string whereCondition = "", object param = null, int commandTimeout = 30)
-		{
-			IEnumerable<T> list = Access.GetList(whereCondition, param, commandTimeout);
-			List<CacheItem<T>> result = Storage.AddOrUpdate(list);
-			return result;
-		}
-
-		public IEnumerable<CacheItem<T>> GetLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
-		{
-			IEnumerable<T> list = Access.GetLimit(limit, whereCondition, param, commandTimeout);
-			List<CacheItem<T>> result = Storage.AddOrUpdate(list);
-			return result;
-		}
-
-		public IEnumerable<CacheItem<T>> GetDistinct(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30)
-		{
-			IEnumerable<T> list = Access.GetDistinct(columnFilter, whereCondition, param, commandTimeout);
-			List<CacheItem<T>> result = Storage.AddOrUpdate(list);
-			return result;
-		}
-
+		/// <summary>
+		/// Counts the number of rows that match the given condition.
+		/// </summary>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of rows that match the given condition.</returns>
 		public int RecordCount(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			int count = Access.RecordCount(whereCondition, param, commandTimeout);
 			return count;
 		}
 
-		public IEnumerable<CacheItem<T>> GetDistinctLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
+		/// <summary>
+		/// Truncates all rows.
+		/// </summary>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		public void Truncate(int commandTimeout = 30)
 		{
-			IEnumerable<T> list = Access.GetDistinctLimit(limit, whereCondition, param, commandTimeout);
-			List<CacheItem<T>> result = Storage.AddOrUpdate(list);
-			return result;
+			Access.Truncate(commandTimeout);
 		}
 
-		public IEnumerable<KeyType> GetKeys<KeyType>(string whereCondition = "", object param = null, int commandTimeout = 30)
-		{
-			IEnumerable<KeyType> keys = Access.GetKeys<KeyType>(whereCondition, param, commandTimeout);
-			return keys;
-		}
+		private readonly ConcurrentDictionary<Type, ObjectMapper> mappers = new ConcurrentDictionary<Type, ObjectMapper>();
 
-		public bool Delete(object key, int commandTimeout = 30)
+		/// <summary>
+		/// Updates a row.
+		/// </summary>
+		/// <param name="obj">The object to update.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the row was updated; false otherwise.</returns>
+		public bool Update(object obj, int commandTimeout = 30)
 		{
-			bool success = Access.Delete(key, commandTimeout);
-			T obj = CreateFromKey(key);
-			_ = Storage.Remove(obj);
+			bool success = Access.Update(obj, commandTimeout);
+			if (success) {
+				Type type = obj.GetType();
+				if (!mappers.TryGetValue(type, out ObjectMapper mapper)) {
+					mapper = Reflect.Mapper(type, typeof(T), Info.KeyColumns.Select(c => c.Property.Name).ToArray());
+					mappers.TryAdd(type, mapper);
+				}
+				T value = (T)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(T));
+				mapper(obj, value);
+				if (((IDictionary<T, R>)Storage).TryGetValue(value, out R item)) {
+					mapper(obj, item.CacheValue);
+				}
+			}
 			return success;
 		}
 
-		public CacheItem<T> Get(object key, int commandTimeout = 30)
-		{
-			T obj = Access.Get(key, commandTimeout);
-			CacheItem<T> ret = Storage.AddOrUpdate(obj);
-			return ret;
-		}
 
-		public int BulkDelete<KeyType>(IEnumerable<object> keys, int commandTimeout = 30)
+		/// <summary>
+		/// Updates a row.
+		/// </summary>
+		/// <param name="obj">The object to update.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the row was updated; false otherwise.</returns>
+		public bool Update(T obj, int commandTimeout = 30)
 		{
-			int count = Access.BulkDelete(keys, commandTimeout);
-			Storage.RemoveKeys(keys);
-			return count;
-		}
-
-		public List<CacheItem<T>> BulkInsert(IEnumerable<T> objs, int commandTimeout = 30)
-		{
-			IEnumerable<T> list;
-			if (TableData<T>.AutoKeyProperty != null) {
-				long max = Access.GetKeys<long?>("WHERE " + TableData<T>.AutoKeyColumn + " = (SELECT MAX(" + TableData<T>.AutoKeyColumn + ") FROM " + TableData<T>.TableName + ")").FirstOrDefault() ?? int.MinValue;
-				Access.BulkInsert(objs, commandTimeout);
-				list = Access.GetList("WHERE " + TableData<T>.AutoKeyColumn + " > " + max);
+			bool success = Access.Update(obj, commandTimeout);
+			if(success) {
+				Storage.Add(obj);
 			}
-			else {
-				Access.BulkInsert(objs, commandTimeout);
-				list = TableData<T>.InsertKeyProperties.Count != 0
-					? Access.BulkGet(objs, commandTimeout)
-					: objs;
-			}
-			List<CacheItem<T>> result = Storage.Add(list);
-			return result;
+			return success;
 		}
 
-		public List<CacheItem<T>> BulkGet(IEnumerable<T> objs, int commandTimeout = 30)
+		/// <summary>
+		/// Upserts a row.
+		/// </summary>
+		/// <param name="obj">The object to upsert.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the object was upserted; false otherwise.</returns>
+		public bool Upsert(T obj, int commandTimeout = 30)
 		{
-			List<T> list = Access.BulkGet(objs, commandTimeout);
-			List<CacheItem<T>> result = Storage.AddOrUpdate(list);
-			return result;
+			bool success = Access.Upsert(obj, commandTimeout);
+			_ = Storage.Add(obj);
+			return success;
 		}
 
-		public List<CacheItem<T>> BulkGet(IEnumerable<object> keys, int commandTimeout = 30)
-		{
-			List<T> list = Access.BulkGet(keys, commandTimeout);
-			List<CacheItem<T>> result = Storage.AddOrUpdate(list);
-			return result;
-		}
-		#endregion ICacheTable<T, CacheItem<T>>
+		#endregion Other Methods
 	}
 }

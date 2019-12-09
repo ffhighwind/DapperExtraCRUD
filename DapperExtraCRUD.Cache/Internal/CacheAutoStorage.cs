@@ -26,158 +26,195 @@
 
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.Serialization;
-using Dapper.Extra.Cache.Interfaces;
+using Dapper.Extra.Internal;
 
 namespace Dapper.Extra.Cache.Internal
 {
 	internal class CacheAutoStorage<T, R> : ICacheStorage<T, R>
 		where T : class
-		where R : CacheItem<T>
+		where R : CacheItem<T>, new()
 	{
-		private readonly IDictionary<T, CacheItem<T>> Cache;
+		public readonly ConcurrentDictionary<T, R> Cache = new ConcurrentDictionary<T, R>();
 
-		internal CacheAutoStorage(IDictionary<T, CacheItem<T>> cache)
+		internal CacheAutoStorage()
 		{
-			Cache = cache;
-			IReadOnlyList<Extra.Internal.SqlColumn> keys = ExtraCrud.Builder<T>().Info.KeyColumns;
-			if (keys.Count == 1)
-				KeyProperty = keys.First().Property;
+			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
+			if (builder.Info.KeyColumns.Count == 1) {
+				ObjectFromKey = builder.ObjectFromKey;
+			}
 		}
 
-		private PropertyInfo KeyProperty { get; set; }
+		private Func<object, T> ObjectFromKey { get; }
 
-		#region ICacheStorage<T>
 		public CacheItem<T> this[T key] => Cache[key];
 
 		public IEnumerable<T> Keys => Cache.Keys;
 
-		public IEnumerable<CacheItem<T>> Values => Cache.Values;
+		public IEnumerable<R> Values => Cache.Values;
 
 		public int Count => Cache.Count;
 
-		public CacheItem<T> Add(T value)
+		ICollection<T> IDictionary<T, R>.Keys => Cache.Keys;
+
+		ICollection<R> IDictionary<T, R>.Values => Cache.Values;
+
+		public bool IsReadOnly => false;
+
+		R IReadOnlyDictionary<T, R>.this[T key] => Cache[key];
+
+		R IDictionary<T, R>.this[T key] {
+			get => Cache[key];
+			set => Cache[key] = value;
+		}
+
+		private R AddValueFactory(T key)
 		{
-			CacheItem<T> item = new CacheItem<T>();
-			item.Item = value;
-			Cache.Add(value, item);
+			R item = new R();
+			item.CacheValue = key;
 			return item;
 		}
 
-		public List<CacheItem<T>> Add(IEnumerable<T> values)
+		private R UpdateValueFactory(T value, R oldValue)
 		{
-			List<CacheItem<T>> list = new List<CacheItem<T>>();
-			foreach (T value in values) {
-				CacheItem<T> item = Add(value);
+			oldValue.CacheValue = value;
+			return oldValue;
+		}
+
+		public R AddOrUpdate(T key)
+		{
+			R item = Cache.AddOrUpdate(key, AddValueFactory, UpdateValueFactory);
+			return item;
+		}
+
+		public R Add(T key)
+		{
+			R item = Cache.AddOrUpdate(key, AddValueFactory, UpdateValueFactory);
+			return item;
+		}
+
+		public List<R> Add(IEnumerable<T> keys)
+		{
+			List<R> list = new List<R>();
+			foreach (T key in keys) {
+				R item = Add(key);
 				list.Add(item);
 			}
 			return list;
 		}
 
-		public CacheItem<T> AddOrUpdate(T value)
+		public bool Remove(T value)
 		{
-			CacheItem<T> item;
-			if (!Cache.TryGetValue(value, out item)) {
-				item = new CacheItem<T>();
-			}
-			item.Item = value;
-			return item;
+			bool success = Cache.TryRemove(value, out R _);
+			return success;
 		}
 
-		public List<CacheItem<T>> AddOrUpdate(IEnumerable<T> values)
+		public bool RemoveKey(object key)
 		{
-			List<CacheItem<T>> list = new List<CacheItem<T>>();
-			foreach (T value in values) {
-				CacheItem<T> item = AddOrUpdate(value);
-				list.Add(item);
+			T obj = ObjectFromKey(key);
+			bool success = Cache.TryRemove(obj, out R _);
+			return success;
+		}
+
+		public void Remove(IEnumerable<T> keys)
+		{
+			foreach (T key in keys) {
+				Remove(key);
 			}
-			return list;
+		}
+
+		public void RemoveKeys(IEnumerable<object> keys)
+		{
+			foreach (object key in keys) {
+				RemoveKey(key);
+			}
 		}
 
 		public void Clear()
 		{
 			foreach (CacheItem<T> value in Cache.Values) {
-				value.Item = null;
+				value.CacheValue = null;
 			}
 			Cache.Clear();
 		}
 
-		public bool Contains(T value)
+		public bool Contains(T key)
 		{
-			bool success = Cache.ContainsKey(value);
+			bool success = Cache.ContainsKey(key);
+			return success;
+		}
+
+		public bool ContainsKey(object key)
+		{
+			T obj = ObjectFromKey(key);
+			bool success = Cache.ContainsKey(obj);
 			return success;
 		}
 
 		public bool ContainsKey(T key)
 		{
-			bool exists = Cache.ContainsKey(key);
-			return exists;
-		}
-
-		public bool ContainsKey<KeyType>(KeyType key)
-		{
-			T obj = (T)FormatterServices.GetUninitializedObject(typeof(T));
-			KeyProperty.SetValue(obj, key);
-			bool success = Cache.ContainsKey(obj);
+			bool success = Cache.ContainsKey(key);
 			return success;
 		}
 
-		public IEnumerator<KeyValuePair<T, CacheItem<T>>> GetEnumerator()
-		{
-			IEnumerator<KeyValuePair<T, CacheItem<T>>> enumerator = Cache.GetEnumerator();
-			return enumerator;
-		}
-
-		public CacheItem<T> Remove(T key)
-		{
-			return RemoveKey(key);
-		}
-
-		public void Remove(IEnumerable<T> values)
-		{
-			RemoveKeys(values);
-		}
-
-		public CacheItem<T> RemoveKey(T key)
-		{
-			if (Cache.TryGetValue(key, out CacheItem<T> item)) {
-				item.Item = null;
-				Cache.Remove(key);
-			}
-			return item;
-		}
-
-		public CacheItem<T> RemoveKey<KeyType>(KeyType key)
-		{
-			throw new NotImplementedException();
-		}
-
-		public void RemoveKeys(IEnumerable<T> keys)
-		{
-			foreach (T key in keys) {
-				RemoveKey(key);
-			}
-		}
-
-		public void RemoveKeys<KeyType>(IEnumerable<KeyType> keys)
-		{
-			throw new NotImplementedException();
-		}
-
-		public bool TryGetValue(T key, out CacheItem<T> value)
+		public bool TryGetValue(T key, out R value)
 		{
 			bool success = Cache.TryGetValue(key, out value);
 			return success;
 		}
 
-		IEnumerator IEnumerable.GetEnumerator()
+		public IEnumerator<KeyValuePair<T, R>> GetEnumerator()
 		{
-			IEnumerator<KeyValuePair<T, CacheItem<T>>> enumerator = GetEnumerator();
+			IEnumerator<KeyValuePair<T, R>> enumerator = Cache.GetEnumerator();
 			return enumerator;
 		}
-		#endregion ICacheStorage<T>
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			IEnumerator<KeyValuePair<T, R>> enumerator = Cache.GetEnumerator();
+			return enumerator;
+		}
+
+		public void Add(T key, R value)
+		{
+			Cache.AddOrUpdate(key, value, UpdateValueFactory);
+		}
+
+		public void Add(KeyValuePair<T, R> item)
+		{
+			((IDictionary<T, R>)Cache).Add(item);
+		}
+
+		public bool Contains(KeyValuePair<T, R> item)
+		{
+			bool success = ((IDictionary<T, R>)Cache).Contains(item);
+			return success;
+		}
+
+		public void CopyTo(KeyValuePair<T, R>[] array, int arrayIndex)
+		{
+			((IDictionary<T, R>)Cache).CopyTo(array, arrayIndex);
+		}
+
+		public bool Remove(KeyValuePair<T, R> item)
+		{
+			bool success = ((IDictionary<T, R>)Cache).Remove(item);
+			return success;
+		}
+
+		public bool TryAdd(T value)
+		{
+			R item = new R();
+			item.CacheValue = value;
+			bool success = Cache.TryAdd(value, item);
+			return success;
+		}
+
+		public R GetOrAdd(T value)
+		{
+			R item = Cache.GetOrAdd(value, AddValueFactory);
+			return item;
+		}
 	}
 }
