@@ -118,6 +118,7 @@ A valid property must have a public set method and its type must be a standard S
 | \[ReadOnly(true)] (class) | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
 | public int Property { set; private get; } | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
 | \[NotMapped] | \[NotMapped] |
+| - | \[IgnoreSelect] (property) |
 | - | \[IgnoreInsert] (class) |
 | - | \[IgnoreUpdate] (class) |
 | - | \[IgnoreDelete] (class) |

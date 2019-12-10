@@ -118,7 +118,6 @@ namespace Dapper.Extra.Internal
 					}
 				}
 				SqlColumn column = new SqlColumn(prop, string.IsNullOrWhiteSpace(columnName) ? prop.Name : Adapter.QuoteIdentifier(columnName), ordinal);
-				columns.Add(column);
 				KeyAttribute keyAttr = prop.GetCustomAttribute<KeyAttribute>(inherit);
 				if (keyAttr != null) {
 					if (keyAttr.AutoIncrement)
@@ -137,12 +136,13 @@ namespace Dapper.Extra.Internal
 						}
 					}
 				}
+				if (!prop.CanRead) {
+					Attributes |= SqlTableAttributes.IgnoreInsert | SqlTableAttributes.IgnoreUpdate | SqlTableAttributes.IgnoreDelete;
+				}
 				if (column.IsKey) {
 					keys.Add(column);
-					if (!prop.CanRead) {
-						Attributes |= SqlTableAttributes.IgnoreInsert | SqlTableAttributes.IgnoreUpdate | SqlTableAttributes.IgnoreDelete;
-					}
 				}
+				columns.Add(column);
 			}
 
 			if (keys.Count == 0) {
@@ -158,14 +158,20 @@ namespace Dapper.Extra.Internal
 				}
 				else {
 					// remove SqlColumnAttributes.AutoKey from all key columns
+					SqlColumnAttributes invertedAutoKey = ~(SqlColumnAttributes.AutoKey ^ SqlColumnAttributes.Key);
 					foreach (SqlColumn key in keys) {
-						key.Attributes = SqlColumnAttributes.Key;
+						key.Attributes &= invertedAutoKey;
 					}
 				}
 			}
 
 			foreach (SqlColumn column in columns.Where(c => !c.IsKey)) {
 				PropertyInfo prop = column.Property;
+
+				// Selects
+				IgnoreSelectAttribute selectAttr = prop.GetCustomAttribute<IgnoreSelectAttribute>(inherit);
+				if (selectAttr != null)
+					column.Attributes |= SqlColumnAttributes.IgnoreSelect;
 
 				// Deletes
 				MatchDeleteAttribute deleteAttr = prop.GetCustomAttribute<MatchDeleteAttribute>(inherit);
