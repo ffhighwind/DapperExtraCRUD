@@ -50,10 +50,6 @@ namespace Dapper.Extra.Cache.Internal
 
 		public CacheItem<T> this[T key] => Cache[key];
 
-		public IEnumerable<T> Keys => Cache.Keys;
-
-		public IEnumerable<R> Values => Cache.Values;
-
 		public int Count => Cache.Count;
 
 		ICollection<T> IDictionary<T, R>.Keys => Cache.Keys;
@@ -61,8 +57,6 @@ namespace Dapper.Extra.Cache.Internal
 		ICollection<R> IDictionary<T, R>.Values => Cache.Values;
 
 		public bool IsReadOnly => false;
-
-		R IReadOnlyDictionary<T, R>.this[T key] => Cache[key];
 
 		R IDictionary<T, R>.this[T key] {
 			get => Cache[key];

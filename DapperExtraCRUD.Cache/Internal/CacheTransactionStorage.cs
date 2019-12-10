@@ -93,12 +93,6 @@ namespace Dapper.Extra.Cache.Internal
 
 		public bool IsReadOnly => false;
 
-		IEnumerable<T> IReadOnlyDictionary<T, R>.Keys => Cache.Keys;
-
-		IEnumerable<R> IReadOnlyDictionary<T, R>.Values => Cache.Values;
-
-		R IReadOnlyDictionary<T, R>.this[T key] => this[key];
-
 		public R this[T key] {
 			get => Cache[key];
 			set {

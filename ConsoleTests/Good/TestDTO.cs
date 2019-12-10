@@ -121,5 +121,10 @@ CREATE TABLE [dbo].[Test](
 		{
 			return Equals(other) && Name == other.Name;
 		}
+
+		public TestDTO Clone()
+		{
+			return (TestDTO)MemberwiseClone();
+		}
 	}
 }

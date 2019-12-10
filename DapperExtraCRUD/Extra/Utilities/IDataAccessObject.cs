@@ -31,7 +31,7 @@ namespace Dapper.Extra.Utilities
 	/// <summary>
 	/// Interface for an object that interacts with a database.
 	/// </summary>
-	public interface IDataAccessConnection
+	public interface IDataAccessObject
 	{
 		/// <summary>
 		/// Determines if the queries are buffered.

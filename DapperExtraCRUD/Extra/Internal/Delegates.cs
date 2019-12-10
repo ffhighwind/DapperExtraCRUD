@@ -178,15 +178,15 @@ namespace Dapper.Extra.Internal
 	/// </summary>
 	/// <typeparam name="T">The table type.</typeparam>
 	/// <param name="connection">The connection to query on.</param>
-	/// <param name="columnFilter">The type whose properties will filter the result.</param>
 	/// <param name="limit">The maximum number of rows.</param>
+	/// <param name="columnFilter">The type whose properties will filter the result.</param>
 	/// <param name="whereCondition">The where condition to use for this query.</param>
 	/// <param name="param">The parameters to use for this query.</param>
 	/// <param name="transaction">The transaction to use for this query.</param>
 	/// <param name="buffered">Whether to buffer the results in memory.</param>
 	/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 	/// <returns>The rows that match the given condition.</returns>
-	public delegate IEnumerable<T> DbTypeLimitList<T>(IDbConnection connection, Type columnFilter, int limit, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+	public delegate IEnumerable<T> DbTypeLimitList<T>(IDbConnection connection, int limit, Type columnFilter, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 		where T : class;
 
 	/// <summary>

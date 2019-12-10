@@ -28,7 +28,7 @@ using System.Collections.Generic;
 
 namespace Dapper.Extra.Cache
 {
-	public interface ICacheStorage<T, R> : IEnumerable<KeyValuePair<T, R>>, IDictionary<T, R>, IReadOnlyDictionary<T, R>
+	public interface ICacheStorage<T, R> : IDictionary<T, R>
 		where T : class
 		where R : CacheItem<T>, new()
 	{

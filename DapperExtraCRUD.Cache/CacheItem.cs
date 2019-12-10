@@ -33,6 +33,6 @@ namespace Dapper.Extra.Cache
 		/// <summary>
 		/// Null if deleted.
 		/// </summary>
-		protected internal T CacheValue { get; internal set; }
+		public T CacheValue { get; internal set; }
 	}
 }

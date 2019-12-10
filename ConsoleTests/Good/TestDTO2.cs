@@ -128,5 +128,10 @@ CREATE TABLE [dbo].[Test2](
 		{
 			return Equals(other);
 		}
+
+		public TestDTO2 Clone()
+		{
+			return (TestDTO2)MemberwiseClone();
+		}
 	}
 }

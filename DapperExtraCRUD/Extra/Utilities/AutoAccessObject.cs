@@ -578,21 +578,6 @@ namespace Dapper.Extra.Utilities
 		/// Selects the rows that match the given condition.
 		/// </summary>
 		/// <param name="transaction">The transaction to use for this query.</param>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows that match the given condition.</returns>
-		public IEnumerable<T> GetDistinct(IDbTransaction transaction, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
-		{
-			IEnumerable<T> list = Queries.GetDistinct(transaction.Connection, typeof(T), whereCondition, param, transaction, buffered, commandTimeout);
-			return list;
-		}
-
-		/// <summary>
-		/// Selects the rows that match the given condition.
-		/// </summary>
-		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
@@ -603,22 +588,6 @@ namespace Dapper.Extra.Utilities
 		{
 			IEnumerable<T> list = Queries.GetDistinct(transaction.Connection, columnFilter, whereCondition, param, transaction, buffered, commandTimeout);
 			return list;
-		}
-
-		/// <summary>
-		/// Selects the rows that match the given condition.
-		/// </summary>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">This argument is ignored and will always be true.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows that match the given condition.</returns>
-		public override IEnumerable<T> GetDistinct(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
-		{
-			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				List<T> list = Queries.GetDistinct(conn, typeof(T), whereCondition, param, null, true, commandTimeout).AsList();
-				return list;
-			}
 		}
 
 		/// <summary>
@@ -642,20 +611,6 @@ namespace Dapper.Extra.Utilities
 		/// Selects the rows that match the given condition.
 		/// </summary>
 		/// <param name="transaction">The transaction to use for this query.</param>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows that match the given condition.</returns>
-		public async Task<IEnumerable<T>> GetDistinctAsync(IDbTransaction transaction, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
-		{
-			return await Task.Run(() => GetDistinct(transaction, whereCondition, param, buffered, commandTimeout));
-		}
-
-		/// <summary>
-		/// Selects the rows that match the given condition.
-		/// </summary>
-		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
@@ -672,31 +627,15 @@ namespace Dapper.Extra.Utilities
 		/// </summary>
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="limit">The maximum number of rows.</param>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows that match the given condition.</returns>
-		public IEnumerable<T> GetDistinctLimit(IDbTransaction transaction, int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
-		{
-			IEnumerable<T> list = Queries.GetDistinctLimit(transaction.Connection, typeof(T), limit, whereCondition, param, transaction, buffered, commandTimeout);
-			return list;
-		}
-
-		/// <summary>
-		/// Selects the rows that match the given condition.
-		/// </summary>
-		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
-		/// <param name="limit">The maximum number of rows.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		public IEnumerable<T> GetDistinctLimit(IDbTransaction transaction, Type columnFilter, int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
+		public IEnumerable<T> GetDistinctLimit(IDbTransaction transaction, int limit, Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
 		{
-			IEnumerable<T> list = Queries.GetDistinctLimit(transaction.Connection, columnFilter, limit, whereCondition, param, transaction, buffered, commandTimeout);
+			IEnumerable<T> list = Queries.GetDistinctLimit(transaction.Connection, limit, columnFilter, whereCondition, param, transaction, buffered, commandTimeout);
 			return list;
 		}
 
@@ -704,66 +643,34 @@ namespace Dapper.Extra.Utilities
 		/// Selects the rows that match the given condition.
 		/// </summary>
 		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="buffered">This argument is ignored and will always be true.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		public override IEnumerable<T> GetDistinctLimit(int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
+		public override IEnumerable<T> GetDistinctLimit(int limit, Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				List<T> list = Queries.GetDistinctLimit(conn, typeof(T), limit, whereCondition, param, null, true, commandTimeout).AsList();
+				List<T> list = Queries.GetDistinctLimit(conn, limit, columnFilter, whereCondition, param, null, buffered, commandTimeout).AsList();
 				return list;
 			}
 		}
 
 		/// <summary>
-		/// Selects the rows that match the given condition.
-		/// </summary>
-		/// <param name="columnFilter">The type whose properties will filter the result.</param>
-		/// <param name="limit">The maximum number of rows.</param>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">This argument is ignored and will always be true.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows that match the given condition.</returns>
-		public override IEnumerable<T> GetDistinctLimit(Type columnFilter, int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
-		{
-			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				List<T> list = Queries.GetDistinctLimit(conn, columnFilter, limit, whereCondition, param, null, buffered, commandTimeout).AsList();
-				return list;
-			}
-		}
-
-		/// <summary>
-		/// Selects the rows that match the given condition.
+		/// Selects the rows that match the given condition asynchronously.
 		/// </summary>
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		public async Task<IEnumerable<T>> GetDistinctLimitAsync(IDbTransaction transaction, int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
+		public async Task<IEnumerable<T>> GetDistinctLimitAsync(IDbTransaction transaction, int limit, Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
 		{
-			return await Task.Run(() => GetDistinctLimit(transaction, limit, whereCondition, param, buffered, commandTimeout));
-		}
-
-		/// <summary>
-		/// Selects the rows that match the given condition.
-		/// </summary>
-		/// <param name="transaction">The transaction to use for this query.</param>
-		/// <param name="columnFilter">The type whose properties will filter the result.</param>
-		/// <param name="limit">The maximum number of rows.</param>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows that match the given condition.</returns>
-		public async Task<IEnumerable<T>> GetDistinctLimitAsync(IDbTransaction transaction, Type columnFilter, int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
-		{
-			return await Task.Run(() => GetDistinctLimit(transaction, columnFilter, limit, whereCondition, param, buffered, commandTimeout));
+			return await Task.Run(() => GetDistinctLimit(transaction, limit, columnFilter, whereCondition, param, buffered, commandTimeout));
 		}
 
 		/// <summary>
@@ -881,16 +788,16 @@ namespace Dapper.Extra.Utilities
 		/// Selects a limited number of rows that match the given condition.
 		/// </summary>
 		/// <param name="transaction">The transaction to use for this query.</param>
-		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>A limited number of rows that match the given condition.</returns>
-		public IEnumerable<T> GetLimit(IDbTransaction transaction, Type columnFilter, int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
+		public IEnumerable<T> GetLimit(IDbTransaction transaction, int limit, Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
 		{
-			IEnumerable<T> list = Queries.GetFilterLimit(transaction.Connection, columnFilter, limit, whereCondition, param, transaction, buffered, commandTimeout);
+			IEnumerable<T> list = Queries.GetFilterLimit(transaction.Connection, limit, columnFilter, whereCondition, param, transaction, buffered, commandTimeout);
 			return list;
 		}
 
@@ -914,17 +821,17 @@ namespace Dapper.Extra.Utilities
 		/// <summary>
 		/// Selects a limited number of rows that match the given condition.
 		/// </summary>
-		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="buffered">This argument is ignored and will always be true.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>A limited number of rows that match the given condition.</returns>
-		public override IEnumerable<T> GetLimit(Type columnFilter, int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
+		public override IEnumerable<T> GetLimit(int limit, Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
-				List<T> list = Queries.GetFilterLimit(conn, columnFilter, limit, whereCondition, param, null, true, commandTimeout).AsList();
+				List<T> list = Queries.GetFilterLimit(conn, limit, columnFilter, whereCondition, param, null, true, commandTimeout).AsList();
 				return list;
 			}
 		}
@@ -948,16 +855,16 @@ namespace Dapper.Extra.Utilities
 		/// Selects a limited number of rows that match the given condition.
 		/// </summary>
 		/// <param name="transaction">The transaction to use for this query.</param>
-		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>A limited number of rows that match the given condition.</returns>
-		public async Task<IEnumerable<T>> GetLimitAsync(IDbTransaction transaction, Type columnFilter, int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
+		public async Task<IEnumerable<T>> GetLimitAsync(IDbTransaction transaction, int limit, Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
 		{
-			return await Task.Run(() => GetLimit(transaction, columnFilter, limit, whereCondition, param, buffered, commandTimeout));
+			return await Task.Run(() => GetLimit(transaction, limit, columnFilter, whereCondition, param, buffered, commandTimeout));
 		}
 
 		/// <summary>

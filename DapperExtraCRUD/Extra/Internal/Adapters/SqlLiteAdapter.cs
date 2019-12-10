@@ -46,5 +46,10 @@ DELETE FROM SQLITE_SEQUENCE WHERE name='{0}'"; // resets autoincrement
 			LimitQuery = @"{1}
 LIMIT {0}";
 		}
+
+		//public override void BulkInsert<T>(IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction, string tableName, DataReaderFactory factory, IEnumerable<SqlColumn> columns, int commandTimeout = 30, SqlBulkCopyOptions options = SqlBulkCopyOptions.Default)
+		//{
+		//	EXEC sqlite3.exe csvfile table
+		//}
 	}
 }

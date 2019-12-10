@@ -36,5 +36,6 @@ namespace UnitTests
 		bool IsInserted(T other);
 		bool IsUpdated(T other);
 		string CreateTable();
+		T Clone();
 	}
 }

@@ -24,6 +24,11 @@
 // SOFTWARE.
 #endregion
 
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using Fasterflect;
+
 namespace Dapper.Extra.Internal.Adapters
 {
 	internal class PostgreSqlAdapter : SqlAdapterImpl
@@ -45,5 +50,12 @@ namespace Dapper.Extra.Internal.Adapters
 			LimitQuery = @"{1}
 LIMIT {0}";
 		}
+
+		//public override void BulkInsert<T>(IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction, string tableName, DataReaderFactory factory, IEnumerable<SqlColumn> columns, int commandTimeout = 30, SqlBulkCopyOptions options = SqlBulkCopyOptions.Default)
+		//{
+		//	https://www.postgresql.org/docs/9.1/sql-copy.html
+		//	COPY table FROM file [CSV|BINARY]
+		//	COPY [BINARY] table FROM file
+		//}
 	}
 }

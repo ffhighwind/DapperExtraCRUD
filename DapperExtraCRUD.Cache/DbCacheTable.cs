@@ -48,7 +48,7 @@ namespace Dapper.Extra.Cache
 			AAO = new AutoAccessObject<T>(connectionString);
 			Access = AAO;
 			AutoCache = new CacheAutoStorage<T, R>();
-			Storage = AutoCache;
+			Items = AutoCache;
 			CreateFromKey = Builder.ObjectFromKey;
 			AutoKeyColumn = Builder.Info.AutoKeyColumn;
 			AutoSyncInsert = Builder.Queries.InsertAutoSync == null;
@@ -57,9 +57,9 @@ namespace Dapper.Extra.Cache
 
 		private readonly Func<object, T> CreateFromKey;
 
-		public ICacheStorage<T, R> Storage { get; private set; }
+		public ICacheStorage<T, R> Items { get; private set; }
 		private readonly CacheAutoStorage<T, R> AutoCache;
-		private IAccessObjectSync<T> Access;
+		public IAccessObjectSync<T> Access { get; private set; }
 		private readonly DataAccessObject<T> DAO;
 		private readonly AutoAccessObject<T> AAO;
 		private readonly SqlBuilder<T> Builder;
@@ -77,7 +77,7 @@ namespace Dapper.Extra.Cache
 
 		public R this[T key, int commandTimeout = 30] {
 			get {
-				if (!((IDictionary<T, R>)Storage).TryGetValue(key, out R value)) {
+				if (!Items.TryGetValue(key, out R value)) {
 					value = Get(key, commandTimeout);
 				}
 				return value;
@@ -95,14 +95,14 @@ namespace Dapper.Extra.Cache
 		#region ICacheTable
 		public DbCacheTransaction BeginTransaction()
 		{
-			if (Access != AutoCache)
+			if (Access != AAO)
 				throw new InvalidOperationException("Cache is already part of a transaction.");
 			try {
 				DAO.Connection.Open();
 				DAO.Transaction = DAO.Connection.BeginTransaction();
 				DbCacheTransaction transaction = new DbCacheTransaction(DAO.Transaction);
 				CacheTransactionStorage<T, R> storage = new CacheTransactionStorage<T, R>(AutoCache.Cache, transaction, CreateFromKey, CloseTransaction);
-				Storage = storage;
+				Items = storage;
 				transaction.TransactionStorage.Add(storage);
 				Access = DAO;
 				return transaction;
@@ -118,11 +118,11 @@ namespace Dapper.Extra.Cache
 
 		public void BeginTransaction(DbCacheTransaction transaction)
 		{
-			if (Access != AutoCache)
+			if (Access != AAO)
 				throw new InvalidOperationException("Cache is already part of a transaction.");
 			DAO.Connection = transaction.Transaction.Connection;
 			DAO.Transaction = transaction.Transaction;
-			Storage = new CacheTransactionStorage<T, R>(AutoCache.Cache, transaction, CreateFromKey, CloseTransaction);
+			Items = new CacheTransactionStorage<T, R>(AutoCache.Cache, transaction, CreateFromKey, CloseTransaction);
 			Access = DAO;
 		}
 
@@ -132,7 +132,7 @@ namespace Dapper.Extra.Cache
 				DAO.Transaction.Dispose();
 				DAO.Connection.Close();
 				DAO.Transaction = null;
-				Storage = AutoCache;
+				Items = AutoCache;
 				Access = AAO;
 			}
 		}
@@ -149,7 +149,7 @@ namespace Dapper.Extra.Cache
 		public int BulkDelete(IEnumerable<object> keys, int commandTimeout = 30)
 		{
 			int count = Access.BulkDelete(keys, commandTimeout);
-			Storage.RemoveKeys(keys);
+			Items.RemoveKeys(keys);
 			return count;
 		}
 
@@ -162,7 +162,7 @@ namespace Dapper.Extra.Cache
 		public int BulkDelete(IEnumerable<T> objs, int commandTimeout = 30)
 		{
 			int count = Access.BulkDelete(objs, commandTimeout);
-			Storage.Remove(objs);
+			Items.Remove(objs);
 			return count;
 		}
 
@@ -175,7 +175,7 @@ namespace Dapper.Extra.Cache
 		public IEnumerable<R> BulkGet(IEnumerable<object> keys, int commandTimeout = 30)
 		{
 			IEnumerable<T> list = Access.BulkGet(keys, commandTimeout);
-			IEnumerable<R> result = Storage.Add(list);
+			IEnumerable<R> result = Items.Add(list);
 			return result;
 		}
 
@@ -188,7 +188,7 @@ namespace Dapper.Extra.Cache
 		public IEnumerable<R> BulkGet(IEnumerable<T> objs, int commandTimeout = 30)
 		{
 			IEnumerable<T> list = Access.BulkGet(objs, commandTimeout);
-			IEnumerable<R> result = Storage.Add(list);
+			IEnumerable<R> result = Items.Add(list);
 			return result;
 		}
 
@@ -199,17 +199,17 @@ namespace Dapper.Extra.Cache
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		public void BulkInsert(IEnumerable<T> objs, int commandTimeout = 30)
 		{
-			if(AutoKeyColumn != null) {
+			if (AutoKeyColumn != null) {
 				long maxAutoKey = MaxAutoKey();
 				Access.BulkInsert(objs, commandTimeout);
 				GetList("WHERE " + AutoKeyColumn.ColumnName + " > " + maxAutoKey, commandTimeout);
 			}
 			else {
 				Access.BulkInsert(objs, commandTimeout);
-				if(AutoSyncInsert)
+				if (AutoSyncInsert)
 					BulkGet(objs);
 				else
-					Storage.Add(objs);
+					Items.Add(objs);
 			}
 		}
 
@@ -247,7 +247,7 @@ namespace Dapper.Extra.Cache
 				BulkGet(objs);
 			else {
 				foreach (T obj in objs) {
-					if (((IDictionary<T, R>)Storage).TryGetValue(obj, out R item)) {
+					if (Items.TryGetValue(obj, out R item)) {
 						item.CacheValue = obj;
 					}
 				}
@@ -264,9 +264,9 @@ namespace Dapper.Extra.Cache
 		public int BulkUpsert(IEnumerable<T> objs, int commandTimeout = 30)
 		{
 			int count;
-			if(AutoKeyColumn != null) {
+			if (AutoKeyColumn != null) {
 				long maxAutoKey = MaxAutoKey();
-				Storage.Add(objs);
+				Items.Add(objs);
 				count = Access.BulkUpsert(objs, commandTimeout);
 				GetList("WHERE " + AutoKeyColumn.ColumnName + " > " + maxAutoKey, commandTimeout);
 			}
@@ -276,7 +276,7 @@ namespace Dapper.Extra.Cache
 					BulkGet(objs, commandTimeout);
 				}
 				else {
-					Storage.Add(objs);
+					Items.Add(objs);
 				}
 			}
 			return count;
@@ -295,7 +295,7 @@ namespace Dapper.Extra.Cache
 		public bool Delete(object key, int commandTimeout = 30)
 		{
 			bool success = Access.Delete(key, commandTimeout);
-			Storage.RemoveKey(key);
+			_ = Items.RemoveKey(key);
 			return success;
 		}
 
@@ -308,7 +308,7 @@ namespace Dapper.Extra.Cache
 		public bool Delete(T obj, int commandTimeout = 30)
 		{
 			bool success = Access.Delete(obj, commandTimeout);
-			Storage.RemoveKey(obj);
+			_ = Items.Remove(obj);
 			return success;
 		}
 
@@ -323,7 +323,7 @@ namespace Dapper.Extra.Cache
 		{
 			List<T> list = Access.GetList(whereCondition, param, true, commandTimeout).AsList();
 			int count = Access.DeleteList(whereCondition, param, commandTimeout);
-			Storage.Remove(list);
+			Items.Remove(list);
 			return count;
 		}
 
@@ -336,7 +336,7 @@ namespace Dapper.Extra.Cache
 		public R Get(object key, int commandTimeout = 30)
 		{
 			T obj = Access.Get(key, commandTimeout);
-			R item = Storage.Add(obj);
+			R item = obj == null ? null : Items.Add(obj);
 			return item;
 		}
 
@@ -349,69 +349,37 @@ namespace Dapper.Extra.Cache
 		public R Get(T obj, int commandTimeout = 30)
 		{
 			obj = Access.Get(obj, commandTimeout);
-			R item = Storage.Add(obj);
+			R item = obj == null ? null : Items.Add(obj);
 			return item;
 		}
 
 		/// <summary>
 		/// Selects the rows that match the given condition.
 		/// </summary>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows that match the given condition.</returns>
-		public IEnumerable<R> GetDistinct(string whereCondition = "", object param = null, int commandTimeout = 30)
-		{
-			List<T> list = Access.GetDistinct(whereCondition, param, true, commandTimeout).AsList();
-			List<R> result = Storage.Add(list);
-			return result;
-		}
-
-		/// <summary>
-		/// Selects the rows that match the given condition.
-		/// </summary>
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		public IEnumerable<R> GetDistinct(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30)
+		public IEnumerable<T> GetDistinct(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			List<T> list = Access.GetDistinct(columnFilter, whereCondition, param, true, commandTimeout).AsList();
-			List<R> result = Storage.Add(list);
-			return result;
+			return list;
 		}
 
 		/// <summary>
 		/// Selects the rows that match the given condition.
 		/// </summary>
 		/// <param name="limit">The maximum number of rows.</param>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows that match the given condition.</returns>
-		public IEnumerable<R> GetDistinctLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
-		{
-			List<T> list = Access.GetDistinctLimit(limit, whereCondition, param, true, commandTimeout).AsList();
-			List<R> result = Storage.Add(list);
-			return result;
-		}
-
-		/// <summary>
-		/// Selects the rows that match the given condition.
-		/// </summary>
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
-		/// <param name="limit">The maximum number of rows.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		public IEnumerable<R> GetDistinctLimit(Type columnFilter, int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
+		public IEnumerable<T> GetDistinctLimit(int limit, Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			List<T> list = Access.GetDistinctLimit(limit, whereCondition, param, true, commandTimeout).AsList();
-			List<R> result = Storage.Add(list);
-			return result;
+			List<T> list = Access.GetDistinctLimit(limit, columnFilter, whereCondition, param, true, commandTimeout).AsList();
+			return list;
 		}
 
 		/// <summary>
@@ -455,24 +423,23 @@ namespace Dapper.Extra.Cache
 		public IEnumerable<R> GetLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			List<T> list = Access.GetLimit(limit, whereCondition, param, true, commandTimeout).AsList();
-			List<R> result = Storage.Add(list);
+			List<R> result = Items.Add(list);
 			return result;
 		}
 
 		/// <summary>
 		/// Selects a limited number of rows that match the given condition.
 		/// </summary>
-		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>A limited number of rows that match the given condition.</returns>
-		public IEnumerable<R> GetLimit(Type columnFilter, int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
+		public IEnumerable<T> GetLimit(int limit, Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			List<T> list = Access.GetLimit(columnFilter, limit, whereCondition, param, true, commandTimeout).AsList();
-			List<R> result = Storage.Add(list);
-			return result;
+			List<T> list = Access.GetLimit(limit, columnFilter, whereCondition, param, true, commandTimeout).AsList();
+			return list;
 		}
 
 		/// <summary>
@@ -486,7 +453,7 @@ namespace Dapper.Extra.Cache
 		public IEnumerable<R> GetList(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			List<T> list = Access.GetList(whereCondition, param, true, commandTimeout).AsList();
-			List<R> result = Storage.Add(list);
+			List<R> result = Items.Add(list);
 			return result;
 		}
 
@@ -499,11 +466,10 @@ namespace Dapper.Extra.Cache
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		public IEnumerable<R> GetList(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30)
+		public IEnumerable<T> GetList(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
 			List<T> list = Access.GetList(columnFilter, whereCondition, param, true, commandTimeout).AsList();
-			List<R> result = Storage.Add(list);
-			return result;
+			return list;
 		}
 
 		/// <summary>
@@ -514,7 +480,7 @@ namespace Dapper.Extra.Cache
 		public R Insert(T obj, int commandTimeout = 30)
 		{
 			Access.Insert(obj, commandTimeout);
-			R item = Storage.Add(obj);
+			R item = Items.Add(obj);
 			return item;
 		}
 
@@ -529,7 +495,7 @@ namespace Dapper.Extra.Cache
 			if (!Access.InsertIfNotExists(obj, commandTimeout)) {
 				return null;
 			}
-			R item = Storage.Add(obj);
+			R item = Items.Add(obj);
 			return item;
 		}
 
@@ -570,11 +536,11 @@ namespace Dapper.Extra.Cache
 				Type type = obj.GetType();
 				if (!mappers.TryGetValue(type, out ObjectMapper mapper)) {
 					mapper = Reflect.Mapper(type, typeof(T), Info.KeyColumns.Select(c => c.Property.Name).ToArray());
-					mappers.TryAdd(type, mapper);
+					_ = mappers.TryAdd(type, mapper);
 				}
 				T value = (T)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(T));
 				mapper(obj, value);
-				if (((IDictionary<T, R>)Storage).TryGetValue(value, out R item)) {
+				if (Items.TryGetValue(value, out R item)) {
 					mapper(obj, item.CacheValue);
 				}
 			}
@@ -591,8 +557,8 @@ namespace Dapper.Extra.Cache
 		public bool Update(T obj, int commandTimeout = 30)
 		{
 			bool success = Access.Update(obj, commandTimeout);
-			if(success) {
-				Storage.Add(obj);
+			if (success) {
+				_ = Items.Add(obj);
 			}
 			return success;
 		}
@@ -606,7 +572,7 @@ namespace Dapper.Extra.Cache
 		public bool Upsert(T obj, int commandTimeout = 30)
 		{
 			bool success = Access.Upsert(obj, commandTimeout);
-			_ = Storage.Add(obj);
+			_ = Items.Add(obj);
 			return success;
 		}
 

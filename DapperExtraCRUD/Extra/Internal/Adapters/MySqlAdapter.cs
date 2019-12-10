@@ -24,6 +24,11 @@
 // SOFTWARE.
 #endregion
 
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using Fasterflect;
+
 namespace Dapper.Extra.Internal.Adapters
 {
 	internal class MySqlAdapter : SqlAdapterImpl
@@ -45,5 +50,14 @@ namespace Dapper.Extra.Internal.Adapters
 			LimitQuery = @"{1}
 LIMIT {0}";
 		}
+
+		//public override void BulkInsert<T>(IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction, string tableName, DataReaderFactory factory, IEnumerable<SqlColumn> columns, int commandTimeout = 30, SqlBulkCopyOptions options = SqlBulkCopyOptions.Default)
+		//{
+		//	https://dev.mysql.com/doc/refman/8.0/en/load-data.html
+		//	@"C:\Program Files (x86)\MySQL\MySQL Server 5.0\bin\mysql.exe",
+		//	LOAD DATA INFILE 'file.txt' INTO TABLE table;
+		//	FIELDS TERMINATED BY '\t' ENCLOSED BY '' ESCAPED BY '\\'
+		//	LINES TERMINATED BY '\n' STARTING BY ''
+		//}
 	}
 }

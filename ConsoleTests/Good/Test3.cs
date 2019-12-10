@@ -131,5 +131,10 @@ CREATE TABLE [dbo].[Test3](
 		{
 			return Equals(other) && Col4 == other.Col4;
 		}
+
+		public Test3 Clone()
+		{
+			return (Test3) MemberwiseClone();
+		}
 	}
 }

@@ -41,7 +41,7 @@ namespace Dapper.Extra.Cache
 		where T : class
 		where R : CacheItem<T>, new()
 	{
-		ICacheStorage<T, R> Storage { get; }
+		ICacheStorage<T, R> Items { get; }
 
 		R this[object key, int commandTimeout = 30] { get; }
 		R this[T obj, int commandTimeout = 30] { get; }
@@ -159,42 +159,23 @@ namespace Dapper.Extra.Cache
 		/// <summary>
 		/// Selects the rows that match the given condition.
 		/// </summary>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<R> GetDistinct(string whereCondition = "", object param = null, int commandTimeout = 30);
-
-		/// <summary>
-		/// Selects the rows that match the given condition.
-		/// </summary>
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<R> GetDistinct(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30);
+		IEnumerable<T> GetDistinct(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows that match the given condition.
 		/// </summary>
 		/// <param name="limit">The maximum number of rows.</param>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<R> GetDistinctLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30);
-
-		/// <summary>
-		/// Selects the rows that match the given condition.
-		/// </summary>
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
-		/// <param name="limit">The maximum number of rows.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<R> GetDistinctLimit(Type columnFilter, int limit, string whereCondition = "", object param = null, int commandTimeout = 30);
+		IEnumerable<T> GetDistinctLimit(int limit, Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows with the given keys.
@@ -228,13 +209,13 @@ namespace Dapper.Extra.Cache
 		/// <summary>
 		/// Selects a limited number of rows that match the given condition.
 		/// </summary>
+		///  <param name="limit">The maximum number of rows.</param>
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
-		/// <param name="limit">The maximum number of rows.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>A limited number of rows that match the given condition.</returns>
-		IEnumerable<R> GetLimit(Type columnFilter, int limit, string whereCondition = "", object param = null,  int commandTimeout = 30);
+		IEnumerable<T> GetLimit(int limit, Type columnFilter, string whereCondition = "", object param = null,  int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows that match the given condition.
@@ -253,7 +234,7 @@ namespace Dapper.Extra.Cache
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<R> GetList(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30);
+		IEnumerable<T> GetList(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		/// <summary>
 		/// Inserts a row.

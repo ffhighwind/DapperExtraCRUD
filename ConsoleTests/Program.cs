@@ -32,6 +32,7 @@ using System.Linq.Expressions;
 using Dapper;
 using Dapper.Extra;
 using Dapper.Extra.Utilities;
+using Dapper.Extra.Cache;
 
 namespace UnitTests
 {
@@ -48,7 +49,7 @@ namespace UnitTests
 				Recreate<TestDTO2>(conn, null);
 				Recreate<Test3>(conn, null);
 				Recreate<TestDTO4>(conn, null);
-
+				/*
 				DoTests<TestDTO>(() => new TestDTO(random), (t) => t.UpdateRandomize(random), new TestDTOfilter());
 				DoTests<TestDTO2>(() => new TestDTO2(random), (t) => t.UpdateRandomize(random), new TestDTO2filter());
 				DoTests<Test3>(() => new Test3(random), (t) => t.UpdateRandomize(random), new Test3filter());
@@ -56,6 +57,12 @@ namespace UnitTests
 
 				DoTests<TestDTO, int>(conn);
 				DoTests<TestDTO4, int>(conn);
+				*/
+
+				DoCacheTests<TestDTO>(() => new TestDTO(random));
+				DoCacheTests<TestDTO2>(() => new TestDTO2(random));
+				DoCacheTests<Test3>(() => new Test3(random));
+				DoCacheTests<TestDTO4>(() => new TestDTO4(random));
 
 				DropTable<TestDTO>(conn);
 				DropTable<TestDTO2>(conn);
@@ -83,6 +90,80 @@ namespace UnitTests
 			List<T> list = map.Values.ToList();
 			list.Sort((x, y) => x.CompareTo(y));
 			return list;
+		}
+
+		public static List<T> CloneList<T>(List<T> list) where T : class, IDto<T>
+		{
+			List<T> list2 = new List<T>();
+			for (int i = 0; i < list.Count; i++) {
+				list2.Add(list[i].Clone());
+			}
+			return list2;
+		}
+
+		public static void DoCacheTests<T>(Func<T> constructor) where T : class, IDto<T>, new()
+		{
+			DbCache cache = new DbCache(ConnString);
+			DbCacheTable<T, CacheItem<T>> table = cache.CreateTable<T>();
+			Random random = new Random(512851);
+			List<T> list = CreateList<T>(50, () => constructor());
+
+			CacheInsert(table, list);
+			CacheDelete(table, list);
+		}
+
+		public static void CacheInsert<T>(DbCacheTable<T, CacheItem<T>> table, List<T> list) where T : class, IDto<T>, new()
+		{
+			list = CloneList(list);
+			for (int i = 0; i < list.Count; i++) {
+				table.Insert(list[i]);
+				if (!table.Access.Get(list[i]).IsInserted(list[i])) {
+					throw new InvalidOperationException();
+				}
+				using (DbCacheTransaction trans = table.BeginTransaction()) {
+					for (int j = i + 1; j < i + 5 && j < list.Count; j++) {
+						table.Insert(list[j]);
+						if (table.Items.Count != table.RecordCount()) {
+							throw new InvalidOperationException();
+						}
+					}
+				}
+				if (table.Items.Count != table.RecordCount()) {
+					throw new InvalidOperationException();
+				}
+			}
+			table.DeleteList();
+		}
+
+		public static void CacheDelete<T>(DbCacheTable<T, CacheItem<T>> table, List<T> list) where T : class, IDto<T>, new()
+		{
+			list = CloneList(list);
+			for (int i = 0; i < list.Count; i++) {
+				table.Insert(list[i]);
+			}
+			if (table.Items.Count != table.RecordCount()) {
+				throw new InvalidOperationException();
+			}
+			for (int i = 0; i < list.Count; i++) {
+				table.Delete(list[i]);
+				using (DbCacheTransaction trans = table.BeginTransaction()) {
+					for (int j = i + 1; j < i + 5 && j < list.Count; j++) {
+						table.Delete(list[j]);
+						if (table.Items.Count != table.RecordCount()) {
+							throw new InvalidOperationException();
+						}
+						foreach(var item in table.Access.GetList()) {
+							if(!table.Items.Contains(item)) {
+								throw new InvalidOperationException();
+							}
+						}
+					}
+				}
+				if (table.Items.Count != table.RecordCount()) {
+					throw new InvalidOperationException();
+				}
+			}
+			table.DeleteList();
 		}
 
 		public static void DoTests<T>(Func<T> constructor, Func<T, T> randomize, IFilter<T> filter) where T : class, IDto<T>, new()
@@ -389,7 +470,7 @@ DROP TABLE dbo.{tableName};";
 		{
 			int max = Math.Min(list.Count, 10);
 			for (int i = 0; i < max; i++) {
-				List<T> items = conn.GetLimit<T>(filter.GetType(), i, "", null, trans).AsList();
+				List<T> items = conn.GetLimit<T>(i, filter.GetType(), "", null, trans).AsList();
 				if (items.Count != i)
 					throw new InvalidOperationException();
 			}
@@ -452,7 +533,7 @@ DROP TABLE dbo.{tableName};";
 		{
 			//requires IgnoreSelect to be useful
 			Dictionary<T, T> map = CreateMap<T>(list);
-			List<T> list2 = conn.GetDistinct<T>(trans).AsList();
+			List<T> list2 = conn.GetDistinct<T>(typeof(T), trans).AsList();
 			if (map.Count != list2.Count)
 				throw new InvalidOperationException();
 			foreach (T item in list2) {
@@ -467,7 +548,7 @@ DROP TABLE dbo.{tableName};";
 			int max = Math.Min(list.Count, 10);
 			for (int i = 2; i < max; i++) {
 				Dictionary<T, T> map = CreateMap<T>(list);
-				List<T> list2 = conn.GetDistinctLimit<T>(i, trans).AsList();
+				List<T> list2 = conn.GetDistinctLimit<T>(i, typeof(T), trans).AsList();
 				if (list2.Count != i)
 					throw new InvalidOperationException();
 				foreach (T item in list2) {
@@ -483,7 +564,7 @@ DROP TABLE dbo.{tableName};";
 			int max = Math.Min(list.Count, 10);
 			for (int i = 2; i < max; i++) {
 				Dictionary<T, T> map = CreateMap<T>(list);
-				List<T> list2 = conn.GetDistinctLimit<T>(filter.GetType(), i, "", null, trans).AsList();
+				List<T> list2 = conn.GetDistinctLimit<T>(i, filter.GetType(), trans).AsList();
 				if (list2.Count == 0)
 					throw new InvalidOperationException();
 			}

@@ -641,7 +641,7 @@ namespace Dapper.Extra.Internal
 		private DbTypeLimitList<T> CreateGetDistinctLimit()
 		{
 			string limitQuery = Adapter.LimitQuery;
-			return (connection, type, limit, whereCondition, param, transaction, buffered, commandTimeout) => {
+			return (connection, limit, type, whereCondition, param, transaction, buffered, commandTimeout) => {
 				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
 					paramsSelect = CreateParamsSelect(type);
 				}
@@ -655,7 +655,7 @@ namespace Dapper.Extra.Internal
 		private DbTypeLimitList<T> CreateGetFilterLimit()
 		{
 			string limitQuery = Info.Adapter.LimitQuery;
-			return (connection, type, limit, whereCondition, param, transaction, buffered, commandTimeout) => {
+			return (connection, limit, type, whereCondition, param, transaction, buffered, commandTimeout) => {
 				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
 					paramsSelect = CreateParamsSelect(type);
 				}

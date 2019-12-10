@@ -116,5 +116,10 @@ CREATE TABLE [dbo].[Test4](
 			clone.FirstName = random.Next().ToString();
 			return clone;
 		}
+
+		public TestDTO4 Clone()
+		{
+			return (TestDTO4)MemberwiseClone();
+		}
 	}
 }

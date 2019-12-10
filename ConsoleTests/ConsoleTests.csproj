@@ -67,6 +67,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DapperExtraCRUD.Cache\DapperExtraCRUD.Cache.csproj">
+      <Project>{3059ba7e-5590-4bbc-a38e-1aedc7d8a8a1}</Project>
+      <Name>DapperExtraCRUD.Cache</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DapperExtraCRUD\DapperExtraCRUD.csproj">
       <Project>{4dbe71c1-2ecd-4192-bc66-e4d1c8dcec08}</Project>
       <Name>DapperExtraCRUD</Name>

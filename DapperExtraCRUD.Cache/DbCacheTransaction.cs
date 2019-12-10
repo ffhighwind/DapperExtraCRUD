@@ -62,7 +62,7 @@ namespace Dapper.Extra.Cache
 		public void Rollback()
 		{
 			foreach (IDbTransaction storage in TransactionStorage) {
-				storage.Rollback();
+				storage.Dispose();
 			}
 			Transaction.Rollback();
 		}
@@ -75,8 +75,8 @@ namespace Dapper.Extra.Cache
 			if (!disposedValue) {
 				if (disposing) {
 					// TODO: dispose managed state (managed objects).
-					Transaction.Dispose();
 					Rollback();
+					Transaction.Dispose();
 				}
 				// TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
 				// TODO: set large fields to null.

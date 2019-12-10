@@ -148,16 +148,6 @@ namespace Dapper.Extra.Utilities
 		/// <summary>
 		/// Selects the rows that match the given condition.
 		/// </summary>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<T> GetDistinct(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
-
-		/// <summary>
-		/// Selects the rows that match the given condition.
-		/// </summary>
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
@@ -170,24 +160,13 @@ namespace Dapper.Extra.Utilities
 		/// Selects the rows that match the given condition.
 		/// </summary>
 		/// <param name="limit">The maximum number of rows.</param>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
-		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<T> GetDistinctLimit(int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
-
-		/// <summary>
-		/// Selects the rows that match the given condition.
-		/// </summary>
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
-		/// <param name="limit">The maximum number of rows.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		IEnumerable<T> GetDistinctLimit(Type columnFilter, int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<T> GetDistinctLimit(int limit, Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows with the given keys.
@@ -224,14 +203,14 @@ namespace Dapper.Extra.Utilities
 		/// <summary>
 		/// Selects a limited number of rows that match the given condition.
 		/// </summary>
-		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>A limited number of rows that match the given condition.</returns>
-		IEnumerable<T> GetLimit(Type columnFilter, int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
+		IEnumerable<T> GetLimit(int limit, Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows that match the given condition.
