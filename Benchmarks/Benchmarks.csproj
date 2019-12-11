@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{965BB116-B0E0-4BAC-B1D3-C1F573420F37}</ProjectGuid>
+    <ProjectGuid>{5D35001D-5C45-4035-9484-8CD3D2EDAAF8}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>UnitTests</RootNamespace>
-    <AssemblyName>ConsoleTests</AssemblyName>
+    <RootNamespace>Benchmarks</RootNamespace>
+    <AssemblyName>Benchmarks</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -33,6 +33,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="BenchmarkDotNet, Version=0.12.0.0, Culture=neutral, PublicKeyToken=aa0ca2f9092cefc4, processorArchitecture=MSIL">
+      <HintPath>..\packages\BenchmarkDotNet.0.12.0\lib\netstandard2.0\BenchmarkDotNet.dll</HintPath>
+    </Reference>
+    <Reference Include="BenchmarkDotNet.Annotations, Version=0.12.0.0, Culture=neutral, PublicKeyToken=aa0ca2f9092cefc4, processorArchitecture=MSIL">
+      <HintPath>..\packages\BenchmarkDotNet.Annotations.0.12.0\lib\netstandard2.0\BenchmarkDotNet.Annotations.dll</HintPath>
+    </Reference>
     <Reference Include="CommandLine, Version=2.4.3.0, Culture=neutral, PublicKeyToken=de6f01bd326f8c32, processorArchitecture=MSIL">
       <HintPath>..\packages\CommandLineParser.2.4.3\lib\netstandard2.0\CommandLine.dll</HintPath>
     </Reference>
@@ -176,31 +182,17 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bad\Bad1.cs" />
-    <Compile Include="Bad\Bad2.cs" />
-    <Compile Include="Good\IDto.cs" />
-    <Compile Include="Good\IDtoKey.cs" />
-    <Compile Include="Good\IFilter.cs" />
-    <Compile Include="Good\Test3.cs" />
-    <Compile Include="Good\Test3filter.cs" />
-    <Compile Include="Good\TestDTO.cs" />
-    <Compile Include="Good\TestDTO2.cs" />
-    <Compile Include="Good\TestDTO2filter.cs" />
-    <Compile Include="Good\TestDTO4.cs" />
-    <Compile Include="Good\TestDTO4filter.cs" />
-    <Compile Include="Good\TestDTOfilter.cs" />
+    <Compile Include="Employee.cs" />
+    <Compile Include="Inserts.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Simple.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Benchmarks\Benchmarks.csproj">
-      <Project>{5d35001d-5c45-4035-9484-8cd3d2edaaf8}</Project>
-      <Name>Benchmarks</Name>
-    </ProjectReference>
     <ProjectReference Include="..\DapperExtraCRUD.Cache\DapperExtraCRUD.Cache.csproj">
       <Project>{3059ba7e-5590-4bbc-a38e-1aedc7d8a8a1}</Project>
       <Name>DapperExtraCRUD.Cache</Name>

@@ -33,12 +33,12 @@ using Fasterflect;
 
 namespace Dapper.Extra.Internal.Adapters
 {
-	internal class SqlServerAdapter : SqlAdapterImpl
+	public class SqlServerAdapter : SqlAdapterImpl
 	{
 		/// <summary>
 		/// Initializes a new instance of the <see cref="SqlServerAdapter"/> class.
 		/// </summary>
-		public SqlServerAdapter() : base(SqlSyntax.SQLServer)
+		internal SqlServerAdapter() : base(SqlSyntax.SQLServer)
 		{
 			QuoteLeft = "[";
 			QuoteRight = "]";

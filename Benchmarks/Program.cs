@@ -24,36 +24,19 @@
 // SOFTWARE.
 #endregion
 
-namespace Dapper.Extra.Internal.Adapters
-{
-	public class MySqlAdapter : SqlAdapterImpl
-	{
-		/// <summary>
-		/// Initializes a new instance of the <see cref="MySqlAdapter"/> class.
-		/// </summary>
-		internal MySqlAdapter() : base(SqlSyntax.MySQL)
-		{
-			QuoteLeft = "`";
-			QuoteRight = "`";
-			EscapeQuote = "``";
-			SelectIntIdentityQuery = "SELECT LAST_INSERT_ID() as `Id`;";
-			DropTempTableIfExistsQuery = "DROP TEMPORARY TABLE IF EXISTS {0};";
-			TruncateTableQuery = "TRUNCATE TABLE {0};";
-			CreateTempTable = @"CREATE TEMPORARY TABLE {0}
-";
-			TempTableName = "_{0}";
-			LimitQuery = @"{1}
-LIMIT {0}";
-		}
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Diagnosers;
+using BenchmarkDotNet.Running;
 
-		//public override void BulkInsert<T>(IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction, string tableName, DataReaderFactory factory, 
-		//	IEnumerable<SqlColumn> columns, int commandTimeout = 30, SqlBulkCopyOptions options = SqlBulkCopyOptions.Default)
-		//{
-		//	https://dev.mysql.com/doc/refman/8.0/en/load-data.html
-		//	@"C:\Program Files (x86)\MySQL\MySQL Server 5.0\bin\mysql.exe",
-		//	LOAD DATA INFILE 'file.txt' INTO TABLE table;
-		//	FIELDS TERMINATED BY '\t' ENCLOSED BY '' ESCAPED BY '\\'
-		//	LINES TERMINATED BY '\n' STARTING BY ''
-		//}
+namespace Benchmarks
+{
+	[MemoryDiagnoser]
+	public class Program
+	{
+		public static void Main()
+		{
+			// Produces benchmark data in bin\Release\BenchmarkDotNet.Artifacts\results
+			_ = BenchmarkRunner.Run<Inserts>();
+		}
 	}
 }

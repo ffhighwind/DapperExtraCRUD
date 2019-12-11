@@ -40,6 +40,5 @@ namespace Dapper.Extra.Cache
 		bool Contains(T value);
 		bool ContainsKey(object key);
 		bool TryAdd(T value);
-		R GetOrAdd(T value);
 	}
 }

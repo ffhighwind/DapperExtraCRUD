@@ -204,11 +204,5 @@ namespace Dapper.Extra.Cache.Internal
 			bool success = Cache.TryAdd(value, item);
 			return success;
 		}
-
-		public R GetOrAdd(T value)
-		{
-			R item = Cache.GetOrAdd(value, AddValueFactory);
-			return item;
-		}
 	}
 }

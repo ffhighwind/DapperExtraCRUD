@@ -26,7 +26,7 @@
 
 namespace Dapper.Extra.Internal.Adapters
 {
-	internal class SqlLiteAdapter : SqlAdapterImpl
+	public class SqlLiteAdapter : SqlAdapterImpl
 	{
 		/// <summary>
 		/// Initializes a new instance of the <see cref="SqlLiteAdapter"/> class.
@@ -47,7 +47,8 @@ DELETE FROM SQLITE_SEQUENCE WHERE name='{0}'"; // resets autoincrement
 LIMIT {0}";
 		}
 
-		//public override void BulkInsert<T>(IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction, string tableName, DataReaderFactory factory, IEnumerable<SqlColumn> columns, int commandTimeout = 30, SqlBulkCopyOptions options = SqlBulkCopyOptions.Default)
+		//public override void BulkInsert<T>(IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction, string tableName, DataReaderFactory factory, 
+		//	IEnumerable<SqlColumn> columns, int commandTimeout = 30, SqlBulkCopyOptions options = SqlBulkCopyOptions.Default)
 		//{
 		//	EXEC sqlite3.exe csvfile table
 		//}

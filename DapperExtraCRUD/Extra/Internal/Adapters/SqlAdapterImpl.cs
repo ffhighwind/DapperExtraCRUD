@@ -32,13 +32,13 @@ using Fasterflect;
 
 namespace Dapper.Extra.Internal.Adapters
 {
-	internal abstract class SqlAdapterImpl : ISqlAdapter
+	public abstract class SqlAdapterImpl : ISqlAdapter
 	{
 		/// <summary>
 		/// Initializes a new instance of the <see cref="SqlAdapterImpl"/> class.
 		/// </summary>
 		/// <param name="syntax">The syntax<see cref="SqlSyntax"/></param>
-		protected SqlAdapterImpl(SqlSyntax syntax)
+		internal SqlAdapterImpl(SqlSyntax syntax)
 		{
 			Syntax = syntax;
 		}

@@ -34,8 +34,8 @@
     <Reference Include="Dapper, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Dapper.2.0.30\lib\net461\Dapper.dll</HintPath>
     </Reference>
-    <Reference Include="Fasterflect.Reflect, Version=3.0.2.0, Culture=neutral, PublicKeyToken=a1fa75de836f6938, processorArchitecture=MSIL">
-      <HintPath>..\packages\Fasterflect.Reflect.3.0.2\lib\net45\Fasterflect.Reflect.dll</HintPath>
+    <Reference Include="Fasterflect.Reflect, Version=3.1.0.0, Culture=neutral, PublicKeyToken=a1fa75de836f6938, processorArchitecture=MSIL">
+      <HintPath>..\packages\Fasterflect.Reflect.3.1.0\lib\net45\Fasterflect.Reflect.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

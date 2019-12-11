@@ -33,6 +33,9 @@ using Dapper;
 using Dapper.Extra;
 using Dapper.Extra.Utilities;
 using Dapper.Extra.Cache;
+using Dapper.Extra.Internal;
+using System.Text;
+using Benchmarks;
 
 namespace UnitTests
 {
@@ -42,7 +45,41 @@ namespace UnitTests
 
 		public static void Main()
 		{
-			Random random = new Random(123512);
+			Random random = new Random(125125);
+			const int Count = 10000;
+			var info = Dapper.Extra.ExtraCrud.TypeInfo<Employee>();
+			List<SqlColumn> columns = info.Columns.Where(c => !c.IsAutoKey).ToList();
+			int max = (2050 / columns.Count) * columns.Count;
+			StringBuilder sb = new StringBuilder("INSERT INTO [dbo].[Employees] (" + string.Join(",", columns.Select(c => c.ColumnName)) + @") VALUES 
+");
+			DynamicParameters dynParams = new DynamicParameters();
+			for (int j = 0; j < max; ) {
+				sb.Append('(');
+				Employee employee = Employee.Create(random);
+				for (int k = 0; k < columns.Count; k++, j++) {
+					string name = "@p" + j;
+					sb.Append(name).Append(',');
+					dynParams.Add(name, columns[k].Getter(employee));
+				}
+				sb.Remove(sb.Length - 1, 1).Append(@"),");
+			}
+			string cmd = sb.Remove(sb.Length - 1, 1).ToString();
+
+			using (SqlConnection conn = new SqlConnection(ConnString)) {
+				for (int i = 0; i < Count; i += max) {
+					conn.Execute(cmd, dynParams);
+				}
+				try {
+					conn.Truncate<Employee>();
+				}
+				catch {
+					conn.DeleteList<Employee>();
+				}
+			}
+
+
+
+			//Random random = new Random(123512);
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
 				conn.Open();
 				Recreate<TestDTO>(conn, null);
@@ -152,8 +189,8 @@ namespace UnitTests
 						if (table.Items.Count != table.RecordCount()) {
 							throw new InvalidOperationException();
 						}
-						foreach(var item in table.Access.GetList()) {
-							if(!table.Items.Contains(item)) {
+						foreach (var item in table.Access.GetList()) {
+							if (!table.Items.Contains(item)) {
 								throw new InvalidOperationException();
 							}
 						}
