@@ -36,22 +36,22 @@ namespace Dapper.Extra.Internal
 		/// <summary>
 		/// An <see cref="SqlAdapter"/> that generates SQL commands for MySQL.
 		/// </summary>
-		public static readonly MySqlAdapter MySQL = new MySqlAdapter();
+		public static readonly ISqlAdapter MySQL = new MySqlAdapter();
 
 		/// <summary>
 		/// An <see cref="SqlAdapter"/> that generates SQL commands for PostgreSQL.
 		/// </summary>
-		public static readonly PostgreSqlAdapter PostgreSQL = new PostgreSqlAdapter();
+		public static readonly ISqlAdapter PostgreSQL = new PostgreSqlAdapter();
 
 		/// <summary>
 		/// An <see cref="SqlAdapter"/> that generates SQL commands for SQLite.
 		/// </summary>
-		public static readonly SqlLiteAdapter SQLite = new SqlLiteAdapter();
+		public static readonly ISqlAdapter SQLite = new SqlLiteAdapter();
 
 		/// <summary>
 		/// An <see cref="SqlAdapter"/> that generates SQL commands for Microsoft SQL Server.
 		/// </summary>
-		public static readonly SqlServerAdapter SQLServer = new SqlServerAdapter();
+		public static readonly ISqlAdapter SQLServer = new SqlServerAdapter();
 
 		/// <summary>
 		/// Gets the <see cref="SqlAdapter"/> that matches a given <see cref="SqlSyntax"/>.

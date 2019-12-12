@@ -26,7 +26,10 @@
 
 namespace Dapper.Extra.Internal.Adapters
 {
-	public class PostgreSqlAdapter : SqlAdapterImpl
+	/// <summary>
+	/// An <see cref="SqlAdapter"/> that generates SQL commands for PostgreSQL.
+	/// </summary>
+	internal class PostgreSqlAdapter : SqlAdapterImpl
 	{
 		/// <summary>
 		/// Initializes a new instance of the <see cref="PostgreSqlAdapter"/> class.

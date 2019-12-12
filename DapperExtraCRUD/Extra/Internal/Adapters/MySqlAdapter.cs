@@ -26,10 +26,13 @@
 
 namespace Dapper.Extra.Internal.Adapters
 {
-	public class MySqlAdapter : SqlAdapterImpl
+	/// <summary>
+	/// An <see cref="SqlAdapter"/> that generates SQL commands for MySQL.
+	/// </summary>
+	internal class MySqlAdapter : SqlAdapterImpl
 	{
 		/// <summary>
-		/// Initializes a new instance of the <see cref="MySqlAdapter"/> class.
+		/// An <see cref="SqlAdapter"/> that generates SQL commands for MySQL.
 		/// </summary>
 		internal MySqlAdapter() : base(SqlSyntax.MySQL)
 		{

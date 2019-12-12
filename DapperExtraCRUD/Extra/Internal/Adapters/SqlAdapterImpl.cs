@@ -32,7 +32,7 @@ using Fasterflect;
 
 namespace Dapper.Extra.Internal.Adapters
 {
-	public abstract class SqlAdapterImpl : ISqlAdapter
+	internal abstract class SqlAdapterImpl : ISqlAdapter
 	{
 		/// <summary>
 		/// Initializes a new instance of the <see cref="SqlAdapterImpl"/> class.

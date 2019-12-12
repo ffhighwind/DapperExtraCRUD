@@ -33,7 +33,10 @@ using Fasterflect;
 
 namespace Dapper.Extra.Internal.Adapters
 {
-	public class SqlServerAdapter : SqlAdapterImpl
+	/// <summary>
+	/// An <see cref="SqlAdapter"/> that generates SQL commands for Microsoft SQL Server.
+	/// </summary>
+	internal class SqlServerAdapter : SqlAdapterImpl
 	{
 		/// <summary>
 		/// Initializes a new instance of the <see cref="SqlServerAdapter"/> class.

@@ -47,9 +47,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Extra\Internal\Adapters\OracleAdapter.cs" />
+    <Compile Remove="Extra\Utilities\UtilExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Extra\Internal\Adapters\OracleAdapter.cs" />
+    <None Include="Extra\Utilities\UtilExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

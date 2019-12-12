@@ -112,7 +112,7 @@ namespace Dapper.Extra.Internal
 	/// <param name="transaction">The transaction to use for this query.</param>
 	/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 	/// <returns>The rows with the given keys.</returns>
-	public delegate IEnumerable<T> DbListList<T>(IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
+	public delegate List<T> DbListList<T>(IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
 		where T : class;
 
 	/// <summary>

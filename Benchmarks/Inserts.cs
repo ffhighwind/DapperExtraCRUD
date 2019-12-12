@@ -52,7 +52,7 @@ namespace Benchmarks
 		public bool InsertManyExtra()
 		{
 			Random random = new Random(125125);
-            var info = Dapper.Extra.ExtraCrud.TypeInfo<Employee>();
+            SqlTypeInfo info = Dapper.Extra.ExtraCrud.TypeInfo<Employee>();
             List<SqlColumn> columns = info.Columns.Where(c => !c.IsAutoKey).ToList();
             int max = (2050 / columns.Count) * columns.Count;
             StringBuilder sb = new StringBuilder("INSERT INTO [dbo].[Employees] (" + string.Join(",", columns.Select(c => c.ColumnName)) + @") VALUES 

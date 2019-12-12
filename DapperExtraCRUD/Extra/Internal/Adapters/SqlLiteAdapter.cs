@@ -26,7 +26,10 @@
 
 namespace Dapper.Extra.Internal.Adapters
 {
-	public class SqlLiteAdapter : SqlAdapterImpl
+	/// <summary>
+	/// An <see cref="SqlAdapter"/> that generates SQL commands for Sqlite.
+	/// </summary>
+	internal class SqlLiteAdapter : SqlAdapterImpl
 	{
 		/// <summary>
 		/// Initializes a new instance of the <see cref="SqlLiteAdapter"/> class.

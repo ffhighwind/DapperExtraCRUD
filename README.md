@@ -7,9 +7,6 @@ allow customization and improved performance.
 
 # Example:
 
-#### Note: 
-This example is not a recommendation on how to design a database table.
-
 ```sql
 CREATE TABLE [dbo].[Users](
 	[UserID] [int] NOT NULL,
@@ -206,11 +203,6 @@ This generates SQL WHERE conditions from a Linq.Expression<Predicate<T>>. It can
 The main reason to use this utility is if you need a type-safe query or need to map a predicate to SQL command. Specifically, I have used this to remove items 
 from a dictionary after deleting rows from a database. It is not well tested, so I do not recommend using it in a production environment.
 
-#### Partition<T>(this IEnumerable<T> source, int size)
-
-This extension is used internally by the KeyType queries in order to get around Dapper's limitation of 2100 parameters. You should not need to use this with any DapperExtraCRUD methods, but you may 
-need it for Dapper queries.
-
 # Tip:
 
 Use a view if you need joins. If this is not sufficient then you can use Dapper's multi-mapping queries or manually map the results.
@@ -225,8 +217,8 @@ these are accessed. This can be prevented by storing a reference to each delegat
 # Future Plans
 
 * ITypeHandler tests
-* Other RDBMS tests (SqlSyntax)
-* Thread-safe bulk operations. These are thread safe for SQL Server, but not others.
+* Other RDBMS tests
+* Bulk operations for other RDBMS.
 * Multi-Mapping/Joins
 * Paged results
 

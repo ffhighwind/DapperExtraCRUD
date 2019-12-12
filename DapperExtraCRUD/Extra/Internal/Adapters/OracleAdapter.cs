@@ -26,7 +26,10 @@
 
 namespace Dapper.Extra.Internal.Adapters
 {
-    internal class OracleAdapter : SqlAdapterImpl
+	/// <summary>
+	/// An <see cref="SqlAdapter"/> that generates SQL commands for Oracle.
+	/// </summary>
+	internal class OracleAdapter : SqlAdapterImpl
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="OracleAdapter"/> class.
