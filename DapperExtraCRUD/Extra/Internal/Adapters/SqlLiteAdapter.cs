@@ -34,7 +34,7 @@ namespace Dapper.Extra.Internal.Adapters
 		/// <summary>
 		/// Initializes a new instance of the <see cref="SqlLiteAdapter"/> class.
 		/// </summary>
-		internal SqlLiteAdapter() : base(SqlSyntax.SQLite)
+		internal SqlLiteAdapter() : base(SqlDialect.SQLite)
 		{
 			QuoteLeft = "\"";
 			QuoteRight = "\"";

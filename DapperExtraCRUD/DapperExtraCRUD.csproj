@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net451;netstandard2.0;netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp2.0;net451</TargetFrameworks>
     <AssemblyName>Dapper.ExtraCRUD</AssemblyName>
     <Version>1.0.0</Version>
     <Authors>Wesley Hamilton</Authors>
@@ -45,10 +45,12 @@
   <PropertyGroup Condition="'$(TargetFramework)'=='net451'">
     <DefineConstants>NETFRAMEWORK;NET45</DefineConstants>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Remove="Extra\Internal\Adapters\OracleAdapter.cs" />
     <Compile Remove="Extra\Utilities\UtilExtensions.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <None Include="Extra\Internal\Adapters\OracleAdapter.cs" />
     <None Include="Extra\Utilities\UtilExtensions.cs" />
@@ -59,7 +61,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
-    <PackageReference Include="Dapper" Version="2.0.30" />
     <PackageReference Include="Microsoft.CSharp" Version="4.6.0" />
     <PackageReference Include="System.ComponentModel" Version="4.3.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.7.0" />

@@ -56,9 +56,9 @@ namespace Dapper.Extra
 		private static readonly ConcurrentDictionary<Type, object> QueriesCache = new ConcurrentDictionary<Type, object>();
 
 		/// <summary>
-		/// The default syntax for tables without a <see cref="Dapper.Extra.Annotations.TableAttribute"/>.
+		/// The default dialect for tables without a <see cref="Dapper.Extra.Annotations.TableAttribute"/>.
 		/// </summary>
-		public static SqlSyntax Syntax { get; set; } = SqlSyntax.SQLServer;
+		public static SqlDialect Dialect { get; set; } = SqlDialect.SQLServer;
 
 		/// <summary>
 		/// Creates or gets a cached <see cref="SqlBuilder{T}"/>.
@@ -77,19 +77,19 @@ namespace Dapper.Extra
 		}
 
 		/// <summary>
-		/// Returns the syntax of the connected database.
+		/// Returns the dialect of the connected database.
 		/// </summary>
 		/// <param name="conn">The connection to use.</param>
-		/// <returns>The syntax of the connected database.</returns>
-		public static SqlSyntax DetectSyntax(IDbConnection conn)
+		/// <returns>The dialect of the connected database.</returns>
+		public static SqlDialect DetectDialect(IDbConnection conn)
 		{
 			bool notOpen = conn.State != ConnectionState.Open;
 			if (notOpen)
 				conn.Open();
-			SqlSyntax syntax = _DetectSyntax(conn);
+			SqlDialect dialect = _DetectDialect(conn);
 			if (notOpen)
 				conn.Close();
-			return syntax;
+			return dialect;
 		}
 
 		/// <summary>
@@ -190,7 +190,7 @@ namespace Dapper.Extra
 			return Builder<T>().Info;
 		}
 
-		private static SqlSyntax _DetectSyntax(IDbConnection conn)
+		private static SqlDialect _DetectDialect(IDbConnection conn)
 		{
 			// SQLServer
 			try {
@@ -201,7 +201,7 @@ namespace Dapper.Extra
 				//int a = conn.QuerySingle<int>("SELECT SQUARE(1)");
 				//DateTime date = conn.QuerySingle<DateTime>("SELECT GETDATE()");
 				//string s = conn.QuerySingle<string>("SELECT RTRIM(LTRIM(' a '))");
-				return SqlSyntax.SQLServer;
+				return SqlDialect.SQLServer;
 			}
 			catch { }
 
@@ -212,13 +212,13 @@ namespace Dapper.Extra
 				//decimal b = conn.QuerySingle<decimal>("SELECT POW(1,1)"); // MySQL
 				//string s = conn.QuerySingle<string>("SELECT @@version"); // SQLServer + MySQL
 				//int a = conn.QuerySingle<int>("SELECT 1 LIMIT 1");
-				return SqlSyntax.MySQL;
+				return SqlDialect.MySQL;
 			}
 			catch { }
 
 			try {
 				int? a = conn.QueryFirstOrDefault<int?>("SELECT LAST_INSERT_ROWID() as Id");
-				return SqlSyntax.SQLite;
+				return SqlDialect.SQLite;
 			}
 			catch { }
 
@@ -227,7 +227,7 @@ namespace Dapper.Extra
 				string s = conn.QuerySingle<string>("'a' || 'b'"); // Oracle + PostgreSQL
 																   //DateTime now = conn.QuerySingle<DateTime>("NOW()"); // PostgreSQL + MySQL
 				int? a = conn.QueryFirstOrDefault<int?>("SELECT LASTVAL() as Id");
-				return SqlSyntax.PostgreSQL;
+				return SqlDialect.PostgreSQL;
 			}
 			catch { }
 
@@ -235,7 +235,7 @@ namespace Dapper.Extra
 			//try {
 			//	int a = conn.QuerySingle<int>("SELECT BITAND(1,1)");
 			//	decimal b = conn.QuerySingle<decimal>("POWER(1,1)");
-			//	return SqlSyntax.Oracle;
+			//	return SqlDialect.Oracle;
 			//}
 			//catch { }
 			throw new InvalidOperationException("Unknown RDBMS");

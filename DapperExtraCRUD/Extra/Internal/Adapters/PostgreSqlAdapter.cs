@@ -34,7 +34,7 @@ namespace Dapper.Extra.Internal.Adapters
 		/// <summary>
 		/// Initializes a new instance of the <see cref="PostgreSqlAdapter"/> class.
 		/// </summary>
-		internal PostgreSqlAdapter() : base(SqlSyntax.PostgreSQL)
+		internal PostgreSqlAdapter() : base(SqlDialect.PostgreSQL)
 		{
 			QuoteLeft = "\"";
 			QuoteRight = "\"";

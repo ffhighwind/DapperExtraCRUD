@@ -29,7 +29,7 @@ using Dapper.Extra.Internal.Adapters;
 namespace Dapper.Extra.Internal
 {
 	/// <summary>
-	/// Generates specialized commands using a given syntax.
+	/// Generates specialized commands using a given dialect.
 	/// </summary>
 	public abstract class SqlAdapter
 	{
@@ -54,20 +54,20 @@ namespace Dapper.Extra.Internal
 		public static readonly ISqlAdapter SQLServer = new SqlServerAdapter();
 
 		/// <summary>
-		/// Gets the <see cref="SqlAdapter"/> that matches a given <see cref="SqlSyntax"/>.
+		/// Gets the <see cref="SqlAdapter"/> that matches a given <see cref="SqlDialect"/>.
 		/// </summary>
-		/// <param name="syntax">The syntax of the <see cref="SqlAdapter"/>.</param>
-		/// <returns>The <see cref="SqlAdapter"/> that matches a given <see cref="SqlSyntax"/>.</returns>
-		public static ISqlAdapter GetAdapter(SqlSyntax syntax)
+		/// <param name="dialect">The dialect of the <see cref="SqlAdapter"/>.</param>
+		/// <returns>The <see cref="SqlAdapter"/> that matches a given <see cref="SqlDialect"/>.</returns>
+		public static ISqlAdapter GetAdapter(SqlDialect dialect)
 		{
-			switch (syntax) {
-				case SqlSyntax.MySQL:
+			switch (dialect) {
+				case SqlDialect.MySQL:
 					return MySQL;
-				case SqlSyntax.PostgreSQL:
+				case SqlDialect.PostgreSQL:
 					return PostgreSQL;
-				case SqlSyntax.SQLite:
+				case SqlDialect.SQLite:
 					return SQLite;
-				case SqlSyntax.SQLServer:
+				case SqlDialect.SQLServer:
 				default:
 					return SQLServer;
 			}

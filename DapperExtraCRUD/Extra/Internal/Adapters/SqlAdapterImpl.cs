@@ -37,10 +37,10 @@ namespace Dapper.Extra.Internal.Adapters
 		/// <summary>
 		/// Initializes a new instance of the <see cref="SqlAdapterImpl"/> class.
 		/// </summary>
-		/// <param name="syntax">The syntax<see cref="SqlSyntax"/></param>
-		internal SqlAdapterImpl(SqlSyntax syntax)
+		/// <param name="dialect">The dialect<see cref="SqlDialect"/></param>
+		internal SqlAdapterImpl(SqlDialect dialect)
 		{
-			Syntax = syntax;
+			Dialect = dialect;
 		}
 
 		#region Properties
@@ -51,9 +51,9 @@ namespace Dapper.Extra.Internal.Adapters
 		public string LimitQuery { get; protected set; }
 
 		/// <summary>
-		/// The syntax used to generate SQL commands.
+		/// The dialect used to generate SQL commands.
 		/// </summary>
-		public SqlSyntax Syntax { get; private set; }
+		public SqlDialect Dialect { get; private set; }
 
 		/// <summary>
 		/// The 'CREATE TABLE AS' part of a 'SELECT INTO' command.
@@ -99,7 +99,7 @@ namespace Dapper.Extra.Internal.Adapters
 			DataReaderFactory factory, IEnumerable<SqlColumn> columns, int commandTimeout = 30, SqlBulkCopyOptions options = SqlBulkCopyOptions.Default) where T : class
 		{
 			// TODO -- CSV mass import etc
-			throw new NotSupportedException(nameof(SqlAdapterImpl.BulkInsert) + " is not supported for " + Syntax);
+			throw new NotSupportedException(nameof(SqlAdapterImpl.BulkInsert) + " is not supported for " + Dialect);
 		}
 
 		/// <summary>

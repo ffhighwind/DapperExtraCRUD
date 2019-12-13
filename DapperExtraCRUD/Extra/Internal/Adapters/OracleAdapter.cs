@@ -34,7 +34,7 @@ namespace Dapper.Extra.Internal.Adapters
         /// <summary>
         /// Initializes a new instance of the <see cref="OracleAdapter"/> class.
         /// </summary>
-        public OracleAdapter() : base(SqlSyntax.Oracle)
+        public OracleAdapter() : base(SqlDialect.Oracle)
         {
 			QuoteLeft = "'";
 			QuoteRight = "'";

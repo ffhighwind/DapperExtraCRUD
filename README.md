@@ -30,8 +30,8 @@ ALTER TABLE [dbo].[Users] ADD CONSTRAINT [DF_Users_Modified]  DEFAULT (getdate()
 
 ```csharp
 
-// Represents and RDBMS syntax used for generating queries.
-public enum SqlSyntax
+// Represents and RDBMS dialect used for generating queries.
+public enum SqlDialect
 {
 	SQLServer,
 	PostgreSQL,
@@ -48,7 +48,7 @@ public enum UserPermissions
 };
 
 [IgnoreDelete] // prevents deletes
-[Table("Users", declaredOnly: true, inheritAttrs: true, syntax: SqlSyntax.SQLServer)]
+[Table("Users", declaredOnly: true, inheritAttrs: true, dialect: SqlDialect.SQLServer)]
 public class User
 {
 	// Primary Key
@@ -116,11 +116,12 @@ A valid property must have a public set method and its type must be a standard S
 | public int Property { set; private get; } | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
 | \[NotMapped] | \[NotMapped] |
 | - | \[IgnoreSelect] (property) |
+| - | \[AutoSync] (property) |
 | - | \[IgnoreInsert] (class) |
 | - | \[IgnoreUpdate] (class) |
 | - | \[IgnoreDelete] (class) |
-| - | \[MatchInsert] |
-| - | \[MatchUpdate] |
+| - | \[MatchInsert] (class/property) |
+| - | \[MatchUpdate] (class/property) |
 
 # Annotation Priority:
 
@@ -133,8 +134,8 @@ A valid property must have a public set method and its type must be a standard S
 ```csharp
 public static void Main(string[] args)
 {
-	// Changes the default syntax
-	ExtraCrud.Syntax = SqlSyntax.PostgreSQL;
+	// Changes the default dialect
+	ExtraCrud.Dialect = SqlDialect.PostgreSQL;
 
 	// Contains class/property information such as attributes that are used internally
 	SqlTypeInfo typeInfo = ExtraCrud.TypeInfo<User>();

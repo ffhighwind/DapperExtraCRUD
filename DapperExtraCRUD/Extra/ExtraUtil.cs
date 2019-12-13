@@ -28,6 +28,11 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using Dapper.Extra.Internal;
+using Fasterflect;
 
 namespace Dapper.Extra
 {
@@ -200,6 +205,46 @@ namespace Dapper.Extra
 					throw new InvalidOperationException("Unknown DbType: " + dbType.ToString());
 			}
 			return dbType;
+		}
+
+		/// <summary>
+		/// Converts a list of objects to a list of CSV rows.
+		/// </summary>
+		/// <typeparam name="T">The type of object.</typeparam>
+		/// <param name="list">A list of objects to convert to a csv.</param>
+		/// <param name="separater">The separater between each value.</param>
+		/// <param name="includeColumnNames">Determines if the column names should be printed.</param>
+		/// <returns>A list of CSV rows.</returns>
+		public static IEnumerable<string> ToCsv<T>(IEnumerable<T> list, string separater = ",", bool printColumnNames = true) where T : class
+		{
+			SqlTypeInfo typeInfo = ExtraCrud.TypeInfo<T>();
+			IReadOnlyList<SqlColumn> columns = typeInfo.AutoKeyColumn == null ? typeInfo.Columns : typeInfo.Columns.Where(c => !c.IsAutoKey).ToArray();
+			if (columns.Count != 0) {
+				MemberGetter[] getters = new MemberGetter[columns.Count];
+				StringBuilder sb = new StringBuilder();
+				for (int i = 0; i < columns.Count; i++) {
+					SqlColumn column = columns[i];
+					getters[i] = columns[i].Getter;
+					sb.Append('\"').Append(column.ColumnName.Replace("\"", "\"\"")).Append('\"').Append(separater);
+				}
+				sb.Remove(sb.Length - separater.Length, separater.Length);
+				if (printColumnNames) {
+					yield return sb.ToString();
+				}
+				foreach (T obj in list) {
+					sb.Clear();
+					foreach (MemberGetter getter in getters) {
+						object value = getter(obj);
+						if (value == null)
+							sb.Append("NULL");
+						else
+							sb.Append('\"').Append(value.ToString().Replace("\"", "\"\"")).Append('\"');
+						sb.Append(separater);
+					}
+					sb.Remove(sb.Length - separater.Length, separater.Length);
+					yield return sb.ToString();
+				}
+			}
 		}
 	}
 }

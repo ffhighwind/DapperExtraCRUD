@@ -27,9 +27,9 @@
 namespace Dapper.Extra
 {
 	/// <summary>
-	/// Represents and RDBMS syntax used for generating queries.
+	/// Represents and RDBMS dialect used for generating queries.
 	/// </summary>
-	public enum SqlSyntax
+	public enum SqlDialect
 	{
 		/// <summary>
 		/// Microsoft SQL Server

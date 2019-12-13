@@ -41,7 +41,7 @@ namespace Dapper.Extra.Internal.Adapters
 		/// <summary>
 		/// Initializes a new instance of the <see cref="SqlServerAdapter"/> class.
 		/// </summary>
-		internal SqlServerAdapter() : base(SqlSyntax.SQLServer)
+		internal SqlServerAdapter() : base(SqlDialect.SQLServer)
 		{
 			QuoteLeft = "[";
 			QuoteRight = "]";

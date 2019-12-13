@@ -33,7 +33,7 @@ using Fasterflect;
 namespace Dapper.Extra.Internal
 {
 	/// <summary>
-	/// Generates SQL commands using a given syntax.
+	/// Generates SQL commands using a given dialect.
 	/// </summary>
 	public interface ISqlAdapter
 	{
@@ -45,9 +45,9 @@ namespace Dapper.Extra.Internal
 		string LimitQuery { get; }
 
 		/// <summary>
-		/// The syntax used to generate SQL commands.
+		/// The dialect used to generate SQL commands.
 		/// </summary>
-		SqlSyntax Syntax { get; }
+		SqlDialect Dialect { get; }
 
 		/// <summary>
 		/// Inserts data into a table using <see cref="SqlBulkCopy"/>.

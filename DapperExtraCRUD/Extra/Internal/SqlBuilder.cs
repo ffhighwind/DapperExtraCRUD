@@ -205,9 +205,9 @@ namespace Dapper.Extra.Internal
 		public ISqlQueries<T> Queries { get; private set; }
 
 		/// <summary>
-		/// The syntax used to generate SQL commands.
+		/// The dialect used to generate SQL commands.
 		/// </summary>
-		public SqlSyntax Syntax => Info.Syntax;
+		public SqlDialect Dialect => Info.Dialect;
 
 		/// <summary>
 		/// The quoted table name or the class name.

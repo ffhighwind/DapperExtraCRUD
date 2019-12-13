@@ -46,47 +46,13 @@ namespace UnitTests
 		public static void Main()
 		{
 			Random random = new Random(125125);
-			const int Count = 10000;
-			var info = Dapper.Extra.ExtraCrud.TypeInfo<Employee>();
-			List<SqlColumn> columns = info.Columns.Where(c => !c.IsAutoKey).ToList();
-			int max = (2050 / columns.Count) * columns.Count;
-			StringBuilder sb = new StringBuilder("INSERT INTO [dbo].[Employees] (" + string.Join(",", columns.Select(c => c.ColumnName)) + @") VALUES 
-");
-			DynamicParameters dynParams = new DynamicParameters();
-			for (int j = 0; j < max; ) {
-				sb.Append('(');
-				Employee employee = Employee.Create(random);
-				for (int k = 0; k < columns.Count; k++, j++) {
-					string name = "@p" + j;
-					sb.Append(name).Append(',');
-					dynParams.Add(name, columns[k].Getter(employee));
-				}
-				sb.Remove(sb.Length - 1, 1).Append(@"),");
-			}
-			string cmd = sb.Remove(sb.Length - 1, 1).ToString();
-
-			using (SqlConnection conn = new SqlConnection(ConnString)) {
-				for (int i = 0; i < Count; i += max) {
-					conn.Execute(cmd, dynParams);
-				}
-				try {
-					conn.Truncate<Employee>();
-				}
-				catch {
-					conn.DeleteList<Employee>();
-				}
-			}
-
-
-
-			//Random random = new Random(123512);
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
 				conn.Open();
 				Recreate<TestDTO>(conn, null);
 				Recreate<TestDTO2>(conn, null);
 				Recreate<Test3>(conn, null);
 				Recreate<TestDTO4>(conn, null);
-				/*
+
 				DoTests<TestDTO>(() => new TestDTO(random), (t) => t.UpdateRandomize(random), new TestDTOfilter());
 				DoTests<TestDTO2>(() => new TestDTO2(random), (t) => t.UpdateRandomize(random), new TestDTO2filter());
 				DoTests<Test3>(() => new Test3(random), (t) => t.UpdateRandomize(random), new Test3filter());
@@ -94,7 +60,6 @@ namespace UnitTests
 
 				DoTests<TestDTO, int>(conn);
 				DoTests<TestDTO4, int>(conn);
-				*/
 
 				DoCacheTests<TestDTO>(() => new TestDTO(random));
 				DoCacheTests<TestDTO2>(() => new TestDTO2(random));

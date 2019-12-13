@@ -37,21 +37,14 @@ namespace Dapper.Extra.Annotations
 		/// Initializes a new instance of the <see cref="ColumnAttribute"/> class.
 		/// </summary>
 		/// <param name="name">The name of the column.</param>
-		/// <param name="ordinal">The zero-based ordinal of the column.</param>
-		public ColumnAttribute(string name, int ordinal = 0)
+		public ColumnAttribute(string name)
 		{
 			Name = name;
-			Ordinal = ordinal;
 		}
 
 		/// <summary>
 		/// The name of the column.
 		/// </summary>
 		public string Name { get; }
-
-		/// <summary>
-		/// The zero-based ordinal of the column.
-		/// </summary>
-		public int Ordinal { get; }
 	}
 }

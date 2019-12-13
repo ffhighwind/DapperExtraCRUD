@@ -34,7 +34,7 @@ namespace Dapper.Extra.Internal.Adapters
 		/// <summary>
 		/// An <see cref="SqlAdapter"/> that generates SQL commands for MySQL.
 		/// </summary>
-		internal MySqlAdapter() : base(SqlSyntax.MySQL)
+		internal MySqlAdapter() : base(SqlDialect.MySQL)
 		{
 			QuoteLeft = "`";
 			QuoteRight = "`";

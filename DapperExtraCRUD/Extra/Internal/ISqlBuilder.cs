@@ -44,9 +44,9 @@ namespace Dapper.Extra.Internal
 		SqlTypeInfo Info { get; }
 
 		/// <summary>
-		/// The syntax used to generate SQL commands.
+		/// The dialect used to generate SQL commands.
 		/// </summary>
-		SqlSyntax Syntax { get; }
+		SqlDialect Dialect { get; }
 
 		/// <summary>
 		/// The quoted table name or the class name.

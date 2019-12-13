@@ -42,12 +42,12 @@ namespace Dapper.Extra.Annotations
 		/// <param name="schema">The schema of the table. This is only for user reference and is completely ignored.</param>
 		/// <param name="declaredOnly">Determines if only top-level properties are used. Subclass properties are ignored if this is true.</param>
 		/// <param name="inheritAttrs">Determines if attributes are inherited.</param>
-		/// <param name="syntax">The syntax used to generate SQL commands.</param>
-		public TableAttribute(string name = null, string schema = null, bool declaredOnly = false, bool inheritAttrs = true, SqlSyntax syntax = SqlSyntax.SQLServer)
+		/// <param name="dialect">The dialect used to generate SQL commands.</param>
+		public TableAttribute(string name = null, string schema = null, bool declaredOnly = false, bool inheritAttrs = true, SqlDialect dialect = SqlDialect.SQLServer)
 		{
 			Name = name?.Trim();
 			Schema = string.IsNullOrWhiteSpace(schema) ? "" : schema.Trim();
-			Syntax = syntax;
+			Dialect = dialect;
 			InheritAttributes = inheritAttrs;
 			DeclaredOnly = declaredOnly;
 		}
@@ -73,8 +73,8 @@ namespace Dapper.Extra.Annotations
 		public string Schema { get; }
 
 		/// <summary>
-		/// The syntax used to generate SQL commands.
+		/// The dialect used to generate SQL commands.
 		/// </summary>
-		public SqlSyntax Syntax { get; }
+		public SqlDialect Dialect { get; }
 	}
 }

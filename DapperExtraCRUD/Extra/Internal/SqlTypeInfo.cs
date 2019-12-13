@@ -52,11 +52,11 @@ namespace Dapper.Extra.Internal
 			bool inherit = false;
 			if (tableAttr == null) {
 				var tableAttr2 = type.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.TableAttribute>(false);
-				Adapter = SqlAdapter.GetAdapter(SqlSyntax.SQLServer);
+				Adapter = SqlAdapter.GetAdapter(SqlDialect.SQLServer);
 				TableName = tableAttr2 != null ? tableAttr2.Name : type.Name;
 			}
 			else {
-				Adapter = SqlAdapter.GetAdapter(tableAttr.Syntax);
+				Adapter = SqlAdapter.GetAdapter(tableAttr.Dialect);
 				TableName = string.IsNullOrWhiteSpace(tableAttr.Name) ? type.Name : tableAttr.Name;
 				if (tableAttr.DeclaredOnly) {
 					flags |= BindingFlags.DeclaredOnly;
@@ -95,7 +95,6 @@ namespace Dapper.Extra.Internal
 					Attributes |= SqlTableAttributes.IgnoreDelete;
 			}
 
-			int ordinal = 0;
 			List<SqlColumn> keys = new List<SqlColumn>();
 			List<SqlColumn> columns = new List<SqlColumn>();
 			int autoKeyCount = 0;
@@ -108,16 +107,14 @@ namespace Dapper.Extra.Internal
 				ColumnAttribute columnAttr = prop.GetCustomAttribute<ColumnAttribute>(inherit);
 				if (columnAttr != null) {
 					columnName = columnAttr.Name;
-					ordinal = columnAttr.Ordinal;
 				}
 				else {
 					var columnAttr2 = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.ColumnAttribute>(inherit);
 					if (columnAttr2 != null) {
 						columnName = columnAttr2.Name;
-						ordinal = columnAttr2.Order;
 					}
 				}
-				SqlColumn column = new SqlColumn(prop, string.IsNullOrWhiteSpace(columnName) ? prop.Name : Adapter.QuoteIdentifier(columnName), ordinal);
+				SqlColumn column = new SqlColumn(prop, string.IsNullOrWhiteSpace(columnName) ? prop.Name : Adapter.QuoteIdentifier(columnName), i);
 				KeyAttribute keyAttr = prop.GetCustomAttribute<KeyAttribute>(inherit);
 				if (keyAttr != null) {
 					if (keyAttr.AutoIncrement)
@@ -129,18 +126,18 @@ namespace Dapper.Extra.Internal
 					if (requiredAttr != null)
 						column.Attributes |= SqlColumnAttributes.Key;
 					else {
-						var keyAttr2 = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.KeyAttribute>(inherit);
-						if (keyAttr2 != null) {
+						var keyAttrCm = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.KeyAttribute>(inherit);
+						if (keyAttrCm != null) {
 							column.Attributes |= SqlColumnAttributes.AutoKey;
 							autoKeyCount++;
 						}
 					}
 				}
-				if (!prop.CanRead) {
-					Attributes |= SqlTableAttributes.IgnoreInsert | SqlTableAttributes.IgnoreUpdate | SqlTableAttributes.IgnoreDelete;
-				}
 				if (column.IsKey) {
 					keys.Add(column);
+					if (!prop.CanRead) {
+						Attributes |= SqlTableAttributes.IgnoreInsert | SqlTableAttributes.IgnoreUpdate | SqlTableAttributes.IgnoreDelete;
+					}
 				}
 				columns.Add(column);
 			}
@@ -191,6 +188,8 @@ namespace Dapper.Extra.Internal
 						column.Attributes |= SqlColumnAttributes.IgnoreUpdate;
 				}
 
+				var autoSyncAttr = prop.GetCustomAttribute<AutoSyncAttribute>(inherit);
+
 				// Inserts
 				if (IgnoreInsert)
 					column.Attributes |= SqlColumnAttributes.IgnoreInsert;
@@ -201,26 +200,32 @@ namespace Dapper.Extra.Internal
 						if (insertAttr.AutoSync)
 							column.Attributes |= SqlColumnAttributes.InsertAutoSync;
 					}
+					if (autoSyncAttr != null && autoSyncAttr.SyncInsert) {
+						column.Attributes |= SqlColumnAttributes.InsertAutoSync;
+					}
 				}
 
 				// Updates
 				if (IgnoreUpdate)
 					column.Attributes = SqlColumnAttributes.IgnoreUpdate;
 				else {
-					IDefaultAttribute updateAttr = prop.GetCustomAttribute<IgnoreUpdateAttribute>(inherit);
-					if (updateAttr != null) {
+					IgnoreUpdateAttribute ignoreUpdateAttr = prop.GetCustomAttribute<IgnoreUpdateAttribute>(inherit);
+					if (ignoreUpdateAttr != null) {
 						column.Attributes |= SqlColumnAttributes.IgnoreUpdate;
-						column.UpdateValue = updateAttr.Value;
-						if (updateAttr.AutoSync)
+						column.UpdateValue = ignoreUpdateAttr.Value;
+						if (ignoreUpdateAttr.AutoSync)
 							column.Attributes |= SqlColumnAttributes.UpdateAutoSync;
 					}
 					else {
-						updateAttr = prop.GetCustomAttribute<MatchUpdateAttribute>(inherit); //NOTE: MatchUpdate != IgnoreUpdate
-						if (updateAttr != null) {
+						MatchUpdateAttribute matchUpdateAttr = prop.GetCustomAttribute<MatchUpdateAttribute>(inherit); //NOTE: MatchUpdate != IgnoreUpdate
+						if (matchUpdateAttr != null) {
 							column.Attributes |= SqlColumnAttributes.MatchUpdate;
-							column.UpdateValue = updateAttr.Value;
-							if (updateAttr.AutoSync)
+							column.UpdateValue = matchUpdateAttr.Value;
+							if (matchUpdateAttr.AutoSync)
 								column.Attributes |= SqlColumnAttributes.UpdateAutoSync;
+						}
+						if (autoSyncAttr != null && autoSyncAttr.SyncUpdate) {
+							column.Attributes |= SqlColumnAttributes.UpdateAutoSync;
 						}
 					}
 				}
@@ -237,7 +242,7 @@ namespace Dapper.Extra.Internal
 		#region Properties
 
 		/// <summary>
-		/// Generates SQL commands using a given syntax.
+		/// Generates SQL commands using a given dialect.
 		/// </summary>
 		public ISqlAdapter Adapter { get; private set; }
 
@@ -322,9 +327,9 @@ namespace Dapper.Extra.Internal
 		public IEnumerable<SqlColumn> SelectColumns => Columns.Where(c => !c.IgnoreSelect);
 
 		/// <summary>
-		/// The syntax used to generate SQL commands.
+		/// The dialect used to generate SQL commands.
 		/// </summary>
-		public SqlSyntax Syntax => Adapter.Syntax;
+		public SqlDialect Dialect => Adapter.Dialect;
 
 		/// <summary>
 		/// The name of the table.
