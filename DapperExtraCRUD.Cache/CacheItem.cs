@@ -27,6 +27,10 @@
 
 namespace Dapper.Extra.Cache
 {
+	/// <summary>
+	/// Base class for cached objects.
+	/// </summary>
+	/// <typeparam name="T">The table type.</typeparam>
 	public class CacheItem<T>
 		where T : class
 	{

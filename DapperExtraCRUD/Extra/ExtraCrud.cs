@@ -31,6 +31,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using Dapper.Extra.Internal;
+using Dapper;
 
 namespace Dapper.Extra
 {

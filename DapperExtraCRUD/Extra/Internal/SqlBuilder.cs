@@ -41,7 +41,7 @@ namespace Dapper.Extra.Internal
 	/// <summary>
 	/// Stores metadata and generates SQL commands for the given type.
 	/// </summary>
-	/// <typeparam name="T">The type of to generate queries for.</typeparam>
+	/// <typeparam name="T">The table type.</typeparam>
 	public sealed class SqlBuilder<T> : ISqlBuilder
 		where T : class
 	{

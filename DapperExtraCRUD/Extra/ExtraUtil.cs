@@ -28,7 +28,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Text;
 using Dapper.Extra.Internal;
@@ -213,7 +212,7 @@ namespace Dapper.Extra
 		/// <typeparam name="T">The type of object.</typeparam>
 		/// <param name="list">A list of objects to convert to a csv.</param>
 		/// <param name="separater">The separater between each value.</param>
-		/// <param name="includeColumnNames">Determines if the column names should be printed.</param>
+		/// <param name="printColumnNames">Determines if the column names should be printed.</param>
 		/// <returns>A list of CSV rows.</returns>
 		public static IEnumerable<string> ToCsv<T>(IEnumerable<T> list, string separater = ",", bool printColumnNames = true) where T : class
 		{

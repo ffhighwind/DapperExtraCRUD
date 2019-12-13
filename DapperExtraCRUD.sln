@@ -5,8 +5,6 @@ VisualStudioVersion = 16.0.29519.87
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DapperExtraCRUD", "DapperExtraCRUD\DapperExtraCRUD.csproj", "{4DBE71C1-2ECD-4192-BC66-E4D1C8DCEC08}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{81F97E4B-4BCF-44EA-951C-158D08FC9592}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DapperTracer", "DapperTracer\DapperTracer.csproj", "{B5F579C6-357F-43E4-9D2D-DE5AE46A9BD7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleTests", "ConsoleTests\ConsoleTests.csproj", "{965BB116-B0E0-4BAC-B1D3-C1F573420F37}"
@@ -16,7 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DapperExtraCRUD.Cache", "DapperExtraCRUD.Cache\DapperExtraCRUD.Cache.csproj", "{3059BA7E-5590-4BBC-A38E-1AEDC7D8A8A1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DapperExtraCRUD.Cache", "DapperExtraCRUD.Cache\DapperExtraCRUD.Cache.csproj", "{3059BA7E-5590-4BBC-A38E-1AEDC7D8A8A1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "Benchmarks\Benchmarks.csproj", "{5D35001D-5C45-4035-9484-8CD3D2EDAAF8}"
 EndProject
@@ -60,28 +58,6 @@ Global
 		{4DBE71C1-2ECD-4192-BC66-E4D1C8DCEC08}.Release|x64.Build.0 = Release|Any CPU
 		{4DBE71C1-2ECD-4192-BC66-E4D1C8DCEC08}.Release|x86.ActiveCfg = Release|Any CPU
 		{4DBE71C1-2ECD-4192-BC66-E4D1C8DCEC08}.Release|x86.Build.0 = Release|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Debug|ARM.Build.0 = Debug|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Debug|ARM64.ActiveCfg = Debug|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Debug|ARM64.Build.0 = Debug|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Debug|x64.Build.0 = Debug|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Debug|x86.Build.0 = Debug|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Release|ARM.ActiveCfg = Release|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Release|ARM.Build.0 = Release|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Release|ARM64.ActiveCfg = Release|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Release|ARM64.Build.0 = Release|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Release|x64.ActiveCfg = Release|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Release|x64.Build.0 = Release|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Release|x86.ActiveCfg = Release|Any CPU
-		{81F97E4B-4BCF-44EA-951C-158D08FC9592}.Release|x86.Build.0 = Release|Any CPU
 		{B5F579C6-357F-43E4-9D2D-DE5AE46A9BD7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B5F579C6-357F-43E4-9D2D-DE5AE46A9BD7}.Debug|ARM.ActiveCfg = Debug|Any CPU
 		{B5F579C6-357F-43E4-9D2D-DE5AE46A9BD7}.Debug|ARM.Build.0 = Debug|Any CPU

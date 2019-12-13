@@ -44,6 +44,12 @@ namespace Dapper.Extra.Cache
 		ICacheStorage<T, R> Items { get; }
 
 		R this[object key, int commandTimeout = 30] { get; }
+		/// <summary>
+		/// Returns a cached object if it exists, otherwise it calls <see cref="Get(T, int)"/>.
+		/// </summary>
+		/// <param name="obj"></param>
+		/// <param name="commandTimeout"></param>
+		/// <returns></returns>
 		R this[T obj, int commandTimeout = 30] { get; }
 
 		#region Bulk

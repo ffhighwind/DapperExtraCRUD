@@ -33,9 +33,6 @@ using Dapper;
 using Dapper.Extra;
 using Dapper.Extra.Utilities;
 using Dapper.Extra.Cache;
-using Dapper.Extra.Internal;
-using System.Text;
-using Benchmarks;
 
 namespace UnitTests
 {
