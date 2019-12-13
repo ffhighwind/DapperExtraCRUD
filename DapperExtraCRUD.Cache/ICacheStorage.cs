@@ -24,21 +24,72 @@
 // SOFTWARE.
 #endregion
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace Dapper.Extra.Cache
 {
+	/// <summary>
+	/// The interface for the storage of a <see cref="DbCacheTable{T, R}"/>.
+	/// </summary>
+	/// <typeparam name="T">The table type.</typeparam>
+	/// <typeparam name="R">The cached item type.</typeparam>
 	public interface ICacheStorage<T, R> : IDictionary<T, R>
 		where T : class
 		where R : CacheItem<T>, new()
 	{
+		/// <summary>
+		/// Adds or updates an object in the storage.
+		/// </summary>
+		/// <param name="value">The object to add to the storage.</param>
+		/// <returns>The cache item referencing the added object.</returns>
 		R Add(T value);
+
+		/// <summary>
+		/// Adds or updates the objects in the storage.
+		/// </summary>
+		/// <param name="values">The objects to add to the storage.</param>
+		/// <returns>The cache items referencing the added objects.</returns>
 		List<R> Add(IEnumerable<T> values);
+
+		/// <summary>
+		/// Attempts to remove an object matching a key.
+		/// </summary>
+		/// <param name="key">The key to remove.</param>
+		/// <returns>True if the object was removed; false otherwise.</returns>
 		bool RemoveKey(object key);
+
+		/// <summary>
+		/// Removes the objects from the storage.
+		/// </summary>
+		/// <param name="values">The objects to remove.</param>
 		void Remove(IEnumerable<T> values);
+
+		/// <summary>
+		/// Removes the objects matching the specified keys from the storage.
+		/// </summary>
+		/// <param name="keys">The keys of the objects to remove.</param>
 		void RemoveKeys(IEnumerable<object> keys);
+		
+		/// <summary>
+		/// Determines whether the storage contains the specified object.
+		/// </summary>
+		/// <param name="value">The object to locate.</param>
+		/// <returns>True if the object is in the storage; false otherwise.</returns>
 		bool Contains(T value);
+
+		/// <summary>
+		/// Determines whether the storage contains the specified key.
+		/// </summary>
+		/// <param name="key">The key to locate.</param>
+		/// <returns>True if the key is in the storage; false otherwise.</returns>
 		bool ContainsKey(object key);
+
+		/// <summary>
+		/// Attempts to add the specified object to the storage.
+		/// </summary>
+		/// <param name="value">The element to add.</param>
+		/// <returns>True if the element was added; false otherwise.</returns>
 		bool TryAdd(T value);
 	}
 }

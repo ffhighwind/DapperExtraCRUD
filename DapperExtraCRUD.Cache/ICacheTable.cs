@@ -30,26 +30,57 @@ using Dapper.Extra.Internal;
 
 namespace Dapper.Extra.Cache
 {
+	/// <summary>
+	/// Non-generic interface for <see cref="DbCacheTable{T, R}"/>.
+	/// </summary>
 	public interface ICacheTable
 	{
+		/// <summary>
+		/// Begins a transaction.
+		/// </summary>
+		/// <returns>The transaction.</returns>
 		DbCacheTransaction BeginTransaction();
+
+		/// <summary>
+		/// Adds the table to a transaction
+		/// </summary>
+		/// <param name="transaction">The transaction</param>
 		void BeginTransaction(DbCacheTransaction transaction);
+
+		/// <summary>
+		/// The table information.
+		/// </summary>
 		SqlTypeInfo Info { get; }
 	}
 
+	/// <summary>
+	/// The interface for <see cref="DbCacheTable{T, R}"/>.
+	/// </summary>
+	/// <typeparam name="T">The table type.</typeparam>
+	/// <typeparam name="R">The cached item type.</typeparam>
 	public interface ICacheTable<T, R>
 		where T : class
 		where R : CacheItem<T>, new()
 	{
+		/// <summary>
+		/// The internal cache storage.
+		/// </summary>
 		ICacheStorage<T, R> Items { get; }
 
+		/// <summary>
+		/// Returns a cached object by key if it exists, otherwise it calls <see cref="Get(object, int)"/>.
+		/// </summary>
+		/// <param name="key">The key of the row to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The selected row if it exists; otherwise null.</returns>
 		R this[object key, int commandTimeout = 30] { get; }
+
 		/// <summary>
 		/// Returns a cached object if it exists, otherwise it calls <see cref="Get(T, int)"/>.
 		/// </summary>
-		/// <param name="obj"></param>
-		/// <param name="commandTimeout"></param>
-		/// <returns></returns>
+		/// <param name="obj">The object to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The selected row if it exists; otherwise null.</returns>
 		R this[T obj, int commandTimeout = 30] { get; }
 
 		#region Bulk

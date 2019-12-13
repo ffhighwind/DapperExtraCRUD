@@ -433,17 +433,15 @@ namespace Dapper.Extra.Internal
 					return 0;
 				};
 			}
-			string dropBulkTableCmd = DropBulkTableCmd();
-			string selectEqualityIntoStagingCmd = SelectIntoStagingTable(EqualityColumns);
-			string equalsTables = WhereEqualsTables(EqualityColumns);
-			return (connection, objs, transaction, commandTimeout) => {
-				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
-				connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
-				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, EqualityColumns, commandTimeout,
-					SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
-				string bulkDeleteCmd = $"DELETE FROM {TableName} FROM {TableName} INNER JOIN {BulkStagingTable} ON {equalsTables}";
-				int count = connection.Execute(bulkDeleteCmd, null, transaction, commandTimeout);
-				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+			string deleteCmd = DeleteCmd();
+			string keyName = EqualityColumns[0].ColumnName;
+			return (connection, keys, transaction, commandTimeout) => {
+				int count = 0;
+				string bulkDeleteCmd = $"{deleteCmd}WHERE \t{keyName} in @Keys";
+				foreach (IEnumerable<KeyType> Keys in ExtraUtil.Partition(keys.Select(k => (KeyType)k), 2000)) {
+					int deleted = connection.Execute(bulkDeleteCmd, new { Keys }, transaction, commandTimeout);
+					count += deleted;
+				}
 				return count;
 			};
 		}
@@ -468,18 +466,15 @@ namespace Dapper.Extra.Internal
 
 		private DbKeysList<T> CreateBulkGetKeys<KeyType>()
 		{
-			string dropBulkTableCmd = DropBulkTableCmd();
-			string selectEqualityIntoStagingCmd = SelectIntoStagingTable(EqualityColumns);
 			string paramsSelectFromTableBulk = ParamsSelectFromTableBulk();
-			string equalsTables = WhereEqualsTables(EqualityColumns);
-			return (connection, objs, transaction, commandTimeout) => {
-				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
-				connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
-				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, EqualityColumns, commandTimeout,
-					SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
-				string bulkGetQuery = $"SELECT {paramsSelectFromTableBulk}\tINNER JOIN {BulkStagingTable} ON {equalsTables}";
-				List<T> result = connection.Query<T>(bulkGetQuery, null, transaction, true, commandTimeout).AsList();
-				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+			string keyName = EqualityColumns[0].ColumnName;
+			return (connection, keys, transaction, commandTimeout) => {
+				List<T> result = new List<T>();
+				string bulkGetKeysQuery = $"SELECT {paramsSelectFromTableBulk}WHERE \t{keyName} in @Keys";
+				foreach (IEnumerable<KeyType> Keys in ExtraUtil.Partition(keys.Select(k => (KeyType)k), 2000)) {
+					IEnumerable<T> list = connection.Query<T>(bulkGetKeysQuery, new { Keys }, transaction, true, commandTimeout);
+					result.AddRange(list);
+				}
 				return result;
 			};
 		}

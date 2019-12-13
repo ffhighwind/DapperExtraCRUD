@@ -30,22 +30,44 @@ using System.Collections.Generic;
 
 namespace Dapper.Extra.Cache
 {
+	/// <summary>
+	/// A factory for database caches.
+	/// </summary>
 	public class DbCache
 	{
-		protected internal ConcurrentDictionary<Type, object> Map = new ConcurrentDictionary<Type, object>();
-		protected internal string ConnectionString { get; set; }
+		/// <summary>
+		/// A cache of <see cref="DbCacheTable{T, R}"/>.
+		/// </summary>
+		private readonly ConcurrentDictionary<Type, object> Map = new ConcurrentDictionary<Type, object>();
 
+		private readonly string ConnectionString;
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="DbCache"/> class.
+		/// </summary>
+		/// <param name="connectionString">The connection string</param>
 		public DbCache(string connectionString)
 		{
 			ConnectionString = connectionString;
 		}
 
+		/// <summary>
+		/// Constructs a <see cref="DbCacheTable{T, R}"/> that stores the default <see cref="CacheItem{T}"/>.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <returns>A cache for a database table.</returns>
 		public DbCacheTable<T, CacheItem<T>> CreateTable<T>()
 			where T : class
 		{
 			return CreateTable<T, CacheItem<T>>();
 		}
 
+		/// <summary>
+		/// Constructs a <see cref="DbCacheTable{T, R}"/> that stores a specific <see cref="CacheItem{T}"/> type.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <typeparam name="R">The <see cref="CacheItem{T}"/> type.</typeparam>
+		/// <returns>A cache for a database table.</returns>
 		public DbCacheTable<T, R> CreateTable<T, R>()
 			where T : class
 			where R : CacheItem<T>, new()

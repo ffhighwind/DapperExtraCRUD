@@ -35,6 +35,11 @@ using System.Linq;
 
 namespace Dapper.Extra.Cache
 {
+	/// <summary>
+	/// A cache for objects in a database.
+	/// </summary>
+	/// <typeparam name="T">The table type.</typeparam>
+	/// <typeparam name="R">The cached item type.</typeparam>
 	public sealed class DbCacheTable<T, R> : ICacheTable<T, R>, ICacheTable
 		where T : class
 		where R : CacheItem<T>, new()
@@ -57,8 +62,15 @@ namespace Dapper.Extra.Cache
 
 		private readonly Func<object, T> CreateFromKey;
 
+		/// <summary>
+		/// The internal cache storage.
+		/// </summary>
 		public ICacheStorage<T, R> Items { get; private set; }
 		private readonly CacheAutoStorage<T, R> AutoCache;
+		/// <summary>
+		/// The access object currently being used by the cache. This can be used if you do not want to store
+		/// the results of a query in the cache.
+		/// </summary>
 		public IAccessObjectSync<T> Access { get; private set; }
 		private readonly DataAccessObject<T> DAO;
 		private readonly AutoAccessObject<T> AAO;
@@ -67,23 +79,33 @@ namespace Dapper.Extra.Cache
 		private readonly bool AutoSyncInsert;
 		private readonly bool AutoSyncUpdate;
 
-		public SqlTypeInfo Info => Builder.Info;
-
 		private long MaxAutoKey()
 		{
 			long max = Access.GetKeys<long?>("WHERE " + AutoKeyColumn.ColumnName + " = (SELECT MAX(" + AutoKeyColumn.ColumnName + ") FROM " + Info.TableName + ")").FirstOrDefault() ?? int.MinValue;
 			return max;
 		}
 
-		public R this[T key, int commandTimeout = 30] {
+		/// <summary>
+		/// Returns a cached object if it exists, otherwise it calls <see cref="Get(T, int)"/>.
+		/// </summary>
+		/// <param name="obj">The object to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The selected row if it exists; otherwise null.</returns>
+		public R this[T obj, int commandTimeout = 30] {
 			get {
-				if (!Items.TryGetValue(key, out R value)) {
-					value = Get(key, commandTimeout);
+				if (!Items.TryGetValue(obj, out R value)) {
+					value = Get(obj, commandTimeout);
 				}
 				return value;
 			}
 		}
 
+		/// <summary>
+		/// Returns a cached object by key if it exists, otherwise it calls <see cref="Get(object, int)"/>.
+		/// </summary>
+		/// <param name="key">The key of the row to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The selected row if it exists; otherwise null.</returns>
 		public R this[object key, int commandTimeout = 30] {
 			get {
 				T obj = CreateFromKey(key);
@@ -93,6 +115,10 @@ namespace Dapper.Extra.Cache
 		}
 
 		#region ICacheTable
+		/// <summary>
+		/// Begins a transaction.
+		/// </summary>
+		/// <returns>The transaction.</returns>
 		public DbCacheTransaction BeginTransaction()
 		{
 			if (Access != AAO)
@@ -116,6 +142,10 @@ namespace Dapper.Extra.Cache
 			}
 		}
 
+		/// <summary>
+		/// Adds the table to a transaction
+		/// </summary>
+		/// <param name="transaction">The transaction</param>
 		public void BeginTransaction(DbCacheTransaction transaction)
 		{
 			if (Access != AAO)
@@ -136,6 +166,11 @@ namespace Dapper.Extra.Cache
 				Access = AAO;
 			}
 		}
+
+		/// <summary>
+		/// The table information.
+		/// </summary>
+		public SqlTypeInfo Info => Builder.Info;
 		#endregion ICacheTable
 
 		#region Bulk
@@ -388,7 +423,6 @@ namespace Dapper.Extra.Cache
 		/// <typeparam name="KeyType">The key type.</typeparam>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The keys that match the given condition.</returns>
 		public IEnumerable<KeyType> GetKeys<KeyType>(string whereCondition = "", object param = null, int commandTimeout = 30)
@@ -402,7 +436,6 @@ namespace Dapper.Extra.Cache
 		/// </summary>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The keys that match the given condition.</returns>
 		public IEnumerable<T> GetKeys(string whereCondition = "", object param = null, int commandTimeout = 30)
@@ -417,7 +450,6 @@ namespace Dapper.Extra.Cache
 		/// <param name="limit">The maximum number of rows.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The limited number of rows that match the given condition.</returns>
 		public IEnumerable<R> GetLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
@@ -447,7 +479,6 @@ namespace Dapper.Extra.Cache
 		/// </summary>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
 		public IEnumerable<R> GetList(string whereCondition = "", object param = null, int commandTimeout = 30)
@@ -463,7 +494,6 @@ namespace Dapper.Extra.Cache
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
 		/// <param name="whereCondition">The where condition to use for this query.</param>
 		/// <param name="param">The parameters to use for this query.</param>
-		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
 		public IEnumerable<T> GetList(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30)

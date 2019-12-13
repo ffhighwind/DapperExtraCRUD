@@ -26,8 +26,14 @@
 
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
+
 namespace Dapper.Extra.Cache
 {
+	/// <summary>
+	/// Stores a backup state of all caches in case of a rollback. This has been done efficiently so that it
+	/// only backs up up modified items in a cache instead of the whole state of the cache.
+	/// </summary>
 	public class DbCacheTransaction : IDbTransaction
 	{
 		internal DbCacheTransaction(IDbTransaction transaction)
@@ -37,6 +43,11 @@ namespace Dapper.Extra.Cache
 
 		internal readonly List<IDbTransaction> TransactionStorage = new List<IDbTransaction>();
 
+		/// <summary>
+		/// Adds tables to the transaction.
+		/// </summary>
+		/// <param name="tables">The tables to add.</param>
+		/// <returns>The transaction.</returns>
 		public DbCacheTransaction Add(params ICacheTable[] tables)
 		{
 			foreach (ICacheTable table in tables) {
@@ -46,9 +57,18 @@ namespace Dapper.Extra.Cache
 		}
 
 		internal readonly IDbTransaction Transaction;
+		/// <summary>
+		/// Specifies the Connection object to associate with the transaction.
+		/// </summary>
 		public IDbConnection Connection => Transaction.Connection;
+		/// <summary>
+		/// Specifies the <see cref="IsolationLevel"/> for this transaction.
+		/// </summary>
 		public IsolationLevel IsolationLevel => Transaction.IsolationLevel;
 
+		/// <summary>
+		/// Commits the database transaction.
+		/// </summary>
 		public void Commit()
 		{
 			Transaction.Commit();
@@ -59,6 +79,9 @@ namespace Dapper.Extra.Cache
 			TransactionStorage.Clear();
 		}
 
+		/// <summary>
+		///  Rolls back the transaction.
+		/// </summary>
 		public void Rollback()
 		{
 			foreach (IDbTransaction storage in TransactionStorage) {
@@ -70,6 +93,9 @@ namespace Dapper.Extra.Cache
 		#region IDisposable Support
 		private bool disposedValue = false; // To detect redundant calls
 
+		/// <summary>
+		/// Disposes of the internal <see cref="SqlTransaction"/> and rolls back the caches.
+		/// </summary>
 		protected virtual void Dispose(bool disposing)
 		{
 			if (!disposedValue) {
@@ -90,9 +116,12 @@ namespace Dapper.Extra.Cache
 		//   Dispose(false);
 		// }
 
-		// This code added to correctly implement the disposable pattern.
+		/// <summary>
+		/// Disposes of the internal <see cref="SqlTransaction"/> and rolls back the caches.
+		/// </summary>
 		public void Dispose()
 		{
+			// This code added to correctly implement the disposable pattern.
 			// Do not change this code. Put cleanup code in Dispose(bool disposing) above.
 			Dispose(true);
 			// TODO: uncomment the following line if the finalizer is overridden above.

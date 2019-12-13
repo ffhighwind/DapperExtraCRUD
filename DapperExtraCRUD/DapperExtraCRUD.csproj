@@ -4,7 +4,7 @@
     <AssemblyName>Dapper.ExtraCRUD</AssemblyName>
     <Version>1.0.0</Version>
     <Authors>Wesley Hamilton</Authors>
-    <Description>A small caching framework for Dapper ExtraCRUD.</Description>
+    <Description>A Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more.</Description>
     <NeutralLanguage>en-us</NeutralLanguage>
     <PackageReleaseNotes></PackageReleaseNotes>
     <PackageTags>dapper orm micro-orm sql</PackageTags>

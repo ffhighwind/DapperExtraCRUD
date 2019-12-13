@@ -50,6 +50,11 @@ namespace UnitTests
 				Recreate<Test3>(conn, null);
 				Recreate<TestDTO4>(conn, null);
 
+				DoCacheTests<TestDTO>(() => new TestDTO(random));
+				DoCacheTests<TestDTO2>(() => new TestDTO2(random));
+				DoCacheTests<Test3>(() => new Test3(random));
+				DoCacheTests<TestDTO4>(() => new TestDTO4(random));
+
 				DoTests<TestDTO>(() => new TestDTO(random), (t) => t.UpdateRandomize(random), new TestDTOfilter());
 				DoTests<TestDTO2>(() => new TestDTO2(random), (t) => t.UpdateRandomize(random), new TestDTO2filter());
 				DoTests<Test3>(() => new Test3(random), (t) => t.UpdateRandomize(random), new Test3filter());
@@ -57,11 +62,6 @@ namespace UnitTests
 
 				DoTests<TestDTO, int>(conn);
 				DoTests<TestDTO4, int>(conn);
-
-				DoCacheTests<TestDTO>(() => new TestDTO(random));
-				DoCacheTests<TestDTO2>(() => new TestDTO2(random));
-				DoCacheTests<Test3>(() => new Test3(random));
-				DoCacheTests<TestDTO4>(() => new TestDTO4(random));
 
 				DropTable<TestDTO>(conn);
 				DropTable<TestDTO2>(conn);
