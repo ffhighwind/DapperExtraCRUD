@@ -143,7 +143,7 @@ namespace Dapper.Extra.Cache
 		}
 
 		/// <summary>
-		/// Adds the table to a transaction
+		/// Adds the table to a transaction.
 		/// </summary>
 		/// <param name="transaction">The transaction</param>
 		public void BeginTransaction(DbCacheTransaction transaction)

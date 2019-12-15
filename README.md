@@ -22,14 +22,9 @@ CREATE TABLE [dbo].[Users](
 ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, 
 	ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY];
-
-ALTER TABLE [dbo].[Users] ADD CONSTRAINT [DF_Users_Created]  DEFAULT (getdate()) FOR [Created];
-
-ALTER TABLE [dbo].[Users] ADD CONSTRAINT [DF_Users_Modified]  DEFAULT (getdate()) FOR [Modified];
 ```
 
 ```csharp
-
 // Represents and RDBMS dialect used for generating queries.
 public enum SqlDialect
 {
@@ -210,9 +205,9 @@ Use a view if you need joins. If this is not sufficient then you can use Dapper'
 
 # Performance:
 
-The Dapper.DapperExtraExtensions methods perform lookups on a ConcurrentDictionary and a cast the results every time they are called. You can prevent this 
-by storing the ISqlQueries object and accessing the delegates directly (e.g. AutoAccessObject/DataAccessObject). Also, 
-less frequently used delegates such as bulk operations have lazy initialization. There is a small synchronization cost every time 
+The Dapper.DapperExtraExtensions methods perform lookups on a ConcurrentDictionary and a cast the results every time they are called. This is
+negligible, but it can prevented by storing the ISqlQueries object and accessing the delegates directly (e.g. AutoAccessObject/DataAccessObject). 
+Also, less frequently used delegates such as bulk operations have lazy initialization. There is a small synchronization cost every time 
 these are accessed. This can be prevented by storing a reference to each delegate outside of the ISqlQueries object.
 
 # Future Plans
