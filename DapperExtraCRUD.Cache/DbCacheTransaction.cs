@@ -62,7 +62,7 @@ namespace Dapper.Extra.Cache
 		/// </summary>
 		public IDbConnection Connection => Transaction.Connection;
 		/// <summary>
-		/// Specifies the <see cref="IsolationLevel"/> for this transaction.
+		/// Specifies the <see cref="IDbTransaction.IsolationLevel"/> for this transaction.
 		/// </summary>
 		public IsolationLevel IsolationLevel => Transaction.IsolationLevel;
 

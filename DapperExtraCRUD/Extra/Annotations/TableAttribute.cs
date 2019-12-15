@@ -25,7 +25,7 @@
 #endregion
 
 using System;
-using Dapper.Extra.Internal;
+using System.Threading;
 
 namespace Dapper.Extra.Annotations
 {
@@ -43,12 +43,16 @@ namespace Dapper.Extra.Annotations
 		/// <param name="schema">The schema of the table. This is only for user reference and is completely ignored.</param>
 		/// <param name="declaredOnly">Determines if only top-level properties are used. Subclass properties are ignored if this is true.</param>
 		/// <param name="inheritAttrs">Determines if attributes are inherited.</param>
-		public TableAttribute(string name = null, string schema = null, bool declaredOnly = false, bool inheritAttrs = true)
+		/// <param name="dialect">The dialect to use when generating SQL commands. If this is null then it will store the default dialect
+		/// from <see cref="ExtraCrud.Dialect"/> the first time it is accessed.</param>
+		public TableAttribute(string name = null, string schema = null, bool declaredOnly = false, bool inheritAttrs = true, SqlDialect dialect = 0)
 		{
 			Name = name?.Trim();
 			Schema = string.IsNullOrWhiteSpace(schema) ? "" : schema.Trim();
 			InheritAttributes = inheritAttrs;
 			DeclaredOnly = declaredOnly;
+			LazyDialect = dialect <= 0 ? new Lazy<SqlDialect>(() => ExtraCrud.Dialect, LazyThreadSafetyMode.None)
+				: new Lazy<SqlDialect>(() => dialect, LazyThreadSafetyMode.None);
 		}
 
 		/// <summary>
@@ -67,8 +71,14 @@ namespace Dapper.Extra.Annotations
 		public string Name { get; }
 
 		/// <summary>
-		/// The schema of the table. This is
+		/// The schema of the table.
 		/// </summary>
 		public string Schema { get; }
+
+		private readonly Lazy<SqlDialect> LazyDialect;
+		/// <summary>
+		/// The dialect to use when generating SQL commands.
+		/// </summary>
+		public SqlDialect Dialect => LazyDialect.Value;
 	}
 }

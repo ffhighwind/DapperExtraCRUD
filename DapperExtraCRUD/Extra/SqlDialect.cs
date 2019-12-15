@@ -34,19 +34,19 @@ namespace Dapper.Extra
 		/// <summary>
 		/// Microsoft SQL Server
 		/// </summary>
-		SQLServer = 0,
+		SQLServer = 1,
 		/// <summary>
 		/// PostgreSQL
 		/// </summary>
-		PostgreSQL = 1,
+		PostgreSQL = 2,
 		/// <summary>
 		/// MySQL
 		/// </summary>
-		MySQL = 2,
+		MySQL = 3,
 		/// <summary>
 		/// SQLite
 		/// </summary>
-		SQLite = 3,
+		SQLite = 4,
 		//Oracle,
 	}
 }
