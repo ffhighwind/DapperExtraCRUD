@@ -43,7 +43,7 @@ public enum UserPermissions
 };
 
 [IgnoreDelete] // prevents deletes
-[Table("Users", declaredOnly: true, inheritAttrs: true, dialect: SqlDialect.SQLServer)]
+[Table("Users", declaredOnly: true, inheritAttrs: true)]
 public class User
 {
 	// Primary Key

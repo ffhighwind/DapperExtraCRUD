@@ -31,7 +31,6 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using Dapper.Extra.Internal;
-using Dapper;
 
 namespace Dapper.Extra
 {
@@ -54,10 +53,8 @@ namespace Dapper.Extra
 
 		private static readonly ConcurrentDictionary<Type, object> BuilderCache = new ConcurrentDictionary<Type, object>();
 
-		private static readonly ConcurrentDictionary<Type, object> QueriesCache = new ConcurrentDictionary<Type, object>();
-
 		/// <summary>
-		/// The default dialect for tables without a <see cref="Dapper.Extra.Annotations.TableAttribute"/>.
+		/// The default dialect for tables.
 		/// </summary>
 		public static SqlDialect Dialect { get; set; } = SqlDialect.SQLServer;
 
@@ -72,7 +69,7 @@ namespace Dapper.Extra
 			if (BuilderCache.TryGetValue(type, out object obj)) {
 				return (SqlBuilder<T>)obj;
 			}
-			SqlTypeInfo typeInfo = new SqlTypeInfo(type);
+			SqlTypeInfo typeInfo = new SqlTypeInfo(type, Dialect);
 			SqlBuilder<T> builder = new SqlBuilder<T>(typeInfo);
 			return (SqlBuilder<T>)BuilderCache.GetOrAdd(type, builder);
 		}
@@ -99,7 +96,8 @@ namespace Dapper.Extra
 		/// <typeparam name="T">The table type.</typeparam>
 		public static IEqualityComparer<T> EqualityComparer<T>() where T : class
 		{
-			return Builder<T>().EqualityComparer;
+			IEqualityComparer<T> comparer = Builder<T>().EqualityComparer;
+			return comparer;
 		}
 
 		/// <summary>
@@ -154,7 +152,6 @@ namespace Dapper.Extra
 		{
 			Type type = typeof(T);
 			BuilderCache.TryRemove(type, out _);
-			QueriesCache.TryRemove(type, out _);
 		}
 
 		/// <summary>
@@ -163,7 +160,6 @@ namespace Dapper.Extra
 		public static void PurgeCache()
 		{
 			BuilderCache.Clear();
-			QueriesCache.Clear();
 		}
 
 		/// <summary>
@@ -173,12 +169,8 @@ namespace Dapper.Extra
 		/// <returns>The queries for the given type.</returns>
 		public static ISqlQueries<T> Queries<T>() where T : class
 		{
-			Type type = typeof(T);
-			if (QueriesCache.TryGetValue(type, out object obj)) {
-				return (SqlQueries<T>)obj;
-			}
 			ISqlQueries<T> queries = Builder<T>().Queries;
-			return (ISqlQueries<T>)QueriesCache.GetOrAdd(type, queries);
+			return queries;
 		}
 
 		/// <summary>
@@ -188,7 +180,32 @@ namespace Dapper.Extra
 		/// <returns>The <see cref="SqlTypeInfo"/>.</returns>
 		public static SqlTypeInfo TypeInfo<T>() where T : class
 		{
-			return Builder<T>().Info;
+			SqlTypeInfo typeInfo = Builder<T>().Info;
+			return typeInfo;
+		}
+
+		/// <summary>
+		/// Sets the adapter for the queries/builder. This can be a custom adapter. The builder 
+		/// for the given type will be purged from the cache if it is not using the given adapter.
+		/// </summary>
+		/// <typeparam name="T">The table type.</typeparam>
+		/// <param name="adapter">The adapter used to generate SQL commands.</param>
+		public static void SetAdapter<T>(ISqlAdapter adapter) where T : class
+		{
+			if (adapter == null) {
+				throw new ArgumentNullException(nameof(adapter));
+			}
+			Type type = typeof(T);
+			SqlBuilder<T> builder;
+			if (BuilderCache.TryGetValue(type, out object obj)) {
+				builder = (SqlBuilder<T>)obj;
+				if (ReferenceEquals(builder.Info.Adapter, adapter)) {
+					return;
+				}
+			}
+			SqlTypeInfo typeInfo = new SqlTypeInfo(type, adapter);
+			builder = new SqlBuilder<T>(typeInfo);
+			BuilderCache.AddOrUpdate(type, builder, (t, old) => builder);
 		}
 
 		private static SqlDialect _DetectDialect(IDbConnection conn)

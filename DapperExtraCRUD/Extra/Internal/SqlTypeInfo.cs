@@ -44,9 +44,21 @@ namespace Dapper.Extra.Internal
 		/// Initializes a new instance of the <see cref="SqlTypeInfo"/> class.
 		/// </summary>
 		/// <param name="type">The table type.</param>
-		public SqlTypeInfo(Type type)
+		/// <param name="dialect">The dialect used to generate SQL commands.</param>
+		public SqlTypeInfo(Type type, SqlDialect dialect = SqlDialect.SQLServer) 
+			: this(type, SqlAdapter.GetAdapter(dialect))
+		{
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="SqlTypeInfo"/> class.
+		/// </summary>
+		/// <param name="type">The table type.</param>
+		/// <param name="adapter">The adapter used to generate SQL commands.</param>
+		public SqlTypeInfo(Type type, ISqlAdapter adapter)
 		{
 			Type = type;
+			Adapter = adapter ?? SqlAdapter.SQLServer;
 			TableAttribute tableAttr = type.GetCustomAttribute<TableAttribute>(false);
 			BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty;
 			bool inherit = false;
@@ -56,7 +68,6 @@ namespace Dapper.Extra.Internal
 				TableName = tableAttr2 != null ? tableAttr2.Name : type.Name;
 			}
 			else {
-				Adapter = SqlAdapter.GetAdapter(tableAttr.Dialect);
 				TableName = string.IsNullOrWhiteSpace(tableAttr.Name) ? type.Name : tableAttr.Name;
 				if (tableAttr.DeclaredOnly) {
 					flags |= BindingFlags.DeclaredOnly;
