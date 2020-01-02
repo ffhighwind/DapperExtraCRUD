@@ -27,7 +27,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnitTests
+namespace ConsoleTests
 {
 	public interface IDto<T> : IComparable<T>, IEquatable<T>, IEqualityComparer<T>
 	{

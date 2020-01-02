@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace UnitTests
+namespace ConsoleTests
 {
 	public class TestDTOfilter : IFilter<TestDTO>
 	{

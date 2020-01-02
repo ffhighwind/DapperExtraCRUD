@@ -27,7 +27,7 @@
 using System;
 using Dapper.Extra.Annotations;
 
-namespace UnitTests
+namespace ConsoleTests
 {
 	[Table("Test4")]
 	public class TestDTO4 : IDtoKey<TestDTO4, int>

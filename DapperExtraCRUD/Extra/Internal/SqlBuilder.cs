@@ -69,7 +69,7 @@ namespace Dapper.Extra.Internal
 			if (info.Type == typeof(string))
 				throw new InvalidOperationException("String is not a valid table type.");
 			Info = info;
-			BulkStagingTable = Info.Adapter.CreateTempTableName(Info.Type.Name + (Info.Type.FullName.GetHashCode() % 10000));
+			BulkStagingTable = Info.Adapter.CreateTempTableName(Info.Type.Name + (Math.Abs(Info.Type.FullName.GetHashCode()) % 99793));
 			SqlQueries<T> queries = new SqlQueries<T>() {
 				Delete = CreateDelete(),
 				Get = CreateGet(),

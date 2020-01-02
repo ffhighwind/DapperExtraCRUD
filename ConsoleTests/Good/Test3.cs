@@ -28,7 +28,7 @@ using System;
 using System.Collections.Generic;
 using Dapper.Extra.Annotations;
 
-namespace UnitTests
+namespace ConsoleTests
 {
 	public class Test3 : IDto<Test3>
 	{

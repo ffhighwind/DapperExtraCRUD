@@ -31,6 +31,7 @@ namespace Dapper.Extra.Annotations
 	/// <summary>
 	/// A named column in a database table.
 	/// </summary>
+	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
 	public class ColumnAttribute : Attribute
 	{
 		/// <summary>

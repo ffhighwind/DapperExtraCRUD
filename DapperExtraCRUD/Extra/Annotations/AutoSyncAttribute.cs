@@ -31,6 +31,7 @@ namespace Dapper.Extra.Annotations
 	/// <summary>
 	/// Synchronizes the column with the database on updates/inserts.
 	/// </summary>
+	[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
 	public class AutoSyncAttribute : Attribute
 	{
 		/// <summary>

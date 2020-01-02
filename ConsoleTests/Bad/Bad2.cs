@@ -26,7 +26,7 @@
 
 using Dapper.Extra.Annotations;
 
-namespace UnitTests
+namespace ConsoleTests
 {
 	public class Bad2
 	{

@@ -1,4 +1,4 @@
-﻿namespace UnitTests
+﻿namespace ConsoleTests
 {
 	public class Test3filter : IFilter<Test3>
 	{

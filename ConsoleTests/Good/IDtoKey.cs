@@ -25,7 +25,7 @@
 #endregion
 
 
-namespace UnitTests
+namespace ConsoleTests
 {
 	public interface IDtoKey<T, KeyType> : IDto<T>
 		where T : IDtoKey<T, KeyType>

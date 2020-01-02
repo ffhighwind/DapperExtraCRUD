@@ -1,4 +1,4 @@
-﻿namespace UnitTests
+﻿namespace ConsoleTests
 {
 	public class TestDTO4filter : IFilter<TestDTO4>
 	{

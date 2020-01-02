@@ -51,8 +51,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Dapper.StrongName" Version="2.0.30" />
     <PackageReference Include="Fasterflect.Reflect" Version="3.1.0" />
-    <PackageReference Include="Dapper" Version="2.0.30" />
   </ItemGroup>
 
   <ItemGroup>

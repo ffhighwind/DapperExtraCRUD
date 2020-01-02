@@ -25,7 +25,7 @@
 #endregion
 
 
-namespace UnitTests
+namespace ConsoleTests
 {
 	public class Bad1
 	{

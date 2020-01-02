@@ -34,7 +34,7 @@ using Dapper.Extra;
 using Dapper.Extra.Utilities;
 using Dapper.Extra.Cache;
 
-namespace UnitTests
+namespace ConsoleTests
 {
 	public class Program
 	{
