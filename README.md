@@ -1,42 +1,76 @@
 # Description:
 
 A thread-safe Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more. Unique additions
-include Bulk operations, AutoSync, new attributes (Versioning keys: MatchUpdate, MatchDelete), Distinct, 
+include Bulk operations, AutoSync, MatchUpdate, MatchDelete, Distinct, 
 Top/Limit, Upsert, and Insert If Not Exists. It also exposes most of the underlying metadata to 
 allow customization and improved performance.
 
+# Extensions:
+
+All extension methods can be seen [here](https://github.com/ffhighwind/DapperExtraCRUD/blob/master/DapperExtraCRUD/DapperExtraExtensions.cs). Bulk operations are only supported for Microsoft SQL Server.
+Update and distinct extensions support custom objects in order to filter the properties.
+
+| Extension | SQL Command |
+| --- | --- |
+| RecordCount | Select count(*) from TABLE where ... |
+| Truncate | Truncate TABLE |
+| Update | Update TABLE T set ...  |
+| Insert | Insert into TABLE ... |
+| InsertIfNotExists | If not exists (select * from TABLE where ...) insert into TABLE ... |
+| Upsert | If not exists (select * from TABLE where ...) insert into TABLE ... else update TABLE set ... |
+| Delete | Delete from TABLE where ... |
+| DeleteList | Delete from TABLE where ... |
+| Get | Select ... from TABLE where ... |
+| GetList | Select ... from TABLE where ... |
+| GetLimit | Select top(N) from TABLE where ... |
+| GetKeys | Select ... from TABLE where ... |
+| GetDistinct | Select distinct ... from TABLE where ... |
+| GetDistinctLimit | Select distinct top(N) from TABLE where ... |
+| BulkDelete | Delete from TABLE where ... |
+| BulkGet | Select from TABLE where ... |
+| BulkInsert |Insert into TABLE ... |
+| BulkUpdate| Update TABLE set ... |
+| BulkInsertIfNotExists | If not exists (select * from TABLE where ...) insert into TABLE ... |
+| BulkUpsert | If not exists (select * from TABLE where ...) insert into TABLE ... else update TABLE set ... |
+
+# Annotations:
+
+These map properties/classes to a database tables and columns.
+
+| Annotation | Description |
+| --- | --- |
+| Table | Map a class to a table. |
+| Column | Map a property to a column. |
+| Key | Map a property to a primary key. |
+| NotMapped | Prevent a property from being mapped. |
+| AutoSync | Automatically selects a column after an insert/update. This does not affect bulk operations. |
+| IgnoreDelete | Prevents deletes. |
+| IgnoreSelect | Ignores a column for selects. This does not work for primary keys. |
+| IgnoreInsert | Ignores a column for insertions. A raw SQL string can replace the value (e.g. 'getdate()'). This does not work for primary keys. |
+| IgnoreUpdate | Ignores a column for updates. A raw SQL string can replace the value. This does not work for primary keys. |
+| MatchUpdate | Treats a column as a primary key for updates. A raw SQL string can replace the value. |
+| MatchDelete | Treats a column as a primary key for deletes. |
+
+# Annotation Priority:
+
+[NotMapped] > [Key] > ... \
+[IgnoreInsert] > [MatchInsert] \
+[IgnoreUpdate] > [MatchUpdate]
+
 # Example:
 
-```sql
-CREATE TABLE [dbo].[Users](
-	[UserID] [int] NOT NULL,
-	[FirstName] [varchar](100) NOT NULL,
-	[LastName] [varchar](100) NOT NULL,
-	[Account Name] [varchar](255) NOT NULL,
-	[Permissions] [tinyint] NOT NULL,
-	[Modified] [datetime2](7) NOT NULL,
-	[Created] [datetime2](7) NOT NULL,
- CONSTRAINT [PK_Users] PRIMARY KEY CLUSTERED 
-(
-	[UserID] ASC
-) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, 
-	ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY];
-```
-
 ```csharp
-[IgnoreDelete] // prevents deletes
-[Table("Users", declaredOnly: true, inheritAttrs: true)]
+[IgnoreDelete]
+[Table(name: "Users", declaredOnly: true, inheritAttrs: true)]
 public class User
 {
-	// Primary Key
 	[Key(autoIncrement: false)]
 	public int UserID { get; set; }
 
 	public string FirstName { get; set; }
+
 	public string LastName { get; set; }
-	
-	// UserName maps to the column 'Account Name'
+
 	[Column("Account Name")]
 	public decimal UserName { get; set; }
 
@@ -50,37 +84,12 @@ public class User
 	[IgnoreUpdate]
 	[IgnoreInsert("getdate()")]
 	public DateTime Created { get; set; }
-
-	private List<User> _Friends { get; set; } = new List<User>();
-	public IReadOnlyList<User> Friends => Friends;
-	public void AddFriend(User friend)
-	{
-		_Friends.Add(friend);
-	}
-	public int NotUsed { get; }
-	private int BestFriendID { get; set; }
-	public decimal Points;
-	[NotMapped]
-	public bool IsDirty { get; set; }
 }
 ```
 
-* User objects represent rows in the [Users] table.
-* [IgnoreDelete] means nothing will occur when delete methods are invoked.
-* [Key(autoIncrement: false)] means the property is a primary key of the table. It is also not an identity (not auto-incrementing) key.
-* [IgnoreInsert(autoSync: true)] means that the property will receive the default value 'getdate()' on inserts. Autosync means that the property 
-will be automatically updated using a select after an insert.
-* [MatchUpdate(value: "getdate()", autoSync: true)] means that the property acts as a versioning key for updates. This means that updates will 
-fail unless the property's value matches what is in the database. After a successful update the value will be set to 'getdate()'.
-* [MatchDelete] means that the property acts as a pseudo-key for deletes. The row will only be deleted if the property's value matches 
-what is in the database.
-* [NotMapped] means that the property should be ignored completely. This should be used on properties that do not represent a column
-in the table.
-* The following columns are ignored for various reasons: _Friends, Friends, NotUsed, BestFriendID, Points, and IsDirty. 
-A valid property must have a public set method and its type must be a standard SQL type, enum, or implement Dapper.SqlMapper.ITypeHandler.
-* A [Key] property without a get method is equivalent to adding \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] to the class.
-
 # Alternative Annotations
+
+You can use annotations from System.ComponentModel instead of Dapper.Extra.Annotations.
 
 | System.ComponentModel | Dapper.Extra.Annotations |
 | --- | --- |
@@ -101,11 +110,29 @@ A valid property must have a public set method and its type must be a standard S
 | - | \[MatchDelete] (property) |
 | - | \[MatchUpdate] (property) |
 
-# Annotation Priority:
+# Utilities:
 
-[NotMapped] > [Required] > [Key] > ... \
-[IgnoreInsert] > [MatchInsert] \
-[IgnoreUpdate] > [MatchUpdate]
+#### AutoAccessObject<T> / DataAccessObject<T>
+
+These include the same the functionality as the extension methods but require fewer parameters per call because they store an SqlConnection or SqlTransaction. 
+They also perform a slightly better than the extension methods because they store a reference to the ISqlQueries.
+
+#### WhereConditionGenerator
+
+This generates SQL WHERE conditions from a Linq.Expression<Predicate<T>>. It can be somewhat expensive to generate, so I recommend caching the results when possible.
+The main reason to use this utility is if you need a type-safe query or need to map a predicate to SQL command. Specifically, I have used this to remove items 
+from a dictionary after deleting rows from a database. It is not well tested, so I do not recommend using it in a production environment.
+
+# Tip:
+
+Use a view if you need joins. If this is not sufficient then you can use Dapper's multi-mapping queries or manually map the results.
+
+# Performance:
+
+The Dapper.DapperExtraExtensions methods perform lookups on a ConcurrentDictionary and a cast the results every time they are called. This is
+negligible, but it can prevented by storing the ISqlQueries object and accessing the delegates directly (e.g. AutoAccessObject/DataAccessObject). 
+Also, less frequently used delegates such as bulk operations have lazy initialization. There is a small synchronization cost every time 
+these are accessed. This can be prevented by storing a reference to each delegate outside of the ISqlQueries object.
 
 # Accessing Metadata:
 
@@ -168,30 +195,6 @@ public static void Main(string[] args)
 	}
 }
 ```
-
-# Utilities:
-
-#### AutoAccessObject<T> / DataAccessObject<T>
-
-These include the same the functionality as the extension methods but require fewer parameters per call because they store an SqlConnection or SqlTransaction. 
-They also perform a slightly better than the extension methods because they store a reference to the ISqlQueries.
-
-#### WhereConditionGenerator
-
-This generates SQL WHERE conditions from a Linq.Expression<Predicate<T>>. It can be somewhat expensive to generate, so I recommend caching the results when possible.
-The main reason to use this utility is if you need a type-safe query or need to map a predicate to SQL command. Specifically, I have used this to remove items 
-from a dictionary after deleting rows from a database. It is not well tested, so I do not recommend using it in a production environment.
-
-# Tip:
-
-Use a view if you need joins. If this is not sufficient then you can use Dapper's multi-mapping queries or manually map the results.
-
-# Performance:
-
-The Dapper.DapperExtraExtensions methods perform lookups on a ConcurrentDictionary and a cast the results every time they are called. This is
-negligible, but it can prevented by storing the ISqlQueries object and accessing the delegates directly (e.g. AutoAccessObject/DataAccessObject). 
-Also, less frequently used delegates such as bulk operations have lazy initialization. There is a small synchronization cost every time 
-these are accessed. This can be prevented by storing a reference to each delegate outside of the ISqlQueries object.
 
 # Future Plans
 
