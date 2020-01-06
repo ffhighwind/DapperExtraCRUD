@@ -25,23 +25,6 @@ CREATE TABLE [dbo].[Users](
 ```
 
 ```csharp
-// Represents and RDBMS dialect used for generating queries.
-public enum SqlDialect
-{
-	SQLServer,
-	PostgreSQL,
-	MySQL,
-	SQLite,
-}
-
-public enum UserPermissions
-{
-	None = 0,
-	Basic = 1,
-	Admin = 2,
-	SuperAdmin = 3
-};
-
 [IgnoreDelete] // prevents deletes
 [Table("Users", declaredOnly: true, inheritAttrs: true)]
 public class User

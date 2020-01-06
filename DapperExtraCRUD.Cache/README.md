@@ -42,14 +42,15 @@ public static class Program
 		DbCacheTable<Person, PersonItem> personCache = cache.CreateTable<Person, PersonItem>();
 		DbCacheTable<Person> employeeCache = cache.CreateTable<Employee>();
 		personCache.GetList(); // get all rows in the database
-		using(IDbTransaction transaction = personCache.BeginTransaction()) {
-			Person person = new Person() {
-				Name = "Joe Smith",
-				DateOfBirth = DateTime.Today.AddDays(-365 * 20);
-			};
-			PersonItem personItem = personCache.Insert(person); // automatically uses the transaction
 
+		Person person = new Person() {
+			Name = "Joe Smith",
+			DateOfBirth = DateTime.Today.AddDays(-365 * 20);
+		};
+
+		using (IDbTransaction transaction = personCache.BeginTransaction()) {
 			transaction.Add(employeeCache); // employee table is now part of the transaction
+			PersonItem personItem = personCache.Insert(person); // automatically uses the transaction
 			Employee employee = new Employee() {
 				Id = personItem.Id,
 				HireDate = DateTime.Now,
