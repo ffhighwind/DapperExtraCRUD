@@ -1,10 +1,12 @@
-# Description:
+# Introduction:
+
+[Nuget: Dapper.ExtraCRUD](https://www.nuget.org/packages/Dapper.ExtraCRUD/)
 
 A thread-safe Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more. Unique additions
 include Bulk operations, AutoSync, MatchUpdate, MatchDelete, Distinct, Top/Limit, Upsert, and Insert If Not Exists. 
 It also exposes most of the underlying metadata to allow customization and improved performance.
 
-# Extensions:
+## Extensions:
 
 Bulk operations are only supported for Microsoft SQL Server. Update and distinct extensions support custom objects in order to filter the properties.
 
@@ -31,7 +33,7 @@ Bulk operations are only supported for Microsoft SQL Server. Update and distinct
 | BulkDelete | Delete from [TABLE] where ... |
 | BulkGet | Select from [TABLE] where ... |
 
-# Annotations:
+## Annotations:
 
 Annotations map classes to a database tables and properties to table columns.
 
@@ -49,13 +51,13 @@ Annotations map classes to a database tables and properties to table columns.
 | MatchUpdate | Treats a column as a primary key for updates. A raw SQL string can replace the value. |
 | MatchDelete | Treats a column as a primary key for deletes. |
 
-# Annotation Priority:
+## Annotation Priority:
 
 [NotMapped] > [Key] > ... \
 [IgnoreInsert] > [MatchInsert] \
 [IgnoreUpdate] > [MatchUpdate]
 
-# Example:
+## Example:
 
 This example shows how to define a "Users" table and perform some operations on it.
 
@@ -103,7 +105,7 @@ public static class Program {
 }
 ```
 
-# Alternative Annotations
+## Alternative Annotations
 
 Some annotations from System.ComponentModel are supported as replacements for Dapper.Extra.Annotations. 
 
@@ -119,7 +121,7 @@ Some annotations from System.ComponentModel are supported as replacements for Da
 | public int Property { set; private get; } | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
 | \[NotMapped] | \[NotMapped] |
 
-# Utilities:
+## Utilities
 
 #### AutoAccessObject<T> / DataAccessObject<T>
 
@@ -136,7 +138,7 @@ from a dictionary after deleting rows from a database. It is not well tested, so
 
 This static class contains a few helper functions such as IsQuotedSqlType, IsSqlIdentifier, SqlValue, etc.
 
-# Accessing Metadata:
+## Accessing Metadata:
 
 ```csharp
 public static void Main(string[] args)
@@ -164,18 +166,18 @@ public static void Main(string[] args)
 }
 ```
 
-# Tip:
+## Tip:
 
 Use a view if you need joins. If this is not sufficient then you can use Dapper's multi-mapping queries or manually map the results.
 
-# Performance:
+## Performance:
 
 The Dapper.DapperExtraExtensions methods perform lookups on a ConcurrentDictionary and a cast the results every time they are called. This is
 negligible, but it can prevented by storing the ISqlQueries object and accessing the delegates directly (e.g. AutoAccessObject/DataAccessObject). 
 Also, less frequently used delegates such as bulk operations have lazy initialization. There is a small synchronization cost every time 
 these are accessed. This can be prevented by storing a reference to each delegate outside of the ISqlQueries object.
 
-# Future Plans
+## Future Plans
 
 * ITypeHandler tests
 * Other RDBMS tests
