@@ -130,16 +130,9 @@ This generates SQL WHERE conditions from a Linq.Expression<Predicate<T>>. It can
 The main reason to use this utility is if you need a type-safe query or need to map a predicate to SQL command. Specifically, I have used this to remove items 
 from a dictionary after deleting rows from a database. It is not well tested, so I do not recommend using it in a production environment.
 
-# Tip:
+#### ExtraUtil
 
-Use a view if you need joins. If this is not sufficient then you can use Dapper's multi-mapping queries or manually map the results.
-
-# Performance:
-
-The Dapper.DapperExtraExtensions methods perform lookups on a ConcurrentDictionary and a cast the results every time they are called. This is
-negligible, but it can prevented by storing the ISqlQueries object and accessing the delegates directly (e.g. AutoAccessObject/DataAccessObject). 
-Also, less frequently used delegates such as bulk operations have lazy initialization. There is a small synchronization cost every time 
-these are accessed. This can be prevented by storing a reference to each delegate outside of the ISqlQueries object.
+This static class contains a few helper functions such as IsQuotedSqlType, IsSqlIdentifier, SqlValue, etc.
 
 # Accessing Metadata:
 
@@ -168,6 +161,17 @@ public static void Main(string[] args)
 	Dictionary<User, User> map = new Dictionary<User, User>(comparer);
 }
 ```
+
+# Tip:
+
+Use a view if you need joins. If this is not sufficient then you can use Dapper's multi-mapping queries or manually map the results.
+
+# Performance:
+
+The Dapper.DapperExtraExtensions methods perform lookups on a ConcurrentDictionary and a cast the results every time they are called. This is
+negligible, but it can prevented by storing the ISqlQueries object and accessing the delegates directly (e.g. AutoAccessObject/DataAccessObject). 
+Also, less frequently used delegates such as bulk operations have lazy initialization. There is a small synchronization cost every time 
+these are accessed. This can be prevented by storing a reference to each delegate outside of the ISqlQueries object.
 
 # Future Plans
 
