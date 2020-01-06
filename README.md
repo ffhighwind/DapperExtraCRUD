@@ -148,15 +148,15 @@ public static void Main(string[] args)
 	// Contains delegates and other metadata for accessing this table/type
 	SqlBuilder<User> builder = ExtraCrud.Builder<User>(); 
 
-	// Access query delegates
+	// Contains delegates for SQL commands
 	SqlQueries<User> queries = ExtraCrud.Queries<User>();
 
 	// Clear metadata to allow garbage collection. This will increase memory usage if you keep a reference 
-	// to purged metadata. I recommend only doing this if are having problems with OutOfMemoryExceptions.
+	// to purged metadata. 
 	ExtraCrud.Purge<User>();
 	ExtraCrud.Purge();
 
-	// Compares <User> for equality based on the keys
+	// Compares User objects for equality based on the primary keys
 	IEqualityComparer<User> comparer = ExtraCrud.EqualityComparer<User>();
 	Dictionary<User, User> map = new Dictionary<User, User>(comparer);
 }
