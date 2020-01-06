@@ -33,7 +33,7 @@ Bulk operations are only supported for Microsoft SQL Server. Update and distinct
 
 # Annotations:
 
-These map properties/classes to a database tables and columns.
+Annotations map classes to a database tables and properties to table columns.
 
 | Annotation | Description |
 | --- | --- |
@@ -56,6 +56,8 @@ These map properties/classes to a database tables and columns.
 [IgnoreUpdate] > [MatchUpdate]
 
 # Example:
+
+This example shows how to define a "Users" table and perform some operations on it.
 
 ```csharp
 [IgnoreDelete]
