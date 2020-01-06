@@ -13,7 +13,7 @@ Update and distinct extensions support custom objects in order to filter the pro
 | Extension | SQL Command |
 | --- | --- |
 | RecordCount | Select count(*) from TABLE where ... |
-| Truncate | Truncate TABLE |
+| Truncate | Truncate table TABLE |
 | Update | Update TABLE T set ...  |
 | Insert | Insert into TABLE ... |
 | InsertIfNotExists | If not exists (select * from TABLE where ...) insert into TABLE ... |
@@ -26,12 +26,12 @@ Update and distinct extensions support custom objects in order to filter the pro
 | GetKeys | Select ... from TABLE where ... |
 | GetDistinct | Select distinct ... from TABLE where ... |
 | GetDistinctLimit | Select distinct top(N) from TABLE where ... |
-| BulkDelete | Delete from TABLE where ... |
-| BulkGet | Select from TABLE where ... |
-| BulkInsert |Insert into TABLE ... |
 | BulkUpdate| Update TABLE set ... |
+| BulkInsert |Insert into TABLE ... |
 | BulkInsertIfNotExists | If not exists (select * from TABLE where ...) insert into TABLE ... |
 | BulkUpsert | If not exists (select * from TABLE where ...) insert into TABLE ... else update TABLE set ... |
+| BulkDelete | Delete from TABLE where ... |
+| BulkGet | Select from TABLE where ... |
 
 # Annotations:
 
@@ -64,7 +64,7 @@ These map properties/classes to a database tables and columns.
 [Table(name: "Users", declaredOnly: true, inheritAttrs: true)]
 public class User
 {
-	[Key(autoIncrement: false)]
+	[Key]
 	public int UserID { get; set; }
 
 	public string FirstName { get; set; }
@@ -76,7 +76,7 @@ public class User
 
 	public UserPermissions Permissions { get; set; }
 
-	[IgnoreInsert(autoSync: true)] // Defaults to getdate()
+	[IgnoreInsert(autoSync: true)]
 	[MatchUpdate(value: "getdate()", autoSync: true)]
 	[MatchDelete]
 	public DateTime Modified { get; set; }
@@ -89,7 +89,7 @@ public class User
 
 # Alternative Annotations
 
-You can use annotations from System.ComponentModel instead of Dapper.Extra.Annotations.
+Some annotations from System.ComponentModel are supported as replacements for Dapper.Extra.Annotations. 
 
 | System.ComponentModel | Dapper.Extra.Annotations |
 | --- | --- |
@@ -102,13 +102,6 @@ You can use annotations from System.ComponentModel instead of Dapper.Extra.Annot
 | \[ReadOnly(true)] (class) | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
 | public int Property { set; private get; } | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
 | \[NotMapped] | \[NotMapped] (property) |
-| - | \[IgnoreSelect] (property) |
-| - | \[IgnoreInsert] (class/property) |
-| - | \[IgnoreUpdate] (class/property) |
-| - | \[IgnoreDelete] (class) |
-| - | \[AutoSync] (property) |
-| - | \[MatchDelete] (property) |
-| - | \[MatchUpdate] (property) |
 
 # Utilities:
 
