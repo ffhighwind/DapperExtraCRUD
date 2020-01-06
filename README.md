@@ -1,37 +1,35 @@
 # Description:
 
 A thread-safe Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more. Unique additions
-include Bulk operations, AutoSync, MatchUpdate, MatchDelete, Distinct, 
-Top/Limit, Upsert, and Insert If Not Exists. It also exposes most of the underlying metadata to 
-allow customization and improved performance.
+include Bulk operations, AutoSync, MatchUpdate, MatchDelete, Distinct, Top/Limit, Upsert, and Insert If Not Exists. 
+It also exposes most of the underlying metadata to allow customization and improved performance.
 
 # Extensions:
 
-All extension methods can be seen [here](https://github.com/ffhighwind/DapperExtraCRUD/blob/master/DapperExtraCRUD/DapperExtraExtensions.cs). Bulk operations are only supported for Microsoft SQL Server.
-Update and distinct extensions support custom objects in order to filter the properties.
+Bulk operations are only supported for Microsoft SQL Server. Update and distinct extensions support custom objects in order to filter the properties.
 
 | Extension | SQL Command |
 | --- | --- |
-| RecordCount | Select count(*) from TABLE where ... |
-| Truncate | Truncate table TABLE |
-| Update | Update TABLE T set ...  |
-| Insert | Insert into TABLE ... |
-| InsertIfNotExists | If not exists (select * from TABLE where ...) insert into TABLE ... |
-| Upsert | If not exists (select * from TABLE where ...) insert into TABLE ... else update TABLE set ... |
-| Delete | Delete from TABLE where ... |
-| DeleteList | Delete from TABLE where ... |
-| Get | Select ... from TABLE where ... |
-| GetList | Select ... from TABLE where ... |
-| GetLimit | Select top(N) from TABLE where ... |
-| GetKeys | Select ... from TABLE where ... |
-| GetDistinct | Select distinct ... from TABLE where ... |
-| GetDistinctLimit | Select distinct top(N) from TABLE where ... |
-| BulkUpdate| Update TABLE set ... |
-| BulkInsert |Insert into TABLE ... |
-| BulkInsertIfNotExists | If not exists (select * from TABLE where ...) insert into TABLE ... |
-| BulkUpsert | If not exists (select * from TABLE where ...) insert into TABLE ... else update TABLE set ... |
-| BulkDelete | Delete from TABLE where ... |
-| BulkGet | Select from TABLE where ... |
+| RecordCount | Select count(*) from [TABLE] where ... |
+| Truncate | Truncate table [TABLE] |
+| Update | Update [TABLE] set ...  |
+| Insert | Insert into [TABLE] ... |
+| InsertIfNotExists | If not exists (select * from [TABLE] where ...) insert into [TABLE] ... |
+| Upsert | If not exists (select * from [TABLE] where ...) insert into TABLE ... else update [TABLE] set ... |
+| Delete | Delete from [TABLE] where ... |
+| DeleteList | Delete from [TABLE] where ... |
+| Get | Select ... from [TABLE] where ... |
+| GetList | Select ... from [TABLE] where ... |
+| GetLimit | Select top(N) from [TABLE] where ... |
+| GetKeys | Select ... from [TABLE] where ... |
+| GetDistinct | Select distinct ... from [TABLE] where ... |
+| GetDistinctLimit | Select distinct top(N) from [TABLE] where ... |
+| BulkUpdate| Update [TABLE] set ... |
+| BulkInsert |Insert into [TABLE] ... |
+| BulkInsertIfNotExists | If not exists (select * from [TABLE] where ...) insert into [TABLE] ... |
+| BulkUpsert | If not exists (select * from [TABLE] where ...) insert into TABLE ... else update [TABLE] set ... |
+| BulkDelete | Delete from [TABLE] where ... |
+| BulkGet | Select from [TABLE] where ... |
 
 # Annotations:
 
@@ -41,8 +39,8 @@ These map properties/classes to a database tables and columns.
 | --- | --- |
 | Table | Map a class to a table. |
 | Column | Map a property to a column. |
-| Key | Map a property to a primary key. |
 | NotMapped | Prevent a property from being mapped. |
+| Key | Map a property to a primary key. |
 | AutoSync | Automatically selects a column after an insert/update. This does not affect bulk operations. |
 | IgnoreDelete | Prevents deletes. |
 | IgnoreSelect | Ignores a column for selects. This does not work for primary keys. |
@@ -85,6 +83,22 @@ public class User
 	[IgnoreInsert("getdate()")]
 	public DateTime Created { get; set; }
 }
+
+public static class Program {
+	public static void Main() {
+		using (SqlConnection conn = new SqlConnection(ConnString)) {
+			DateTime minHireDate = DateTime.Today.AddDays(-30);
+			IEnumerable<User> users = conn.GetList<User>("where HireDate >= @minHireDate ", new { minHireDate });
+			User user = new User() {
+				FirstName = "Jason",
+				LastName = "Borne",
+				UserName = "jborne",
+				Permissions = UserPermissions.Admin,
+			}
+			conn.Insert(user);
+		}
+	}
+}
 ```
 
 # Alternative Annotations
@@ -101,7 +115,7 @@ Some annotations from System.ComponentModel are supported as replacements for Da
 | \[ReadOnly(true)] (property) | \[IgnoreInsert]\[IgnoreUpdate] |
 | \[ReadOnly(true)] (class) | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
 | public int Property { set; private get; } | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
-| \[NotMapped] | \[NotMapped] (property) |
+| \[NotMapped] | \[NotMapped] |
 
 # Utilities:
 
@@ -149,43 +163,9 @@ public static void Main(string[] args)
 	ExtraCrud.Purge<User>();
 	ExtraCrud.Purge();
 
-	using (SqlConnection conn = new SqlConnection(ConnString)) {
-		conn.Open();
-
-		// Get all users created within the last month
-		DateTime minDate = DateTime.Today.AddDays(-30);
-		List<User> users = queries.GetList("WHERE Created >= @minDate", new { minDate });
-
-		User johnDoe = new User()
-		{
-			UserID = 1,
-			FirstName = "John",
-			LastName = "Doe",
-			Permissions = UserPermissions.Basic,
-		};
-
-		using (SqlTransaction trans = conn.BeginTransaction()) {
-			if(!conn.InsertIfNotExists(user, trans)) {
-				Console.WriteLine("User already exists!"); // based on the UserID
-			}
-			else
-				trans.Commit();
-		}
-
-		johnDoe = conn.Get(johnDoe.UserID, trans);
-
-		// Compares <User> for equality based on the keys
-		IEqualityComparer<User> comparer = ExtraCrud.EqualityComparer<User>();
-
-		Dictionary<User, User> map = new Dictionary<User, User>(comparer);
-		foreach (User user in users) {
-			if(!comparer.Equals(user, johnDoe)) {
-				// Prevent self friendship
-				user.AddFriend(johnDoe);
-			}
-			map.Add(user, user);
-		}
-	}
+	// Compares <User> for equality based on the keys
+	IEqualityComparer<User> comparer = ExtraCrud.EqualityComparer<User>();
+	Dictionary<User, User> map = new Dictionary<User, User>(comparer);
 }
 ```
 
