@@ -58,6 +58,7 @@ public static class Program
 				HireDate = DateTime.Now,
 			};
 			CacheItem<Employee> employeeItem = employeeCache.Insert(employee);
+			transaction.Commit();
 		}
 	}
 }

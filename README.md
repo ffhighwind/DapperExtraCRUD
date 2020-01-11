@@ -89,6 +89,8 @@ public class User
 }
 
 public static class Program {
+	private const string ConnString = "Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;";
+	
 	public static void Main() {
 		using (SqlConnection conn = new SqlConnection(ConnString)) {
 			DateTime minHireDate = DateTime.Today.AddDays(-30);
