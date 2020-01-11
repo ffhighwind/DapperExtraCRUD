@@ -29,8 +29,7 @@ public class PersonItem : CacheItem<Person>
 
 public class Employee
 {
-	[Key]
-	[Required]
+	[Key(autoIncrement: false)]
 	public int Id { get; set; }
 	public DateTime HireDate { get; set; }
 }
