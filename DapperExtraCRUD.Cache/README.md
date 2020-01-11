@@ -50,8 +50,7 @@ public static class Program
 			DateOfBirth = DateTime.Today.AddDays(-365 * 20);
 		};
 
-		using (IDbTransaction transaction = personCache.BeginTransaction()) {
-			transaction.Add(employeeCache); // employee table is now part of the transaction
+		using (DbCacheTransaction transaction = personCache.BeginTransaction().Add(employeeCache)) {
 			PersonItem personItem = personCache.Insert(person); // automatically uses the transaction
 			Employee employee = new Employee() {
 				Id = personItem.Id,
