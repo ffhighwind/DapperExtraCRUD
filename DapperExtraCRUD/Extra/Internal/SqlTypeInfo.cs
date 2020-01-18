@@ -87,6 +87,13 @@ namespace Dapper.Extra.Internal
 				Attributes |= SqlTableAttributes.IgnoreInsert | SqlTableAttributes.IgnoreUpdate | SqlTableAttributes.IgnoreDelete;
 			else {
 				var editableAttr = type.GetCustomAttribute<System.ComponentModel.DataAnnotations.EditableAttribute>(false);
+				AutoSyncAttribute autoSyncAttr = type.GetCustomAttribute<AutoSyncAttribute>(false);
+				if (autoSyncAttr != null) {
+					if (autoSyncAttr.SyncUpdate)
+						Attributes |= SqlTableAttributes.UpdateAutoSync;
+					if (autoSyncAttr.SyncInsert)
+						Attributes |= SqlTableAttributes.InsertAutoSync;
+				}
 				if (editableAttr != null) {
 					if (!editableAttr.AllowEdit)
 						Attributes |= SqlTableAttributes.IgnoreUpdate;
@@ -189,6 +196,19 @@ namespace Dapper.Extra.Internal
 				IgnoreSelectAttribute selectAttr = prop.GetCustomAttribute<IgnoreSelectAttribute>(inherit);
 				if (selectAttr != null)
 					column.Attributes |= SqlColumnAttributes.IgnoreSelect;
+				else {
+					AutoSyncAttribute autoSyncAttr = prop.GetCustomAttribute<AutoSyncAttribute>(inherit);
+					if (autoSyncAttr != null) {
+						if (autoSyncAttr.SyncInsert)
+							column.Attributes |= SqlColumnAttributes.InsertAutoSync;
+						if (autoSyncAttr.SyncUpdate)
+							column.Attributes |= SqlColumnAttributes.UpdateAutoSync;
+					}
+					if (InsertAutoSync)
+						column.Attributes |= SqlColumnAttributes.InsertAutoSync;
+					if (UpdateAutoSync)
+						column.Attributes |= SqlColumnAttributes.UpdateAutoSync;
+				}
 
 				// Deletes
 				MatchDeleteAttribute deleteAttr = prop.GetCustomAttribute<MatchDeleteAttribute>(inherit);
@@ -237,15 +257,6 @@ namespace Dapper.Extra.Internal
 						if (matchUpdateAttr.AutoSync)
 							column.Attributes |= SqlColumnAttributes.UpdateAutoSync;
 					}
-				}
-
-				// AutoSync
-				var autoSyncAttr = prop.GetCustomAttribute<AutoSyncAttribute>(inherit);
-				if (autoSyncAttr != null) {
-					if (autoSyncAttr.SyncInsert)
-						column.Attributes |= SqlColumnAttributes.InsertAutoSync;
-					if (autoSyncAttr.SyncUpdate)
-						column.Attributes |= SqlColumnAttributes.UpdateAutoSync;
 				}
 			}
 
@@ -315,6 +326,16 @@ namespace Dapper.Extra.Internal
 		public bool IgnoreInsert => Attributes.HasFlag(SqlTableAttributes.IgnoreInsert);
 
 		/// <summary>
+		/// Determines if objects should be synchronized after insert.
+		/// </summary>
+		public bool InsertAutoSync => Attributes.HasFlag(SqlTableAttributes.InsertAutoSync);
+
+		/// <summary>
+		/// Determines if objects should be synchronized after updates.
+		/// </summary>
+		public bool UpdateAutoSync => Attributes.HasFlag(SqlTableAttributes.UpdateAutoSync);
+
+		/// <summary>
 		/// Determines if updates are ignored.
 		/// </summary>
 		public bool IgnoreUpdate => Attributes.HasFlag(SqlTableAttributes.IgnoreUpdate);
@@ -379,6 +400,9 @@ namespace Dapper.Extra.Internal
 		/// </summary>
 		public IEnumerable<SqlColumn> UpsertColumns => Columns.Where(c => !c.IgnoreInsert || !c.IgnoreUpdate || c.InsertValue != null || c.UpdateValue != null);
 
+		/// <summary>
+		/// Returns a string that represents the current object.
+		/// </summary>
 		public override string ToString()
 		{
 			return "(SqlTypeInfo " + Type.FullName + ")";

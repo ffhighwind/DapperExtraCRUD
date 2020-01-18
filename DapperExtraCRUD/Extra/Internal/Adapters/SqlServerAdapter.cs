@@ -55,6 +55,10 @@ namespace Dapper.Extra.Internal.Adapters
 			CreateTempTable = "";
 			LimitQuery = @"TOP({0})
 {1}";
+			CurrentDate = "CONVERT(DATE, GETDATE())";
+			CurrentDateTime = "GETDATE()";
+			CurrentDateUtc = "CONVERT(DATE, GETUTCDATE())";
+			CurrentDateTimeUtc = "GETUTCDATE()";
 		}
 
 		/// <summary>
@@ -97,5 +101,55 @@ namespace Dapper.Extra.Internal.Adapters
 		{
 			return type == typeof(long) || type == typeof(ulong) ? SelectIdentityLongQuery : SelectIntIdentityQuery;
 		}
+
+		/*
+		/// <summary>
+		/// Creates an SQL command to call the DATEADD function.
+		/// </summary>
+		/// <param name="interval">The interval type</param>
+		/// <param name="amount">The amount to add.</param>
+		/// <param name="column">The datetime column. If this is null then it will be replaced by the current date.</param>
+		/// <returns>A command to call the DATEADD function.</returns>
+		public override string DateAdd(TimeInterval interval, int amount, SqlColumn column = null)
+		{
+			string intervalStr;
+			switch (interval) {
+				case TimeInterval.MICROSECOND:
+					amount /= 1000;
+					goto case TimeInterval.MILLISECOND;
+				case TimeInterval.MILLISECOND:
+					intervalStr = "MS";
+					break;
+				case TimeInterval.SECOND:
+					intervalStr = "SECOND";
+					break;
+				case TimeInterval.MINUTE:
+					intervalStr = "MINUTE";
+					break;
+				case TimeInterval.HOUR:
+					intervalStr = "HOUR";
+					break;
+				case TimeInterval.DAY:
+					intervalStr = "DAY";
+					break;
+				case TimeInterval.WEEK:
+					intervalStr = "WEEK";
+					break;
+				case TimeInterval.MONTH:
+					intervalStr = "MONTH";
+					break;
+				case TimeInterval.QUARTER:
+					intervalStr = "QUARTER";
+					break;
+				case TimeInterval.YEAR:
+					intervalStr = "YEAR";
+					break;
+				default:
+					throw new InvalidOperationException(interval.ToString());
+			}
+			string columnStr = column == null ? "@" + column.ColumnName : CurrDateTime;
+			return string.Format("DATE_ADD({0}, {1}, {2})", intervalStr, amount, columnStr);
+		}
+		*/
 	}
 }

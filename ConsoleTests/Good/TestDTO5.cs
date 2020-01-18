@@ -12,6 +12,7 @@ namespace ConsoleTests
 			Name = random.Next().ToString();
 			Created = DateTime.FromOADate(random.NextDouble());
 			Modified = DateTime.FromOADate(random.NextDouble());
+			Modified2 = DateTime.FromOADate(random.NextDouble());
 		}
 
 		public int ID { get; set; }
@@ -25,6 +26,11 @@ namespace ConsoleTests
 		[MatchUpdate("getdate()", true)]
 		[IgnoreInsert("getdate()")]
 		public DateTime Modified { get; set; }
+
+
+		[MatchUpdate(null, true)]
+		[IgnoreInsert(null)]
+		public DateTime Modified2 { get; set; }
 
 		public TestDTO5 Clone()
 		{
@@ -43,7 +49,8 @@ CREATE TABLE [dbo].[TestDTO5](
 	[ID] [int] IDENTITY(1,1) NOT NULL,
 	[Name] [varchar](255) NOT NULL,
 	[Created] [datetime2](7) NOT NULL,
-	[Modified] [datetime2](7) NOT NULL,
+	[Modified] [datetime] NOT NULL,
+	[Modified2] [datetime2](2) NOT NULL,
  CONSTRAINT [PK_TestDTO5] PRIMARY KEY CLUSTERED 
 (
 	[ID] ASC
@@ -52,7 +59,9 @@ CREATE TABLE [dbo].[TestDTO5](
 
 ALTER TABLE [dbo].[TestDTO5] ADD  CONSTRAINT [DF_TestDTO5_Created]  DEFAULT (getdate()) FOR [Created];
 
-ALTER TABLE [dbo].[TestDTO5] ADD  CONSTRAINT [DF_TestDTO5_Modified]  DEFAULT (getdate()) FOR [Modified]";
+ALTER TABLE [dbo].[TestDTO5] ADD  CONSTRAINT [DF_TestDTO5_Modified]  DEFAULT (getdate()) FOR [Modified];
+
+ALTER TABLE [dbo].[TestDTO5] ADD  CONSTRAINT [DF_TestDTO5_Modified2]  DEFAULT (getdate()) FOR [Modified2];";
 		}
 
 		public bool Equals(TestDTO5 other)
@@ -85,7 +94,7 @@ ALTER TABLE [dbo].[TestDTO5] ADD  CONSTRAINT [DF_TestDTO5_Modified]  DEFAULT (ge
 			bool a1 = ID == other.ID;
 			bool a2 = Name == other.Name;
 			bool a3 = Created == other.Created;
-			bool a4 = Modified == other.Modified; // auto-syncd
+			//bool a4 = Modified == other.Modified; // auto-syncd
 			return a1 && a2 && a3;
 		}
 

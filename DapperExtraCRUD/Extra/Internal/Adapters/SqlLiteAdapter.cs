@@ -24,6 +24,8 @@
 // SOFTWARE.
 #endregion
 
+using System;
+
 namespace Dapper.Extra.Internal.Adapters
 {
 	/// <summary>
@@ -48,6 +50,10 @@ DELETE FROM SQLITE_SEQUENCE WHERE name='{0}'"; // resets autoincrement
 			TempTableName = "_{0}"; // temp.{0}
 			LimitQuery = @"{1}
 LIMIT {0}";
+			CurrentDate = "DATE('now', 'localtime')";
+			CurrentDateTime = "DATETIME('now', 'localtime')";
+			CurrentDateUtc = "DATE('now')";
+			CurrentDateTimeUtc = "DATETIME('now')";
 		}
 
 		//public override void BulkInsert<T>(IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction, string tableName, DataReaderFactory factory, 
@@ -55,5 +61,61 @@ LIMIT {0}";
 		//{
 		//	EXEC sqlite3.exe csvfile table
 		//}
+
+			/*
+		/// <summary>
+		/// Creates an SQL command to call the DATEADD function.
+		/// </summary>
+		/// <param name="interval">The interval type</param>
+		/// <param name="amount">The amount to add.</param>
+		/// <param name="column">The datetime column. If this is null then it will be replaced by the current date.</param>
+		/// <returns>A command to call the DATEADD function.</returns>
+		public override string DateAdd(TimeInterval interval, int amount, SqlColumn column = null)
+		{
+			object amountObj = amount;
+			string addSubStr = amount < 0 ? "-" : "+";
+			string columnStr = column == null ? "@" + column.ColumnName : "'localtime'";
+			string intervalStr;
+			switch (interval) {
+				case TimeInterval.MICROSECOND:
+					amountObj = (amount / 1000000.0).ToString("0.0#####");
+					intervalStr = "second";
+					break;
+				case TimeInterval.MILLISECOND:
+					amountObj = (amount / 1000000.0).ToString("0.0##");
+					intervalStr = "second";
+					break;
+				case TimeInterval.SECOND:
+					intervalStr = "second";
+					break;
+				case TimeInterval.MINUTE:
+					intervalStr = "minute";
+					break;
+				case TimeInterval.HOUR:
+					intervalStr = "hour";
+					break;
+				case TimeInterval.WEEK:
+					amountObj = amount * 7;
+					intervalStr = "day";
+					break;
+				case TimeInterval.DAY:
+					intervalStr = "day";
+					break;
+				case TimeInterval.QUARTER:
+					amountObj = amount * 3;
+					intervalStr = "month";
+					break;
+				case TimeInterval.MONTH:
+					intervalStr = "month";
+					break;
+				case TimeInterval.YEAR:
+					intervalStr = "year";
+					break;
+				default:
+					throw new InvalidOperationException(interval.ToString());
+			}
+			return string.Format("DATETIME({0}, {1}{2} {3})", columnStr, addSubStr, intervalStr, amountObj);
+		}
+		*/
 	}
 }

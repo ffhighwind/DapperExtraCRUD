@@ -57,6 +57,14 @@ namespace Dapper.Extra.Internal
 		/// <summary>
 		/// Prevents delete commands.
 		/// </summary>
-		IgnoreDelete = 1 << 5
+		IgnoreDelete = 1 << 5,
+		/// <summary>
+		/// Determines if objects should be synchronized after inserts.
+		/// </summary>
+		InsertAutoSync = 1 << 8,
+		/// <summary>
+		/// Determines if objects should be synchronized after updates.
+		/// </summary>
+		UpdateAutoSync = 1 << 9,
 	}
 }

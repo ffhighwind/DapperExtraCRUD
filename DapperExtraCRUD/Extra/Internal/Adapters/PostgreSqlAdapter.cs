@@ -24,6 +24,8 @@
 // SOFTWARE.
 #endregion
 
+using System;
+
 namespace Dapper.Extra.Internal.Adapters
 {
 	/// <summary>
@@ -47,6 +49,10 @@ namespace Dapper.Extra.Internal.Adapters
 			TempTableName = "_{0}";
 			LimitQuery = @"{1}
 LIMIT {0}";
+			CurrentDate = "CURRENT_DATE";
+			CurrentDateTime = "NOW()";
+			CurrentDateUtc = "(CURRENT_DATE AT TIME ZONE 'UTC')";
+			CurrentDateTimeUtc = "(NOW() AT TIME ZONE 'UTC')";
 		}
 
 		//public override void BulkInsert<T>(IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction, string tableName, DataReaderFactory factory, 
@@ -56,5 +62,57 @@ LIMIT {0}";
 		//	COPY table FROM file [CSV|BINARY]
 		//	COPY [BINARY] table FROM file
 		//}
+
+		/*
+		/// <summary>
+		/// Creates an SQL command to call the DATEADD function.
+		/// </summary>
+		/// <param name="interval">The interval type</param>
+		/// <param name="amount">The amount to add.</param>
+		/// <param name="column">The datetime column. If this is null then it will be replaced by the current date.</param>
+		/// <returns>A command to call the DATEADD function.</returns>
+		public override string DateAdd(TimeInterval interval, int amount, SqlColumn column = null)
+		{
+			string opStr = amount < 0 ? "-" : "+";
+			string intervalStr;
+			switch (interval) {
+				case TimeInterval.MICROSECOND:
+					amount /= 1000;
+					goto case TimeInterval.MILLISECOND;
+				case TimeInterval.MILLISECOND:
+					intervalStr = new TimeSpan(0, 0, 0, amount).ToString("'hh:mm:ss.fff'");
+					break;
+				case TimeInterval.SECOND:
+					intervalStr = amount + " SECONDS";
+					break;
+				case TimeInterval.MINUTE:
+					intervalStr = amount + " MINUTES";
+					break;
+				case TimeInterval.HOUR:
+					intervalStr = amount + " HOURS";
+					break;
+				case TimeInterval.DAY:
+					intervalStr = amount + " DAYS";
+					break;
+				case TimeInterval.WEEK:
+					amount *= 7;
+					intervalStr = amount + " DAYS";
+					break;
+				case TimeInterval.MONTH:
+					intervalStr = amount + " MONTHS";
+					break;
+				case TimeInterval.QUARTER:
+					intervalStr = amount + " MONTHS";
+					break;
+				case TimeInterval.YEAR:
+					intervalStr = amount + " YEARS";
+					break;
+				default:
+					throw new InvalidOperationException(interval.ToString());
+			}
+			string columnStr = column == null ? "@" + column.ColumnName : CurrDateTime;
+			return string.Format("({0} {1} INTERVAL {2}))", columnStr, opStr, intervalStr);
+		}
+		*/
 	}
 }

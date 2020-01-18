@@ -39,6 +39,7 @@ namespace ConsoleTests
 	public class Program
 	{
 		private const string ConnString = @"Data Source=DESKTOP-V0JVTST\SQLEXPRESS;Initial Catalog=Test;Integrated Security=True;";
+		private const int TestAmount = 300;
 
 		public static void Main()
 		{
@@ -46,7 +47,6 @@ namespace ConsoleTests
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
 				conn.Open();
 
-				/*
 				Recreate<TestDTO>(conn, null);
 				DoCacheTests<TestDTO>(() => new TestDTO(random));
 				DoTests<TestDTO>(() => new TestDTO(random), (t) => t.UpdateRandomize(random), new TestDTOfilter());
@@ -68,7 +68,6 @@ namespace ConsoleTests
 				DoTests<TestDTO4>(() => new TestDTO4(random), (t) => t.UpdateRandomize(random), new TestDTO4filter());
 				DoTests<TestDTO4, int>(conn);
 				DropTable<TestDTO4>(conn);
-				*/
 
 				Recreate<TestDTO5>(conn, null);
 				DoCacheTests<TestDTO5>(() => new TestDTO5(random));
@@ -119,7 +118,7 @@ namespace ConsoleTests
 			DbCache cache = new DbCache(ConnString);
 			DbCacheTable<T, CacheItem<T>> table = cache.CreateTable<T>();
 			Random random = new Random(512851);
-			List<T> list = CreateList<T>(50, () => constructor());
+			List<T> list = CreateList<T>(TestAmount + (int)((random.Next() % TestAmount) * 0.1), () => constructor());
 
 			CacheInsert(table, list);
 			CacheDelete(table, list);
@@ -186,7 +185,7 @@ namespace ConsoleTests
 				conn.Open();
 				using (SqlTransaction trans = conn.BeginTransaction()) {
 					Recreate<T>(conn, trans);
-					Insert<T>(conn, trans, random.Next() % 50 + 25, constructor);
+					Insert<T>(conn, trans, TestAmount + (int)((random.Next() % TestAmount) * 0.1), constructor);
 					trans.Commit();
 				}
 				List<T> list = conn.GetList<T>().ToList();
@@ -473,8 +472,7 @@ DROP TABLE dbo.{tableName};";
 
 		public static void GetLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
-			//IEnumerable<T> GetLimit(int limit, string whereCondition = "", object param = null, int commandTimeout = 30);
-			int max = Math.Min(list.Count, 10);
+			int max = Math.Min(list.Count, 20);
 			for (int i = 0; i < max; i++) {
 				List<T> items = conn.GetLimit<T>(i, trans).AsList();
 				if (items.Count != i)
@@ -484,7 +482,7 @@ DROP TABLE dbo.{tableName};";
 
 		public static void GetFilterLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list, IFilter<T> filter) where T : class, IDto<T>
 		{
-			int max = Math.Min(list.Count, 10);
+			int max = Math.Min(list.Count, 20);
 			for (int i = 0; i < max; i++) {
 				List<T> items = conn.GetLimit<T>(i, filter.GetType(), "", null, trans).AsList();
 				if (items.Count != i)
@@ -523,7 +521,7 @@ DROP TABLE dbo.{tableName};";
 					throw new InvalidOperationException();
 				}
 			}
-			if(failures.Count > 0) {
+			if (failures.Count > 0) {
 				throw new InvalidOperationException();
 			}
 		}

@@ -79,6 +79,26 @@ namespace Dapper.Extra.Internal.Adapters
 
 		protected string TruncateTableQuery { get; set; }
 
+		/// <summary>
+		/// The SQL command that returns the current date.
+		/// </summary>
+		public string CurrentDate { get; protected set; }
+
+		/// <summary>
+		/// The SQL command that returns the current datetime.
+		/// </summary>
+		public string CurrentDateTime { get; protected set; }
+
+		/// <summary>
+		/// The SQL command that returns the current UTC datetime.
+		/// </summary>
+		public string CurrentDateTimeUtc { get; protected set; }
+
+		/// <summary>
+		/// The SQL command that returns the current UTC date.
+		/// </summary>
+		public string CurrentDateUtc { get; protected set; }
+
 		#endregion
 
 		#region Methods

@@ -149,6 +149,9 @@ namespace Dapper.Extra.Internal
 		/// </summary>
 		public string UpdateValue { get; internal set; }
 
+		/// <summary>
+		/// Returns a string that represents the current object.
+		/// </summary>
 		public override string ToString()
 		{
 			string typeName;

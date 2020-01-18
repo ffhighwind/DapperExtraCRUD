@@ -52,6 +52,7 @@ Annotations map classes to a database tables and properties to table columns.
 ## Annotation Priority:
 
 [NotMapped] > [Key] > ... \
+[IgnoreSelect] > [AutoSync] \
 [IgnoreInsert] > [MatchInsert] \
 [IgnoreUpdate] > [MatchUpdate]
 
@@ -168,7 +169,8 @@ public static void Main(string[] args)
 
 ## Tip:
 
-Use a view if you need joins. If this is not sufficient then you can use Dapper's multi-mapping queries or manually map the results.
+* MatchUpdate and MatchDelete on DateTime/Timespan only work for datetime2(2), datetime, and smalldatetime for SQL Server. This is because of differences in precision for datetime2 vs C# DateTime.
+* Use a view if you need joins. Alternatively you can use Dapper's multi-mapping queries or manually map the results.
 
 ## Performance:
 

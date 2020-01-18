@@ -949,6 +949,9 @@ namespace Dapper.Extra.Internal
 			};
 		}
 
+		/// <summary>
+		/// Returns a string that represents the current object.
+		/// </summary>
 		public override string ToString()
 		{
 			return "(SqlBuilder " + Info.Type.FullName + ")";

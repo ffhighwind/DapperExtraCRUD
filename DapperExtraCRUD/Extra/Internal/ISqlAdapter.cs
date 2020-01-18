@@ -114,5 +114,25 @@ namespace Dapper.Extra.Internal
 		/// <param name="tableName">The table name.</param>
 		/// <returns>A command to truncate a table.</returns>
 		string TruncateTable(string tableName);
+
+		/// <summary>
+		/// The SQL command that returns the current date.
+		/// </summary>
+		string CurrentDate { get; }
+
+		/// <summary>
+		/// The SQL command that returns the current datetime.
+		/// </summary>
+		string CurrentDateTime { get; }
+
+		/// <summary>
+		/// The SQL command that returns the current UTC datetime.
+		/// </summary>
+		string CurrentDateTimeUtc { get; }
+
+		/// <summary>
+		/// The SQL command that returns the current UTC date.
+		/// </summary>
+		string CurrentDateUtc {get; }
 	}
 }

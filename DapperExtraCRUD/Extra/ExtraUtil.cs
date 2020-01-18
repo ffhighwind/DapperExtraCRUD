@@ -181,7 +181,7 @@ namespace Dapper.Extra
 					str = null;
 					break;
 				case DbType.Time:
-					str = ((TimeSpan)value).ToString("'HH:mm:ss:fff'");
+					str = ((TimeSpan)value).ToString("'HH:mm:ss.fff'");
 					break;
 				case DbType.Single:
 				case DbType.Double:
@@ -195,10 +195,10 @@ namespace Dapper.Extra
 					break;
 				case DbType.DateTime:
 				case DbType.DateTime2:
-					str = ((DateTime)value).ToString("'yyyy-MM-dd HH:mm:ss:fff'");
+					str = ((DateTime)value).ToString("'yyyy-MM-dd HH:mm:ss.fff'");
 					break;
 				case DbType.DateTimeOffset:
-					str = ((DateTimeOffset)value).ToString("'dddd, MMM dd yyyy HH:mm:ss:fff zzz'", CultureInfo.InvariantCulture);
+					str = ((DateTimeOffset)value).ToString("'dddd, MMM dd yyyy HH:mm:ss.fff zzz'", CultureInfo.InvariantCulture);
 					break;
 				default:
 					throw new InvalidOperationException("Unknown DbType: " + dbType.ToString());

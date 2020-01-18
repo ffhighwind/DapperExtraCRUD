@@ -10,6 +10,7 @@ namespace ConsoleTests
 		{
 			return obj.ID == default(int)
 				&& obj.Modified == default(DateTime)
+				&& obj.Modified2 == default(DateTime)
 				&& obj.Created == default(DateTime)
 				&& obj.Name != default(string);
 		}
