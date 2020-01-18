@@ -45,48 +45,62 @@ namespace ConsoleTests
 			Random random = new Random(125125);
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
 				conn.Open();
+
+				/*
 				Recreate<TestDTO>(conn, null);
-				Recreate<TestDTO2>(conn, null);
-				Recreate<Test3>(conn, null);
-				Recreate<TestDTO4>(conn, null);
-
 				DoCacheTests<TestDTO>(() => new TestDTO(random));
-				DoCacheTests<TestDTO2>(() => new TestDTO2(random));
-				DoCacheTests<Test3>(() => new Test3(random));
-				DoCacheTests<TestDTO4>(() => new TestDTO4(random));
-
 				DoTests<TestDTO>(() => new TestDTO(random), (t) => t.UpdateRandomize(random), new TestDTOfilter());
-				DoTests<TestDTO2>(() => new TestDTO2(random), (t) => t.UpdateRandomize(random), new TestDTO2filter());
-				DoTests<Test3>(() => new Test3(random), (t) => t.UpdateRandomize(random), new Test3filter());
-				DoTests<TestDTO4>(() => new TestDTO4(random), (t) => t.UpdateRandomize(random), new TestDTO4filter());
-
 				DoTests<TestDTO, int>(conn);
-				DoTests<TestDTO4, int>(conn);
-
 				DropTable<TestDTO>(conn);
+
+				Recreate<TestDTO2>(conn, null);
+				DoCacheTests<TestDTO2>(() => new TestDTO2(random));
+				DoTests<TestDTO2>(() => new TestDTO2(random), (t) => t.UpdateRandomize(random), new TestDTO2filter());
 				DropTable<TestDTO2>(conn);
+
+				Recreate<Test3>(conn, null);
+				DoCacheTests<Test3>(() => new Test3(random));
+				DoTests<Test3>(() => new Test3(random), (t) => t.UpdateRandomize(random), new Test3filter());
 				DropTable<Test3>(conn);
+
+				Recreate<TestDTO4>(conn, null);
+				DoCacheTests<TestDTO4>(() => new TestDTO4(random));
+				DoTests<TestDTO4>(() => new TestDTO4(random), (t) => t.UpdateRandomize(random), new TestDTO4filter());
+				DoTests<TestDTO4, int>(conn);
 				DropTable<TestDTO4>(conn);
+				*/
+
+				Recreate<TestDTO5>(conn, null);
+				DoCacheTests<TestDTO5>(() => new TestDTO5(random));
+				DoTests<TestDTO5>(() => new TestDTO5(random), (t) => t.UpdateRandomize(random), new TestDTO5filter());
+				DoTests<TestDTO5, int>(conn);
+				DropTable<TestDTO5>(conn);
 			}
 		}
 
 		public static List<T> CreateList<T>(int count, Func<T> create) where T : class, IDto<T>
 		{
-			Dictionary<T, T> map = new Dictionary<T, T>(create());
-			for (int i = 0; i < count; i++) {
-				T created;
-				int fails = 0;
-				while (true) {
-					created = create();
-					if (!map.ContainsKey(created))
-						break;
-					fails++;
-					if (fails > 3)
-						break; // assumes only autokeys
+			List<T> list;
+			if (ExtraCrud.TypeInfo<T>().AutoKeyColumn != null) {
+				list = new List<T>();
+				for (int i = 0; i < count; ++i) {
+					T created = create();
+					list.Add(created);
 				}
-				map.Add(created, created);
 			}
-			List<T> list = map.Values.ToList();
+			else {
+				Dictionary<T, T> map = new Dictionary<T, T>(create());
+				T created = null;
+				for (int i = 0; i < count; i++) {
+					for (int fails = 0; fails < 4; ++fails) {
+						created = create();
+						if (!map.ContainsKey(created))
+							break;
+					}
+					map.Add(created, created);
+				}
+				list = map.Values.ToList();
+			}
 			list.Sort((x, y) => x.CompareTo(y));
 			return list;
 		}
@@ -203,6 +217,9 @@ namespace ConsoleTests
 				}
 				using (SqlTransaction trans = conn.BeginTransaction()) {
 					Update<T>(conn, trans, list, randomize);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					Update_Obj<T>(conn, trans, list);
 				}
 				using (SqlTransaction trans = conn.BeginTransaction()) {
 					Upsert<T>(conn, trans);
@@ -489,16 +506,25 @@ DROP TABLE dbo.{tableName};";
 		public static void Update<T>(SqlConnection conn, SqlTransaction trans, List<T> list, Func<T, T> randomize) where T : class, IDto<T>
 		{
 			//bool Update(T obj, int commandTimeout = 30);
+			List<T> failures = new List<T>();
 			foreach (T item in list) {
 				T get = conn.Get<T>(item, trans);
 				if (get == null)
 					throw new InvalidOperationException();
-				T updated = randomize(item);
-				if (!conn.Update<T>(updated, trans) && !updated.IsIdentical(get))
-					throw new InvalidOperationException();
+				T updated = randomize(get);
+				if (!conn.Update<T>(updated, trans)) {
+					if (!updated.IsIdentical(get)) {
+						failures.Add(get);
+						continue;
+					}
+				}
 				get = conn.Get<T>(updated, trans);
-				if (!updated.IsUpdated(get))
+				if (!updated.IsUpdated(get)) {
 					throw new InvalidOperationException();
+				}
+			}
+			if(failures.Count > 0) {
+				throw new InvalidOperationException();
 			}
 		}
 
@@ -649,6 +675,7 @@ DROP TABLE dbo.{tableName};";
 
 		public static void Update_Obj<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
+			var updateObj = Dapper.Extra.ExtraCrud.Builder<T>().Queries.UpdateObj;
 			//bool Update(object obj, int commandTimeout = 30);
 		}
 

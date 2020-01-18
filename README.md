@@ -2,9 +2,7 @@
 
 [Nuget: Dapper.ExtraCRUD](https://www.nuget.org/packages/Dapper.ExtraCRUD/)
 
-A thread-safe Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more. Unique additions
-include Bulk operations, AutoSync, MatchUpdate, MatchDelete, Distinct, Top/Limit, Upsert, and Insert If Not Exists. 
-It also exposes most of the underlying metadata to allow customization and improved performance.
+A thread-safe Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more. Unique additions include Bulk operations, AutoSync, MatchUpdate, MatchDelete, Distinct, Top/Limit, Upsert, and Insert If Not Exists. It also exposes most of the underlying metadata to allow customization and improved performance.
 
 ## Extensions:
 

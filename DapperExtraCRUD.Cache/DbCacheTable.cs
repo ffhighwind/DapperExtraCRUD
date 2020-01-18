@@ -32,6 +32,7 @@ using Dapper.Extra.Utilities;
 using Fasterflect;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Reflection;
 
 namespace Dapper.Extra.Cache
 {
@@ -551,7 +552,16 @@ namespace Dapper.Extra.Cache
 			Access.Truncate(commandTimeout);
 		}
 
-		private readonly ConcurrentDictionary<Type, ObjectMapper> mappers = new ConcurrentDictionary<Type, ObjectMapper>();
+		/// <summary>
+		/// ObjectMappers for Update.
+		/// </summary>
+		private readonly ConcurrentDictionary<Type, MapperPair> mappers = new ConcurrentDictionary<Type, MapperPair>();
+
+		internal class MapperPair
+		{
+			public ObjectMapper KeyMapper;
+			public ObjectMapper ValueMapper;
+		}
 
 		/// <summary>
 		/// Updates a row.
@@ -564,14 +574,17 @@ namespace Dapper.Extra.Cache
 			bool success = Access.Update(obj, commandTimeout);
 			if (success) {
 				Type type = obj.GetType();
-				if (!mappers.TryGetValue(type, out ObjectMapper mapper)) {
-					mapper = Reflect.Mapper(type, typeof(T), Info.KeyColumns.Select(c => c.Property.Name).ToArray());
-					_ = mappers.TryAdd(type, mapper);
+				if (!mappers.TryGetValue(type, out MapperPair mapperPair)) {
+					mapperPair = new MapperPair();
+					mapperPair.KeyMapper = Reflect.Mapper(type, typeof(T), Info.KeyColumns.Select(c => c.ColumnName).ToArray());
+					string[] props = Builder.GetSharedColumns(type, Info.UpdateColumns).Select(c => c.ColumnName).ToArray();
+					mapperPair.ValueMapper = Reflect.Mapper(type, typeof(T), props);
+					_ = mappers.TryAdd(type, mapperPair);
 				}
 				T value = (T)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(T));
-				mapper(obj, value);
+				mapperPair.KeyMapper(obj, value);
 				if (Items.TryGetValue(value, out R item)) {
-					mapper(obj, item.CacheValue);
+					mapperPair.ValueMapper(obj, item.CacheValue);
 				}
 			}
 			return success;

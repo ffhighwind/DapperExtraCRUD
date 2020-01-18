@@ -24,6 +24,7 @@
 // SOFTWARE.
 #endregion
 
+using System;
 using System.Collections.Generic;
 
 namespace Dapper.Extra.Internal
@@ -52,5 +53,13 @@ namespace Dapper.Extra.Internal
 		/// The quoted table name or the class name.
 		/// </summary>
 		string TableName { get; }
+
+		/// <summary>
+		/// Gets the subset of columns that match the property names of <paramref name="type"/>.
+		/// </summary>
+		/// <param name="type">The type whose properties to match.</param>
+		/// <param name="columns">A list of columns from <see cref="Info"/>. </param>
+		/// <returns>The subset of columns that match the property names of <paramref name="type"/>.</returns>
+		IEnumerable<SqlColumn> GetSharedColumns(Type type, IEnumerable<SqlColumn> columns);
 	}
 }

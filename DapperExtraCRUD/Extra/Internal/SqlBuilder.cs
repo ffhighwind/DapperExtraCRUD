@@ -71,11 +71,8 @@ namespace Dapper.Extra.Internal
 			Info = info;
 			BulkStagingTable = Info.Adapter.CreateTempTableName(Info.Type.Name + (Math.Abs(Info.Type.FullName.GetHashCode()) % 99793));
 			SqlQueries<T> queries = new SqlQueries<T>() {
-				Delete = CreateDelete(),
-				Get = CreateGet(),
-				GetList = CreateGetList(),
-				Insert = CreateInsert(),
-				Update = CreateUpdate(),
+				InsertAutoSync = CreateAutoSync(Info.InsertAutoSyncColumns),
+				UpdateAutoSync = CreateAutoSync(info.UpdateAutoSyncColumns),
 				LazyUpdateObj = new Lazy<DbObjBool<T>>(() => CreateUpdateObj()),
 				LazyBulkDelete = new Lazy<DbListInt<T>>(() => CreateBulkDelete(), threadSafety),
 				LazyBulkGet = new Lazy<DbListList<T>>(() => CreateBulkGet(), threadSafety),
@@ -92,12 +89,15 @@ namespace Dapper.Extra.Internal
 				LazyInsertIfNotExists = new Lazy<DbTBool<T>>(() => CreateInsertIfNotExists(), threadSafety),
 				LazyRecordCount = new Lazy<DbWhereInt<T>>(() => CreateRecordCount(), threadSafety),
 				LazyUpsert = new Lazy<DbTBool<T>>(() => CreateUpsert(), threadSafety),
-				InsertAutoSync = CreateAutoSync(Info.InsertAutoSyncColumns),
-				UpdateAutoSync = CreateAutoSync(info.UpdateAutoSyncColumns),
 				LazyGetFilter = new Lazy<DbTypeWhereList<T>>(() => CreateGetFilterList(), threadSafety),
 				LazyGetFilterLimit = new Lazy<DbTypeLimitList<T>>(() => CreateGetFilterLimit(), threadSafety),
 			};
 			Queries = queries;
+			queries.Insert = CreateInsert();
+			queries.Update = CreateUpdate();
+			queries.Delete = CreateDelete();
+			queries.Get = CreateGet();
+			queries.GetList = CreateGetList();
 			DataReaderFactory = new DataReaderFactory(typeof(T), info.Columns.Select(c => c.Property));
 
 			if (info.EqualityColumns.Count == 1) {
@@ -227,6 +227,33 @@ namespace Dapper.Extra.Internal
 		#endregion
 
 		#region Methods
+
+
+		/// <summary>
+		/// Gets the subset of columns that match the property names of <paramref name="type"/>.
+		/// </summary>
+		/// <param name="type">The type whose properties to match.</param>
+		/// <param name="columns">A list of columns from <see cref="Info"/>. </param>
+		/// <returns>The subset of columns that match the property names of <paramref name="type"/>.</returns>
+		public IEnumerable<SqlColumn> GetSharedColumns(Type type, IEnumerable<SqlColumn> columns)
+		{
+			if (type == typeof(T))
+				return columns;
+			Dictionary<string, SqlColumn> map = new Dictionary<string, SqlColumn>();
+			foreach (SqlColumn column in columns) {
+				map.Add(column.ColumnName, column);
+			}
+			List<SqlColumn> list = new List<SqlColumn>();
+			foreach (PropertyInfo prop in type.GetProperties(BindingFlags.Public | BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(p => p.CanWrite)) {
+				if(map.TryGetValue(prop.Name, out SqlColumn column) && column.Type.IsAssignableFrom(prop.PropertyType)) {
+					list.Add(column);
+				}
+			}
+			if (list.Count == 0)
+				throw new InvalidOperationException(type.FullName + " does not have any matching columns with " + typeof(T).FullName);
+			return list;
+		}
+
 
 		/// <summary>
 		/// Creates a function that syncs the given columns.
@@ -922,16 +949,9 @@ namespace Dapper.Extra.Internal
 			};
 		}
 
-		private IEnumerable<SqlColumn> GetSharedColumns(Type type, IEnumerable<SqlColumn> columns)
+		public override string ToString()
 		{
-			if (type == typeof(T))
-				return columns;
-			IEnumerable<string> propNames = type.GetProperties(BindingFlags.Public | BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.DeclaredOnly).Select(p => p.Name);
-			HashSet<string> columnNames = new HashSet<string>(propNames);
-			List<SqlColumn> list = columns.Where(c => propNames.Contains(c.Property.Name)).ToList();
-			if (list.Count == 0)
-				throw new InvalidOperationException(type.FullName + " does not have any matching columns with " + typeof(T).FullName);
-			return list;
+			return "(SqlBuilder " + Info.Type.FullName + ")";
 		}
 
 		#endregion

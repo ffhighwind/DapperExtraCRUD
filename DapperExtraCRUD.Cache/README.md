@@ -41,7 +41,7 @@ public static class Program
 	{
 		DbCache cache = new DbCache(ConnString);
 		DbCacheTable<Person, PersonItem> personCache = cache.CreateTable<Person, PersonItem>();
-		DbCacheTable<Person> employeeCache = cache.CreateTable<Employee>();
+		DbCacheTable<Employee, CacheItem<Employee>> employeeCache = cache.CreateTable<Employee>();
 		personCache.GetList(); // get all rows in the database
 
 		Person person = new Person() {

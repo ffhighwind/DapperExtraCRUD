@@ -148,5 +148,17 @@ namespace Dapper.Extra.Internal
 		/// The value from the <see cref="IgnoreUpdateAttribute"/> or <see cref="MatchUpdateAttribute"/> if it exists. 
 		/// </summary>
 		public string UpdateValue { get; internal set; }
+
+		public override string ToString()
+		{
+			string typeName;
+			if (Type.Name == "Nullable`1")
+				typeName = Type.FullName.Substring(26, Type.FullName.IndexOf(',') - 26) + "?";
+			else if (Type.Namespace == "System")
+				typeName = Type.Name;
+			else
+				typeName = Type.FullName;
+			return "(SqlColumn " + typeName + " " + Property.Name + ")";
+		}
 	}
 }

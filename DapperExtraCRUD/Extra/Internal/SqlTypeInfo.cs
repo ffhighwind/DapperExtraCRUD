@@ -45,7 +45,7 @@ namespace Dapper.Extra.Internal
 		/// </summary>
 		/// <param name="type">The table type.</param>
 		/// <param name="dialect">The dialect used to generate SQL commands.</param>
-		public SqlTypeInfo(Type type, SqlDialect dialect = SqlDialect.SQLServer) 
+		public SqlTypeInfo(Type type, SqlDialect dialect = SqlDialect.SQLServer)
 			: this(type, SqlAdapter.GetAdapter(dialect))
 		{
 		}
@@ -152,14 +152,23 @@ namespace Dapper.Extra.Internal
 				}
 				columns.Add(column);
 			}
-
 			if (keys.Count == 0) {
-				KeyColumns = Constants.SqlColumnsEmpty;
+				SqlColumn key = columns.FirstOrDefault(c => string.Equals(c.ColumnName, "ID", StringComparison.OrdinalIgnoreCase));
+				if (key == null) {
+					int len = type.Name.Length + 2;
+					key = columns.FirstOrDefault(c => c.ColumnName.Length == len && c.ColumnName.StartsWith(type.Name) && c.ColumnName.EndsWith("ID", StringComparison.OrdinalIgnoreCase));
+				}
+				if (key != null) {
+					key.Attributes |= SqlColumnAttributes.AutoKey;
+					keys.Add(key);
+				}
+				else
+					KeyColumns = Constants.SqlColumnsEmpty;
 			}
-			else {
+			if (keys.Count != 0) {
 				KeyColumns = keys.ToArray();
-				if (KeyColumns.Count == 1 && KeyColumns[0].IsAutoKey && ExtraCrud.IsValidAutoIncrementType(keys[0].Type)) {
-					AutoKeyColumn = keys[0];
+				if (KeyColumns.Count == 1 && KeyColumns[0].IsAutoKey && ExtraCrud.IsValidAutoIncrementType(KeyColumns[0].Type)) {
+					AutoKeyColumn = KeyColumns[0];
 				}
 				else if (autoKeyCount != 0 && KeyColumns.Count != autoKeyCount) {
 					throw new InvalidOperationException(Type.FullName + " cannot have a both a composite key and an autoincrement key.");
@@ -167,7 +176,7 @@ namespace Dapper.Extra.Internal
 				else {
 					// remove SqlColumnAttributes.AutoKey from all key columns
 					SqlColumnAttributes invertedAutoKey = ~(SqlColumnAttributes.AutoKey ^ SqlColumnAttributes.Key);
-					foreach (SqlColumn key in keys) {
+					foreach (SqlColumn key in KeyColumns) {
 						key.Attributes &= invertedAutoKey;
 					}
 				}
@@ -199,46 +208,44 @@ namespace Dapper.Extra.Internal
 						column.Attributes |= SqlColumnAttributes.IgnoreUpdate;
 				}
 
-				var autoSyncAttr = prop.GetCustomAttribute<AutoSyncAttribute>(inherit);
-
 				// Inserts
-				if (IgnoreInsert)
+				IgnoreInsertAttribute insertAttr = prop.GetCustomAttribute<IgnoreInsertAttribute>(inherit);
+				if (insertAttr != null) {
 					column.Attributes |= SqlColumnAttributes.IgnoreInsert;
-				else {
-					IgnoreInsertAttribute insertAttr = prop.GetCustomAttribute<IgnoreInsertAttribute>(inherit);
-					if (insertAttr != null) {
-						column.InsertValue = insertAttr.Value;
-						if (insertAttr.AutoSync)
-							column.Attributes |= SqlColumnAttributes.InsertAutoSync;
-					}
-					if (autoSyncAttr != null && autoSyncAttr.SyncInsert) {
+					column.InsertValue = insertAttr.Value;
+					if (insertAttr.AutoSync)
 						column.Attributes |= SqlColumnAttributes.InsertAutoSync;
+				}
+				else if (IgnoreInsert)
+					column.Attributes |= SqlColumnAttributes.IgnoreInsert;
+
+				// Updates
+				IgnoreUpdateAttribute ignoreUpdateAttr = prop.GetCustomAttribute<IgnoreUpdateAttribute>(inherit);
+				if (ignoreUpdateAttr != null) {
+					column.Attributes |= SqlColumnAttributes.IgnoreUpdate;
+					column.UpdateValue = ignoreUpdateAttr.Value;
+					if (ignoreUpdateAttr.AutoSync)
+						column.Attributes |= SqlColumnAttributes.UpdateAutoSync;
+				}
+				else if (IgnoreUpdate)
+					column.Attributes = SqlColumnAttributes.IgnoreUpdate;
+				else {
+					MatchUpdateAttribute matchUpdateAttr = prop.GetCustomAttribute<MatchUpdateAttribute>(inherit); //NOTE: MatchUpdate != IgnoreUpdate
+					if (matchUpdateAttr != null) {
+						column.Attributes |= SqlColumnAttributes.MatchUpdate;
+						column.UpdateValue = matchUpdateAttr.Value;
+						if (matchUpdateAttr.AutoSync)
+							column.Attributes |= SqlColumnAttributes.UpdateAutoSync;
 					}
 				}
 
-				// Updates
-				if (IgnoreUpdate)
-					column.Attributes = SqlColumnAttributes.IgnoreUpdate;
-				else {
-					IgnoreUpdateAttribute ignoreUpdateAttr = prop.GetCustomAttribute<IgnoreUpdateAttribute>(inherit);
-					if (ignoreUpdateAttr != null) {
-						column.Attributes |= SqlColumnAttributes.IgnoreUpdate;
-						column.UpdateValue = ignoreUpdateAttr.Value;
-						if (ignoreUpdateAttr.AutoSync)
-							column.Attributes |= SqlColumnAttributes.UpdateAutoSync;
-					}
-					else {
-						MatchUpdateAttribute matchUpdateAttr = prop.GetCustomAttribute<MatchUpdateAttribute>(inherit); //NOTE: MatchUpdate != IgnoreUpdate
-						if (matchUpdateAttr != null) {
-							column.Attributes |= SqlColumnAttributes.MatchUpdate;
-							column.UpdateValue = matchUpdateAttr.Value;
-							if (matchUpdateAttr.AutoSync)
-								column.Attributes |= SqlColumnAttributes.UpdateAutoSync;
-						}
-						if (autoSyncAttr != null && autoSyncAttr.SyncUpdate) {
-							column.Attributes |= SqlColumnAttributes.UpdateAutoSync;
-						}
-					}
+				// AutoSync
+				var autoSyncAttr = prop.GetCustomAttribute<AutoSyncAttribute>(inherit);
+				if (autoSyncAttr != null) {
+					if (autoSyncAttr.SyncInsert)
+						column.Attributes |= SqlColumnAttributes.InsertAutoSync;
+					if (autoSyncAttr.SyncUpdate)
+						column.Attributes |= SqlColumnAttributes.UpdateAutoSync;
 				}
 			}
 
@@ -360,7 +367,7 @@ namespace Dapper.Extra.Internal
 		/// <summary>
 		/// The columns that are modified on update commands. If this is an empty list then no updates are allowed.
 		/// </summary>
-		public IEnumerable<SqlColumn> UpdateColumns => Columns.Where(c => !c.IsKey && (!c.IgnoreUpdate || c.UpdateValue != null));
+		public IEnumerable<SqlColumn> UpdateColumns => Columns.Where(c => !c.IsKey && ((!c.IgnoreUpdate && !c.MatchUpdate) || c.UpdateValue != null));
 
 		/// <summary>
 		/// The columns that determine equality when performing updates.
@@ -371,6 +378,11 @@ namespace Dapper.Extra.Internal
 		/// The columns that are inserted on insert commands. If this is an empty list then no inserts are allowed.
 		/// </summary>
 		public IEnumerable<SqlColumn> UpsertColumns => Columns.Where(c => !c.IgnoreInsert || !c.IgnoreUpdate || c.InsertValue != null || c.UpdateValue != null);
+
+		public override string ToString()
+		{
+			return "(SqlTypeInfo " + Type.FullName + ")";
+		}
 
 		#endregion
 	}

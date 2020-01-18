@@ -31,12 +31,26 @@ namespace Dapper.Extra.Cache
 	/// Base class for cached objects.
 	/// </summary>
 	/// <typeparam name="T">The table type.</typeparam>
-	public class CacheItem<T>
-		where T : class
+	public class CacheItem<T> where T : class
 	{
+		private T _value;
+
 		/// <summary>
 		/// Null if deleted.
 		/// </summary>
-		public T CacheValue { get; internal set; }
+		public T CacheValue {
+			get => _value;
+			internal set {
+				_value = value;
+				ValueChanged();
+			}
+		}
+
+		/// <summary>
+		/// Called after <see cref="CacheValue"/> changes.
+		/// </summary>
+		protected virtual void ValueChanged()
+		{
+		}
 	}
 }
