@@ -1,6 +1,6 @@
 ﻿#region License
 // Released under MIT License 
-// License: https://www.mit.edu/~amini/LICENSE.md
+// License: https://opensource.org/licenses/MIT
 // Home page: https://github.com/ffhighwind/DapperExtraCRUD
 
 // Copyright(c) 2018 Wesley Hamilton
@@ -29,38 +29,41 @@ using System;
 namespace Dapper.Extra.Internal.Adapters
 {
 	/// <summary>
-	/// An <see cref="SqlAdapter"/> that generates SQL commands for PostgreSQL.
+	/// An <see cref="SqlAdapter"/> that generates SQL commands for MySQL.
 	/// </summary>
-	internal class PostgreSqlAdapter : SqlAdapterImpl
+	internal class MySqlAdapter : SqlAdapterImpl
 	{
 		/// <summary>
-		/// Initializes a new instance of the <see cref="PostgreSqlAdapter"/> class.
+		/// An <see cref="SqlAdapter"/> that generates SQL commands for MySQL.
 		/// </summary>
-		internal PostgreSqlAdapter() : base(SqlDialect.PostgreSQL)
+		internal MySqlAdapter() : base(SqlDialect.MySQL)
 		{
-			QuoteLeft = "\"";
-			QuoteRight = "\"";
-			EscapeQuote = "\"\"";
-			SelectIntIdentityQuery = "SELECT LASTVAL() as \"Id\";";
+			QuoteLeft = "`";
+			QuoteRight = "`";
+			EscapeQuote = "``";
+			SelectIntIdentityQuery = "SELECT LAST_INSERT_ID() as `Id`;";
 			DropTempTableIfExistsQuery = "DROP TEMPORARY TABLE IF EXISTS {0};";
-			TruncateTableQuery = "TRUNCATE TABLE ONLY {0};";
-			CreateTempTable = @"CREATE TEMPORARY TABLE {0} AS
+			TruncateTableQuery = "TRUNCATE TABLE {0};";
+			CreateTempTable = @"CREATE TEMPORARY TABLE {0}
 ";
 			TempTableName = "_{0}";
 			LimitQuery = @"{1}
 LIMIT {0}";
-			CurrentDate = "CURRENT_DATE";
+
+			CurrentDate = "CURDATE()";
 			CurrentDateTime = "NOW()";
-			CurrentDateUtc = "(CURRENT_DATE AT TIME ZONE 'UTC')";
-			CurrentDateTimeUtc = "(NOW() AT TIME ZONE 'UTC')";
+			CurrentDateUtc = "CAST(UTC_TIMESTAMP() as DATE)";
+			CurrentDateTimeUtc = "UTC_TIMESTAMP()";
 		}
 
 		//public override void BulkInsert<T>(IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction, string tableName, DataReaderFactory factory, 
 		//	IEnumerable<SqlColumn> columns, int commandTimeout = 30, SqlBulkCopyOptions options = SqlBulkCopyOptions.Default)
 		//{
-		//	https://www.postgresql.org/docs/9.1/sql-copy.html
-		//	COPY table FROM file [CSV|BINARY]
-		//	COPY [BINARY] table FROM file
+		//	https://dev.mysql.com/doc/refman/8.0/en/load-data.html
+		//	@"C:\Program Files (x86)\MySQL\MySQL Server 5.0\bin\mysql.exe",
+		//	LOAD DATA INFILE 'file.txt' INTO TABLE table;
+		//	FIELDS TERMINATED BY '\t' ENCLOSED BY '' ESCAPED BY '\\'
+		//	LINES TERMINATED BY '\n' STARTING BY ''
 		//}
 
 		/*
@@ -73,45 +76,43 @@ LIMIT {0}";
 		/// <returns>A command to call the DATEADD function.</returns>
 		public override string DateAdd(TimeInterval interval, int amount, SqlColumn column = null)
 		{
-			string opStr = amount < 0 ? "-" : "+";
 			string intervalStr;
 			switch (interval) {
-				case TimeInterval.MICROSECOND:
-					amount /= 1000;
-					goto case TimeInterval.MILLISECOND;
 				case TimeInterval.MILLISECOND:
-					intervalStr = new TimeSpan(0, 0, 0, amount).ToString("'hh:mm:ss.fff'");
+					amount *= 1000;
+					goto case TimeInterval.MICROSECOND;
+				case TimeInterval.MICROSECOND:
+					intervalStr = "MICROSECOND";
 					break;
 				case TimeInterval.SECOND:
-					intervalStr = amount + " SECONDS";
+					intervalStr = "SECOND";
 					break;
 				case TimeInterval.MINUTE:
-					intervalStr = amount + " MINUTES";
+					intervalStr = "MINUTE";
 					break;
 				case TimeInterval.HOUR:
-					intervalStr = amount + " HOURS";
+					intervalStr = "HOUR";
 					break;
 				case TimeInterval.DAY:
-					intervalStr = amount + " DAYS";
+					intervalStr = "DAY";
 					break;
 				case TimeInterval.WEEK:
-					amount *= 7;
-					intervalStr = amount + " DAYS";
+					intervalStr = "WEEK";
 					break;
 				case TimeInterval.MONTH:
-					intervalStr = amount + " MONTHS";
+					intervalStr = "MONTH";
 					break;
 				case TimeInterval.QUARTER:
-					intervalStr = amount + " MONTHS";
+					intervalStr = "QUARTER";
 					break;
 				case TimeInterval.YEAR:
-					intervalStr = amount + " YEARS";
+					intervalStr = "YEAR";
 					break;
 				default:
 					throw new InvalidOperationException(interval.ToString());
 			}
 			string columnStr = column == null ? "@" + column.ColumnName : CurrDateTime;
-			return string.Format("({0} {1} INTERVAL {2}))", columnStr, opStr, intervalStr);
+			return string.Format("DATE_ADD({0}, INTERVAL {1} {2})", columnStr, intervalStr, amount);
 		}
 		*/
 	}

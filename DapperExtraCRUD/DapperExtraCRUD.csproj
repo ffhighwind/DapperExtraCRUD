@@ -2,11 +2,11 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netcoreapp2.0;net461</TargetFrameworks>
     <AssemblyName>Dapper.ExtraCRUD</AssemblyName>
-    <Version>1.1.2</Version>
+    <Version>1.2.0</Version>
     <Authors>Wesley Hamilton</Authors>
     <Description>A Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more.</Description>
     <NeutralLanguage>en-us</NeutralLanguage>
-    <PackageReleaseNotes>Added icons</PackageReleaseNotes>
+    <PackageReleaseNotes>Moved namespace most of Dapper.Extra.Internal to Dapper.Extra.</PackageReleaseNotes>
     <PackageTags>dapper orm micro-orm sql</PackageTags>
     <PackageLicense>Apache-2.0</PackageLicense>
     <PackageProjectUrl>https://github.com/ffhighwind/DapperExtraCRUD</PackageProjectUrl>
@@ -17,8 +17,8 @@
     <DelaySign>false</DelaySign>
     <RootNamespace>Dapper</RootNamespace>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <AssemblyVersion>1.1.2.0</AssemblyVersion>
-    <FileVersion>1.1.2.0</FileVersion>
+    <AssemblyVersion>1.2.0.0</AssemblyVersion>
+    <FileVersion>1.2.0.0</FileVersion>
     <ProjectGuid>{4DBE71C1-2ECD-4192-BC66-E4D1C8DCEC08}</ProjectGuid>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
@@ -56,15 +56,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Extra\Internal\Adapters\OracleAdapter.cs" />
+    <Compile Remove="Extra\Adapters\OracleAdapter.cs" />
     <Compile Remove="Extra\Internal\TimeInterval.cs" />
     <Compile Remove="Extra\Utilities\UtilExtensions.cs" />
     <None Include="..\Images\DapperExtraCRUD-200x200.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
-    <None Include="Extra\Internal\Adapters\OracleAdapter.cs" />
-    <None Include="Extra\Internal\TimeInterval.cs" />
+    <None Include="Extra\Adapters\OracleAdapter.cs" />
     <None Include="Extra\Utilities\UtilExtensions.cs" />
     <PackageReference Include="Dapper.StrongName" Version="2.0.30" />
     <PackageReference Include="Fasterflect.Reflect" Version="3.1.0" />

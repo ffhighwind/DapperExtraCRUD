@@ -1,6 +1,6 @@
 ﻿#region License
 // Released under MIT License 
-// License: https://www.mit.edu/~amini/LICENSE.md
+// License: https://opensource.org/licenses/MIT
 // Home page: https://github.com/ffhighwind/DapperExtraCRUD
 
 // Copyright(c) 2018 Wesley Hamilton
@@ -32,7 +32,7 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Diagnosers;
 using Dapper;
 using System.Linq;
-using Dapper.Extra.Internal;
+using Dapper.Extra;
 
 namespace Benchmarks
 {
@@ -45,14 +45,14 @@ namespace Benchmarks
 
 		static Inserts()
 		{
-			_ = Dapper.Extra.ExtraCrud.Builder<Employee>();
+			_ = ExtraCrud.Builder<Employee>();
 		}
 
 		[Benchmark(Description = "InsertMany (ExtraCRUD)", OperationsPerInvoke = 1)]
 		public bool InsertManyExtra()
 		{
 			Random random = new Random(125125);
-            SqlTypeInfo info = Dapper.Extra.ExtraCrud.TypeInfo<Employee>();
+            SqlTypeInfo info = ExtraCrud.TypeInfo<Employee>();
             List<SqlColumn> columns = info.Columns.Where(c => !c.IsAutoKey).ToList();
             int max = (2050 / columns.Count) * columns.Count;
             StringBuilder sb = new StringBuilder("INSERT INTO [dbo].[Employees] (" + string.Join(",", columns.Select(c => c.ColumnName)) + @") VALUES 

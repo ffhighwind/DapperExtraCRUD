@@ -1,6 +1,6 @@
 ﻿#region License
 // Released under MIT License 
-// License: https://www.mit.edu/~amini/LICENSE.md
+// License: https://opensource.org/licenses/MIT
 // Home page: https://github.com/ffhighwind/DapperExtraCRUD
 
 // Copyright(c) 2018 Wesley Hamilton
@@ -24,33 +24,42 @@
 // SOFTWARE.
 #endregion
 
-namespace Dapper.Extra.Internal.Adapters
+using System;
+using System.Collections.Generic;
+
+namespace Dapper.Extra
 {
 	/// <summary>
-	/// An <see cref="SqlAdapter"/> that generates SQL commands for Oracle.
+	/// Stores metadata and generates SQL commands.
 	/// </summary>
-	internal class OracleAdapter : SqlAdapterImpl
-    {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="OracleAdapter"/> class.
-        /// </summary>
-        public OracleAdapter() : base(SqlDialect.Oracle)
-        {
-			QuoteLeft = "'";
-			QuoteRight = "'";
-			EscapeQuoteRight = "''";
-			SelectIntIdentityQuery = ""; // SEQUENCE?
-			DropTableIfExistsQuery = @"
-BEGIN
-	EXECUTE IMMEDIATE 'DROP TABLE {0}';
-	EXCEPTION
-	WHEN OTHERS THEN NULL;
-END;";
-			TruncateTableQuery = "TRUNCATE TABLE {0};";
-			TempTableName = "{0}";
-			CreateTempTable = "";
-			LimitQuery = @"TOP({0})
-{1}";
-        }
-    }
+	public interface ISqlBuilder
+	{
+		/// <summary>
+		/// The valid columns for the given type.
+		/// </summary>
+		IReadOnlyList<SqlColumn> Columns { get; }
+
+		/// <summary>
+		/// Stores metadata for for the given type.
+		/// </summary>
+		SqlTypeInfo Info { get; }
+
+		/// <summary>
+		/// The dialect used to generate SQL commands.
+		/// </summary>
+		SqlDialect Dialect { get; }
+
+		/// <summary>
+		/// The quoted table name or the class name.
+		/// </summary>
+		string TableName { get; }
+
+		/// <summary>
+		/// Gets the subset of columns that match the property names of <paramref name="type"/>.
+		/// </summary>
+		/// <param name="type">The type whose properties to match.</param>
+		/// <param name="columns">A list of columns from <see cref="Info"/>. </param>
+		/// <returns>The subset of columns that match the property names of <paramref name="type"/>.</returns>
+		IEnumerable<SqlColumn> GetSharedColumns(Type type, IEnumerable<SqlColumn> columns);
+	}
 }

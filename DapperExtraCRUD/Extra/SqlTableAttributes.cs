@@ -1,6 +1,6 @@
 ﻿#region License
 // Released under MIT License 
-// License: https://www.mit.edu/~amini/LICENSE.md
+// License: https://opensource.org/licenses/MIT
 // Home page: https://github.com/ffhighwind/DapperExtraCRUD
 
 // Copyright(c) 2018 Wesley Hamilton
@@ -24,59 +24,46 @@
 // SOFTWARE.
 #endregion
 
-namespace Dapper.Extra.Internal
+namespace Dapper.Extra
 {
 	/// <summary>
-	/// The accepted attributes for the column.
+	/// The attributes for the class.
 	/// </summary>
-	public enum SqlColumnAttributes
+	public enum SqlTableAttributes
 	{
 		/// <summary>
-		/// No column attributes.
+		/// No table attributes.
 		/// </summary>
 		None = 0,
 		/// <summary>
-		/// The column is part of the primary key.
+		/// Prevent inherited properties.
 		/// </summary>
-		Key = 1,
+		DeclaredOnly = 1,
 		/// <summary>
-		/// The column is an auto-increment key.
+		/// Include inherited attributes.
 		/// </summary>
-		AutoKey = (1 << 1) | Key,
+		InheritAttributes = 1 << 1,
+
+		//IgnoreSelect = 1 << 2,
+
 		/// <summary>
-		/// Ignores the column for selects.
-		/// </summary>
-		IgnoreSelect = 1 << 2,
-		/// <summary>
-		/// Ignores the column for inserts.
+		/// Prevents insert commands.
 		/// </summary>
 		IgnoreInsert = 1 << 3,
 		/// <summary>
-		/// Ignores the column for updates.
+		/// Prevents update commands.
 		/// </summary>
 		IgnoreUpdate = 1 << 4,
 		/// <summary>
-		/// Ignores the column for inserts.
+		/// Prevents delete commands.
 		/// </summary>
 		IgnoreDelete = 1 << 5,
 		/// <summary>
-		/// Determines if the column must match the database on deletes.
-		/// </summary>
-		MatchDelete = 1 << 6,
-		/// <summary>
-		/// Determines if the column must matched the database on updates.
-		/// </summary>
-		MatchUpdate = 1 << 7,
-		/// <summary>
-		/// Prevents the column from being included in commands.
-		/// </summary>
-		NotMapped = IgnoreSelect | IgnoreInsert | IgnoreUpdate | IgnoreDelete,
-		/// <summary>
-		/// Determines if the column should be synchronized after inserts.
+		/// Determines if objects should be synchronized after inserts.
 		/// </summary>
 		InsertAutoSync = 1 << 8,
 		/// <summary>
-		/// Determines if the column should be synchronized after updates.
+		/// Determines if objects should be synchronized after updates.
 		/// </summary>
 		UpdateAutoSync = 1 << 9,
 	}

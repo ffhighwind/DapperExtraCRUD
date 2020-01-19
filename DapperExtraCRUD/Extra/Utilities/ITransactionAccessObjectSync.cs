@@ -1,6 +1,6 @@
 ﻿#region License
 // Released under MIT License 
-// License: https://www.mit.edu/~amini/LICENSE.md
+// License: https://opensource.org/licenses/MIT
 // Home page: https://github.com/ffhighwind/DapperExtraCRUD
 
 // Copyright(c) 2018 Wesley Hamilton
@@ -27,7 +27,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using Dapper.Extra.Internal;
 
 namespace Dapper.Extra.Utilities
 {

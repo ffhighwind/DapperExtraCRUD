@@ -1,6 +1,6 @@
 ﻿#region License
 // Released under MIT License 
-// License: https://www.mit.edu/~amini/LICENSE.md
+// License: https://opensource.org/licenses/MIT
 // Home page: https://github.com/ffhighwind/DapperExtraCRUD
 
 // Copyright(c) 2018 Wesley Hamilton
@@ -30,7 +30,7 @@ using System.Collections.Generic;
 namespace Dapper.Extra.Utilities
 {
 	/// <summary>
-	/// Interface for an object that interacts with an <see cref="Dapper.Extra.Internal.ISqlQueries{T}"/>.
+	/// Interface for an object that interacts with an <see cref="Dapper.Extra.ISqlQueries{T}"/>.
 	/// </summary>
 	/// <typeparam name="T">The table type.</typeparam>
 	public interface IAccessObjectSync<T> where T : class

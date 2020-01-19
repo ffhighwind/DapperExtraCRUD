@@ -170,7 +170,7 @@ public static void Main(string[] args)
 
 ## Tip:
 
-* MatchUpdate and MatchDelete on DateTime/Timespan only work for datetime2(2), datetime, and smalldatetime for SQL Server. This is because of differences in precision for datetime2 vs C# DateTime.
+* MatchUpdate and MatchDelete on DateTime only works on datetime2 for up to 2 decimal places (e.g. datetime2(2)). This is because of differences in precision for datetime2 vs C# DateTime.
 * Use a view if you need joins. Alternatively you can use Dapper's multi-mapping queries or manually map the results.
 
 ## Performance:

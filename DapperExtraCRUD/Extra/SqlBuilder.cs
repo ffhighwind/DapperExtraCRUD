@@ -1,6 +1,6 @@
 ﻿#region License
 // Released under MIT License 
-// License: https://www.mit.edu/~amini/LICENSE.md
+// License: https://opensource.org/licenses/MIT
 // Home page: https://github.com/ffhighwind/DapperExtraCRUD
 
 // Copyright(c) 2018 Wesley Hamilton
@@ -35,8 +35,9 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using Fasterflect;
+using Dapper.Extra.Internal;
 
-namespace Dapper.Extra.Internal
+namespace Dapper.Extra
 {
 	/// <summary>
 	/// Stores metadata and generates SQL commands for the given type.

@@ -1,6 +1,6 @@
 ﻿#region License
 // Released under MIT License 
-// License: https://www.mit.edu/~amini/LICENSE.md
+// License: https://opensource.org/licenses/MIT
 // Home page: https://github.com/ffhighwind/DapperExtraCRUD
 
 // Copyright(c) 2018 Wesley Hamilton
@@ -26,13 +26,12 @@
 
 using System;
 using System.Collections.Generic;
-using Dapper.Extra.Internal;
 using Dapper.Extra.Cache.Internal;
 using Dapper.Extra.Utilities;
 using Fasterflect;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Reflection;
+using Dapper.Extra.Internal;
 
 namespace Dapper.Extra.Cache
 {

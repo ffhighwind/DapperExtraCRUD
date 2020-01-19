@@ -1,6 +1,6 @@
 ﻿#region License
 // Released under MIT License 
-// License: https://www.mit.edu/~amini/LICENSE.md
+// License: https://opensource.org/licenses/MIT
 // Home page: https://github.com/ffhighwind/DapperExtraCRUD
 
 // Copyright(c) 2018 Wesley Hamilton
@@ -24,47 +24,53 @@
 // SOFTWARE.
 #endregion
 
-namespace Dapper.Extra.Internal
+using Dapper.Extra.Internal.Adapters;
+
+namespace Dapper.Extra
 {
 	/// <summary>
-	/// The attributes for the class.
+	/// Generates specialized commands using a given dialect.
 	/// </summary>
-	public enum SqlTableAttributes
+	public abstract class SqlAdapter
 	{
 		/// <summary>
-		/// No table attributes.
+		/// An <see cref="SqlAdapter"/> that generates SQL commands for MySQL.
 		/// </summary>
-		None = 0,
-		/// <summary>
-		/// Prevent inherited properties.
-		/// </summary>
-		DeclaredOnly = 1,
-		/// <summary>
-		/// Include inherited attributes.
-		/// </summary>
-		InheritAttributes = 1 << 1,
-
-		//IgnoreSelect = 1 << 2,
+		public static readonly ISqlAdapter MySQL = new MySqlAdapter();
 
 		/// <summary>
-		/// Prevents insert commands.
+		/// An <see cref="SqlAdapter"/> that generates SQL commands for PostgreSQL.
 		/// </summary>
-		IgnoreInsert = 1 << 3,
+		public static readonly ISqlAdapter PostgreSQL = new PostgreSqlAdapter();
+
 		/// <summary>
-		/// Prevents update commands.
+		/// An <see cref="SqlAdapter"/> that generates SQL commands for SQLite.
 		/// </summary>
-		IgnoreUpdate = 1 << 4,
+		public static readonly ISqlAdapter SQLite = new SqlLiteAdapter();
+
 		/// <summary>
-		/// Prevents delete commands.
+		/// An <see cref="SqlAdapter"/> that generates SQL commands for Microsoft SQL Server.
 		/// </summary>
-		IgnoreDelete = 1 << 5,
+		public static readonly ISqlAdapter SQLServer = new SqlServerAdapter();
+
 		/// <summary>
-		/// Determines if objects should be synchronized after inserts.
+		/// Gets the <see cref="SqlAdapter"/> that matches a given <see cref="SqlDialect"/>.
 		/// </summary>
-		InsertAutoSync = 1 << 8,
-		/// <summary>
-		/// Determines if objects should be synchronized after updates.
-		/// </summary>
-		UpdateAutoSync = 1 << 9,
+		/// <param name="dialect">The dialect of the <see cref="SqlAdapter"/>.</param>
+		/// <returns>The <see cref="SqlAdapter"/> that matches a given <see cref="SqlDialect"/>.</returns>
+		public static ISqlAdapter GetAdapter(SqlDialect dialect)
+		{
+			switch (dialect) {
+				case SqlDialect.MySQL:
+					return MySQL;
+				case SqlDialect.PostgreSQL:
+					return PostgreSQL;
+				case SqlDialect.SQLite:
+					return SQLite;
+				case SqlDialect.SQLServer:
+				default:
+					return SQLServer;
+			}
+		}
 	}
 }

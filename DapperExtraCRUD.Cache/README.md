@@ -3,13 +3,13 @@
 [Nuget: Dapper.ExtraCRUD.Cache](https://www.nuget.org/packages/Dapper.ExtraCRUD.Cache/)
 <img  align="right" src="https://raw.githubusercontent.com/ffhighwind/DapperExtraCRUD/master/Images/DapperExtraCRUD-200x200.png" alt="ExtraCRUD">
 
-A cache framework for Dapper.ExtraCRUD. This combines the functionality of DataAccessObjects/AutoAccessObject and a ConcurrentDictionary with support for transactions and rollbacks. The cache is not thread-safe. It is recommended
-that you keep a separate cache per thread or do not use caching at all when multi-threading.
+A cache framework for Dapper.ExtraCRUD. This combines the functionality of DataAccessObjects/AutoAccessObject and a ConcurrentDictionary with support for transactions and rollbacks.
 
-#### Note
+#### Notes
 
-Using caching on databases where multiple users will simultaneously update/delete data is not recommended. If you are going to do this then you should be very careful. Refresh caches for tables that
-are modified often. Always refresh or double-check for changes before performing updates and deletes.
+The cache is not thread-safe. It is recommended that you keep a separate cache per thread or do not use caching at all when multi-threading.
+
+Using caching on databases where multiple users will simultaneously update/delete data is not recommended. If you are going to do this then you should be very careful. Refresh caches for tables that are modified often. Always refresh or double-check for changes before performing updates and deletes.
 
 ## Example
 
@@ -65,7 +65,7 @@ public class EmployeeItem : CacheItem<Employee>
 	public bool Load()
 	{
 		EmployeeItem value = DB.Employees.Get(CacheValue);
-		return value != null && value == this;
+		return value == this;
 	}
 }
 
@@ -106,3 +106,12 @@ public static class Program
 }
 }
 ```
+# License:
+
+*MIT License*
+
+Copyright (c) 2018 Wesley Hamilton
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

@@ -1,6 +1,6 @@
 ﻿#region License
 // Released under MIT License 
-// License: https://www.mit.edu/~amini/LICENSE.md
+// License: https://opensource.org/licenses/MIT
 // Home page: https://github.com/ffhighwind/DapperExtraCRUD
 
 // Copyright(c) 2018 Wesley Hamilton
@@ -24,10 +24,10 @@
 // SOFTWARE.
 #endregion
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System;
 
 namespace Dapper.Extra.Internal
 {

@@ -1,6 +1,6 @@
 ﻿#region License
 // Released under MIT License 
-// License: https://www.mit.edu/~amini/LICENSE.md
+// License: https://opensource.org/licenses/MIT
 // Home page: https://github.com/ffhighwind/DapperExtraCRUD
 
 // Copyright(c) 2018 Wesley Hamilton
@@ -24,53 +24,60 @@
 // SOFTWARE.
 #endregion
 
-using Dapper.Extra.Internal.Adapters;
-
-namespace Dapper.Extra.Internal
+namespace Dapper.Extra
 {
 	/// <summary>
-	/// Generates specialized commands using a given dialect.
+	/// The accepted attributes for the column.
 	/// </summary>
-	public abstract class SqlAdapter
+	public enum SqlColumnAttributes
 	{
 		/// <summary>
-		/// An <see cref="SqlAdapter"/> that generates SQL commands for MySQL.
+		/// No column attributes.
 		/// </summary>
-		public static readonly ISqlAdapter MySQL = new MySqlAdapter();
-
+		None = 0,
 		/// <summary>
-		/// An <see cref="SqlAdapter"/> that generates SQL commands for PostgreSQL.
+		/// The column is part of the primary key.
 		/// </summary>
-		public static readonly ISqlAdapter PostgreSQL = new PostgreSqlAdapter();
-
+		Key = 1,
 		/// <summary>
-		/// An <see cref="SqlAdapter"/> that generates SQL commands for SQLite.
+		/// The column is an auto-increment key.
 		/// </summary>
-		public static readonly ISqlAdapter SQLite = new SqlLiteAdapter();
-
+		AutoKey = (1 << 1) | Key,
 		/// <summary>
-		/// An <see cref="SqlAdapter"/> that generates SQL commands for Microsoft SQL Server.
+		/// Ignores the column for selects.
 		/// </summary>
-		public static readonly ISqlAdapter SQLServer = new SqlServerAdapter();
-
+		IgnoreSelect = 1 << 2,
 		/// <summary>
-		/// Gets the <see cref="SqlAdapter"/> that matches a given <see cref="SqlDialect"/>.
+		/// Ignores the column for inserts.
 		/// </summary>
-		/// <param name="dialect">The dialect of the <see cref="SqlAdapter"/>.</param>
-		/// <returns>The <see cref="SqlAdapter"/> that matches a given <see cref="SqlDialect"/>.</returns>
-		public static ISqlAdapter GetAdapter(SqlDialect dialect)
-		{
-			switch (dialect) {
-				case SqlDialect.MySQL:
-					return MySQL;
-				case SqlDialect.PostgreSQL:
-					return PostgreSQL;
-				case SqlDialect.SQLite:
-					return SQLite;
-				case SqlDialect.SQLServer:
-				default:
-					return SQLServer;
-			}
-		}
+		IgnoreInsert = 1 << 3,
+		/// <summary>
+		/// Ignores the column for updates.
+		/// </summary>
+		IgnoreUpdate = 1 << 4,
+		/// <summary>
+		/// Ignores the column for inserts.
+		/// </summary>
+		IgnoreDelete = 1 << 5,
+		/// <summary>
+		/// Determines if the column must match the database on deletes.
+		/// </summary>
+		MatchDelete = 1 << 6,
+		/// <summary>
+		/// Determines if the column must matched the database on updates.
+		/// </summary>
+		MatchUpdate = 1 << 7,
+		/// <summary>
+		/// Prevents the column from being included in commands.
+		/// </summary>
+		NotMapped = IgnoreSelect | IgnoreInsert | IgnoreUpdate | IgnoreDelete,
+		/// <summary>
+		/// Determines if the column should be synchronized after inserts.
+		/// </summary>
+		InsertAutoSync = 1 << 8,
+		/// <summary>
+		/// Determines if the column should be synchronized after updates.
+		/// </summary>
+		UpdateAutoSync = 1 << 9,
 	}
 }
