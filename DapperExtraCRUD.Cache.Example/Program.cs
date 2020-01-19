@@ -1,19 +1,4 @@
-﻿# Introduction
-
-[Nuget: Dapper.ExtraCRUD.Cache](https://www.nuget.org/packages/Dapper.ExtraCRUD.Cache/)
-<img  align="right" src="https://raw.githubusercontent.com/ffhighwind/DapperExtraCRUD/master/Images/DapperExtraCRUD-200x200.png" alt="ExtraCRUD">
-
-A cache framework for Dapper.ExtraCRUD. This combines the functionality of DataAccessObjects/AutoAccessObject and a ConcurrentDictionary with support for transactions and rollbacks. 
-
-#### Note
-
-Using caching on databases where multiple users will simultaneously update/delete data is not recommended. If you are going to do this then you should be very careful. Refresh caches for tables that
-are modified often. Always refresh or double-check for changes before performing updates and deletes.
-
-## Example
-
-```csharp
-using System;
+﻿using System;
 using System.Data.SqlClient;
 using Dapper.Extra.Annotations;
 using Dapper.Extra.Cache;
@@ -104,4 +89,3 @@ public static class Program
 	}
 }
 }
-```
