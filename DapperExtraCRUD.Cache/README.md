@@ -1,6 +1,7 @@
 ﻿# Introduction
 
 [Nuget: Dapper.ExtraCRUD.Cache](https://www.nuget.org/packages/Dapper.ExtraCRUD.Cache/)
+<img  align="right" src="https://raw.githubusercontent.com/ffhighwind/DapperExtraCRUD/master/Images/DapperExtraCRUD-200x200.png" alt="ExtraCRUD">
 
 A cache framework for Dapper.ExtraCRUD. This combines the functionality of DataAccessObjects/AutoAccessObject and a ConcurrentDictionary with support for transactions and rollbacks.
 
