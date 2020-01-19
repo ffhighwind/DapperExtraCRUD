@@ -26,7 +26,6 @@
 
 using System;
 using System.Collections.Generic;
-using Dapper.Extra.Internal;
 
 namespace Dapper.Extra.Cache
 {
@@ -46,6 +45,12 @@ namespace Dapper.Extra.Cache
 		/// </summary>
 		/// <param name="transaction">The transaction</param>
 		void BeginTransaction(DbCacheTransaction transaction);
+
+		/// <summary>
+		/// Returns the current transaction for the cache.
+		/// </summary>
+		/// <returns>The current transaction for the cache if it exists; otherwise null.</returns>
+		DbCacheTransaction Transaction { get; }
 
 		/// <summary>
 		/// The table information.

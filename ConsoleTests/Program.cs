@@ -137,15 +137,21 @@ namespace ConsoleTests
 				if (!table.Access.Get(list[i]).IsInserted(list[i])) {
 					throw new InvalidOperationException();
 				}
+				int count = table.RecordCount();
+				if (table.Items.Count != count) {
+					throw new InvalidOperationException();
+				}
 				using (DbCacheTransaction trans = table.BeginTransaction()) {
 					for (int j = i + 1; j < i + 5 && j < list.Count; j++) {
 						table.Insert(list[j]);
-						if (table.Items.Count != table.RecordCount()) {
+						count = table.RecordCount();
+						if (table.Items.Count != count) {
 							throw new InvalidOperationException();
 						}
 					}
 				}
-				if (table.Items.Count != table.RecordCount()) {
+				count = table.RecordCount();
+				if (table.Items.Count != count) {
 					throw new InvalidOperationException();
 				}
 			}

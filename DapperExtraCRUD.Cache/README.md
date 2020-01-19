@@ -47,14 +47,16 @@ public class EmployeeItem : CacheItem<Employee>
 	public string UserName => CacheValue.UserName;
 	public string Name => CacheValue.FirstName + " " + CacheValue.LastName;
 	public DateTime HireDate => CacheValue.HireDate;
-	public EmployeeItem Manager { get; private set; }
+	public EmployeeItem Manager => LazyManager.Value;
 	public DateTime DOB => CacheValue.DateOfBirth;
 	public double Age => (DateTime.Today - CacheValue.DateOfBirth).TotalDays / 365.0;
 	public DateTime ModifiedDate => CacheValue.ModifiedDate;
 	public DateTime CreatedDate => CacheValue.CreatedDate;
+	private Lazy<EmployeeItem> LazyManager;
 	protected override void ValueChanged()
 	{
-		Manager = DB.Employees[CacheValue.ManagerID];
+		// Lazy is required here or this could be costly
+		LazyManager = new Lazy<EmployeeItem>(() => DB.Employees[CacheValue.ManagerID], false);
 	}
 
 	public bool Save()
@@ -78,6 +80,7 @@ public static class DB
 	public static DateTime GetDate()
 	{
 		using (SqlConnection conn = new SqlConnection(ConnString)) {
+			// getdate() could be replaced by a cached version of Dapper.Extra.ExtraCrud.Info<Employee>().Adapter.CurrentDateTime
 			return conn.QueryFirst<DateTime>("select getdate()");
 		}
 	}

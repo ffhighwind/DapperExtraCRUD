@@ -26,9 +26,7 @@
 
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using Dapper.Extra.Internal;
 
 namespace Dapper.Extra.Cache.Internal
 {
@@ -36,7 +34,7 @@ namespace Dapper.Extra.Cache.Internal
 		where T : class
 		where R : CacheItem<T>, new()
 	{
-		public readonly ConcurrentDictionary<T, R> Cache = new ConcurrentDictionary<T, R>();
+		public readonly Dictionary<T, R> Cache = new Dictionary<T, R>();
 
 		internal CacheAutoStorage()
 		{
@@ -63,28 +61,13 @@ namespace Dapper.Extra.Cache.Internal
 			set => Cache[key] = value;
 		}
 
-		private R AddValueFactory(T key)
-		{
-			R item = new R();
-			item.CacheValue = key;
-			return item;
-		}
-
-		private R UpdateValueFactory(T value, R oldValue)
-		{
-			oldValue.CacheValue = value;
-			return oldValue;
-		}
-
-		public R AddOrUpdate(T key)
-		{
-			R item = Cache.AddOrUpdate(key, AddValueFactory, UpdateValueFactory);
-			return item;
-		}
-
 		public R Add(T key)
 		{
-			R item = Cache.AddOrUpdate(key, AddValueFactory, UpdateValueFactory);
+			if(!Cache.TryGetValue(key, out R item)) {
+				item = new R();
+				Cache.Add(key, item);
+			}
+			item.CacheValue = key;
 			return item;
 		}
 
@@ -100,14 +83,14 @@ namespace Dapper.Extra.Cache.Internal
 
 		public bool Remove(T value)
 		{
-			bool success = Cache.TryRemove(value, out R _);
+			bool success = Cache.Remove(value);
 			return success;
 		}
 
 		public bool RemoveKey(object key)
 		{
 			T obj = ObjectFromKey(key);
-			bool success = Cache.TryRemove(obj, out R _);
+			bool success = Cache.Remove(obj);
 			return success;
 		}
 
@@ -172,7 +155,7 @@ namespace Dapper.Extra.Cache.Internal
 
 		public void Add(T key, R value)
 		{
-			Cache.AddOrUpdate(key, value, UpdateValueFactory);
+			Add(key);
 		}
 
 		public void Add(KeyValuePair<T, R> item)
@@ -194,14 +177,6 @@ namespace Dapper.Extra.Cache.Internal
 		public bool Remove(KeyValuePair<T, R> item)
 		{
 			bool success = ((IDictionary<T, R>)Cache).Remove(item);
-			return success;
-		}
-
-		public bool TryAdd(T value)
-		{
-			R item = new R();
-			item.CacheValue = value;
-			bool success = Cache.TryAdd(value, item);
 			return success;
 		}
 	}

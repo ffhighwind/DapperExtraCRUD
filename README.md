@@ -42,7 +42,7 @@ Annotations map classes to a database tables and properties to table columns.
 | Column | Map a property to a column. |
 | NotMapped | Prevent a property from being mapped. |
 | Key | Map a property to a primary key. |
-| AutoSync | Automatically selects a column after an insert/update. This does not affect bulk operations. |
+| AutoSync | Automatically selects a column/class after an insert/update. This does not affect bulk operations. Note that synchronization is a delayed action, which means that rows can be modified before they are selected. If only certain columns are synchronized then there is no guarentee on the accuracy of the data. |
 | IgnoreDelete | Prevents deletes. |
 | IgnoreSelect | Ignores a column for selects. This does not work for primary keys. |
 | IgnoreInsert | Ignores a column for insertions. A raw SQL string can replace the value (e.g. 'getdate()'). This does not work for primary keys. |

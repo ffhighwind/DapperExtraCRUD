@@ -24,7 +24,6 @@
 // SOFTWARE.
 #endregion
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace Dapper.Extra.Cache
@@ -84,12 +83,5 @@ namespace Dapper.Extra.Cache
 		/// <param name="key">The key to locate.</param>
 		/// <returns>True if the key is in the storage; false otherwise.</returns>
 		bool ContainsKey(object key);
-
-		/// <summary>
-		/// Attempts to add the specified object to the storage.
-		/// </summary>
-		/// <param name="value">The element to add.</param>
-		/// <returns>True if the element was added; false otherwise.</returns>
-		bool TryAdd(T value);
 	}
 }

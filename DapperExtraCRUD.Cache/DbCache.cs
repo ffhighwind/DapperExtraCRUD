@@ -25,7 +25,6 @@
 #endregion
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace Dapper.Extra.Cache
@@ -38,7 +37,7 @@ namespace Dapper.Extra.Cache
 		/// <summary>
 		/// A cache of <see cref="DbCacheTable{T, R}"/>.
 		/// </summary>
-		private readonly ConcurrentDictionary<Type, object> Map = new ConcurrentDictionary<Type, object>();
+		private readonly Dictionary<Type, object> Map = new Dictionary<Type, object>();
 
 		private readonly string ConnectionString;
 
@@ -72,7 +71,15 @@ namespace Dapper.Extra.Cache
 			where T : class
 			where R : CacheItem<T>, new()
 		{
-			return (DbCacheTable<T, R>)Map.GetOrAdd(typeof(T), (type) => new DbCacheTable<T, R>(ConnectionString));
+			DbCacheTable<T, R> table;
+			if (Map.TryGetValue(typeof(T), out object obj)) {
+				table = (DbCacheTable<T, R>)obj;
+			}
+			else {
+				table = new DbCacheTable<T, R>(ConnectionString);
+				Map.Add(typeof(T), table);
+			}
+			return table;
 		}
 	}
 }

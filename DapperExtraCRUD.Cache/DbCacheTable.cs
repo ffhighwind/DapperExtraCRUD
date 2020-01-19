@@ -31,7 +31,6 @@ using Dapper.Extra.Utilities;
 using Fasterflect;
 using System.Collections.Concurrent;
 using System.Linq;
-using Dapper.Extra.Internal;
 
 namespace Dapper.Extra.Cache
 {
@@ -78,6 +77,7 @@ namespace Dapper.Extra.Cache
 		private readonly SqlColumn AutoKeyColumn;
 		private readonly bool AutoSyncInsert;
 		private readonly bool AutoSyncUpdate;
+		public DbCacheTransaction Transaction { get; private set; }
 
 		private long MaxAutoKey()
 		{
@@ -133,10 +133,12 @@ namespace Dapper.Extra.Cache
 				Items = storage;
 				transaction.TransactionStorage.Add(storage);
 				Access = DAO;
+				Transaction = transaction;
 				return transaction;
 			}
 			catch {
 				DAO.Transaction = null;
+				Transaction = null;
 				if (DAO.Connection.State == System.Data.ConnectionState.Open) {
 					DAO.Connection.Close();
 				}

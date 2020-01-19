@@ -26,7 +26,6 @@
 
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 
@@ -39,12 +38,12 @@ namespace Dapper.Extra.Cache.Internal
 		/// <summary>
 		/// The current state.
 		/// </summary>
-		private ConcurrentDictionary<T, R> Cache { get; set; }
+		private Dictionary<T, R> Cache { get; set; }
 		/// <summary>
 		///  A backup of what was changed in the Cache in case a rollback is needed. A CacheValue will be null if an item was added
 		///  during the transaction and needs to be removed on a rollback.
 		/// </summary>
-		private ConcurrentDictionary<T, R> SavePoint { get; set; } = new ConcurrentDictionary<T, R>();
+		private Dictionary<T, CItem> SavePoint { get; set; } = new Dictionary<T, CItem>();
 		/// <summary>
 		/// Resets the state of the DbCacheTable that created this object. The AccessObject will be changed back to the 
 		/// <see cref="Utilities.AutoAccessObject{T}"/> and the <see cref="ICacheStorage{T, R}"/> will be changed back to 
@@ -60,25 +59,12 @@ namespace Dapper.Extra.Cache.Internal
 		/// </summary>
 		private readonly Func<object, T> CreateFromKey;
 
-		public CacheTransactionStorage(ConcurrentDictionary<T, R> cache, IDbTransaction transaction, Func<object, T> createFromKey, Action onClose)
+		public CacheTransactionStorage(Dictionary<T, R> cache, IDbTransaction transaction, Func<object, T> createFromKey, Action onClose)
 		{
 			Cache = cache;
 			Transaction = transaction;
 			OnClose = onClose;
 			CreateFromKey = createFromKey;
-		}
-
-		private R UpdateValueFactory(T t, R r)
-		{
-			r.CacheValue = t;
-			return r;
-		}
-
-		private R AddValueFactory(T t)
-		{
-			R item = new R();
-			item.CacheValue = t;
-			return item;
 		}
 
 		public IDbConnection Connection => Transaction.Connection;
@@ -151,10 +137,10 @@ namespace Dapper.Extra.Cache.Internal
 			if (SavePoint == null)
 				return;
 			foreach (var kv in SavePoint) {
-				if (kv.Value.CacheValue == null)
-					Cache.TryRemove(kv.Key, out R item);
+				if (kv.Value.value == null)
+					Cache.Remove(kv.Key);
 				else
-					Cache.AddOrUpdate(kv.Key, AddValueFactory, UpdateValueFactory);
+					Cache[kv.Key] = new R() { CacheValue = kv.Key };
 			}
 			SavePoint.Clear();
 			SavePoint = null;
@@ -163,10 +149,15 @@ namespace Dapper.Extra.Cache.Internal
 
 		public R Add(T value)
 		{
-			if (!Cache.TryGetValue(value, out R item))
+			if (!Cache.TryGetValue(value, out R item)) {
 				item = new R();
-			SavePoint.TryAdd(value, item);
-			item = Cache.AddOrUpdate(value, AddValueFactory, UpdateValueFactory);
+				Cache.Add(value, item);
+			}
+			if (!SavePoint.ContainsKey(value)) {
+				CItem citem = new CItem() { value = item.CacheValue };
+				SavePoint.Add(value, citem);
+			}
+			item.CacheValue = value;
 			return item;
 		}
 
@@ -222,16 +213,18 @@ namespace Dapper.Extra.Cache.Internal
 
 		public void Add(T key, R value)
 		{
-			if (!Cache.TryGetValue(key, out R item))
-				item = new R();
-			SavePoint.TryAdd(key, item);
-			item = Cache.AddOrUpdate(key, value, UpdateValueFactory);
+			Add(key);
 		}
 
 		public bool Remove(T key)
 		{
-			if (Cache.TryRemove(key, out R item)) {
-				SavePoint.TryAdd(key, item);
+			if (Cache.TryGetValue(key, out R item)) {
+				if(!SavePoint.TryGetValue(key, out CItem _)) {
+					CItem citem = new CItem() { value = item.CacheValue };
+					SavePoint.Add(key, citem);
+				}
+				item.CacheValue = null;
+				_ = Cache.Remove(key);
 				return true;
 			}
 			return false;
@@ -279,12 +272,9 @@ namespace Dapper.Extra.Cache.Internal
 			return Cache.GetEnumerator();
 		}
 
-		public bool TryAdd(T value)
+		internal class CItem
 		{
-			R item = new R();
-			item.CacheValue = value;
-			bool success = Cache.TryAdd(value, item);
-			return success;
+			public T value;
 		}
 	}
 }
