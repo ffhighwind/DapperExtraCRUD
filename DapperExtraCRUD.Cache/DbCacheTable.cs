@@ -82,8 +82,10 @@ namespace Dapper.Extra.Cache
 
 		private long MaxAutoKey()
 		{
-			long max = Access.GetKeys<long?>("WHERE " + AutoKeyColumn.ColumnName + " = (SELECT MAX(" + AutoKeyColumn.ColumnName + ") FROM " + Info.TableName + ")").FirstOrDefault() ?? int.MinValue;
-			return max;
+			IEnumerable<long> max = Access.GetKeys<long>("WHERE " + AutoKeyColumn.ColumnName + " = (SELECT MAX(" + AutoKeyColumn.ColumnName + ") FROM " + Info.TableName + ")");
+			if (max.Any())
+				return max.First();
+			return long.MinValue;
 		}
 
 		/// <summary>
@@ -357,9 +359,9 @@ namespace Dapper.Extra.Cache
 		/// <returns>The number of deleted rows.</returns>
 		public int DeleteList(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			List<T> list = Access.GetList(whereCondition, param, true, commandTimeout).AsList();
+			List<T> keys = Access.GetKeys(whereCondition, param, true, commandTimeout).AsList();
 			int count = Access.DeleteList(whereCondition, param, commandTimeout);
-			Items.Remove(list);
+			Items.Remove(keys);
 			return count;
 		}
 
@@ -550,6 +552,7 @@ namespace Dapper.Extra.Cache
 		public void Truncate(int commandTimeout = 30)
 		{
 			Access.Truncate(commandTimeout);
+			Items.Clear();
 		}
 
 		/// <summary>

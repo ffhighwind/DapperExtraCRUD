@@ -35,7 +35,6 @@ namespace ConsoleTests
 		public TestDTO() { }
 		public TestDTO(Random random)
 		{
-			ID = random.Next();
 			Name = random.Next().ToString();
 			CreatedDt = DateTime.FromOADate(random.NextDouble());
 		}

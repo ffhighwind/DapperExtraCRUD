@@ -122,6 +122,11 @@ namespace ConsoleTests
 
 			CacheInsert(table, list);
 			CacheDelete(table, list);
+			CacheBulkInsert(table, list);
+			CacheBulkInsertIfNotExists(table, list);
+			CacheBulkUpdate(table, list, random);
+			CacheBulkGet(table, list);
+			CacheTransactions(table, list, random);
 		}
 
 		public static void CacheInsert<T>(DbCacheTable<T, CacheItem<T>> table, List<T> list) where T : class, IDto<T>, new()
@@ -143,6 +148,122 @@ namespace ConsoleTests
 				if (table.Items.Count != table.RecordCount()) {
 					throw new InvalidOperationException();
 				}
+			}
+			table.DeleteList();
+		}
+
+		public static void CacheBulkInsert<T>(DbCacheTable<T, CacheItem<T>> table, List<T> list) where T : class, IDto<T>, new()
+		{
+			list = CloneList(list);
+			table.Insert(list[0]);
+			if (1 != table.RecordCount()) {
+				throw new InvalidOperationException();
+			}
+			using (DbCacheTransaction trans = table.BeginTransaction()) {
+				table.BulkInsert(list.Skip(1));
+				if (table.Items.Count != table.RecordCount()) {
+					throw new InvalidOperationException();
+				}
+			}
+			if (1 != table.RecordCount()) {
+				throw new InvalidOperationException();
+			}
+			table.DeleteList();
+		}
+
+		public static void CacheBulkInsertIfNotExists<T>(DbCacheTable<T, CacheItem<T>> table, List<T> list) where T : class, IDto<T>, new()
+		{
+			bool hasAutoKey = ExtraCrud.TypeInfo<T>().AutoKeyColumn != null;
+			list = CloneList(list);
+			int count = list.Count / 2;
+			table.BulkInsertIfNotExists(list.Take(count));
+			using (DbCacheTransaction trans = table.BeginTransaction()) {
+				if (count != table.RecordCount()) {
+					throw new InvalidOperationException();
+				}
+				table.BulkInsertIfNotExists(list);
+				int count2 = table.RecordCount();
+				if (list.Count != count2) {
+					if (count + list.Count != count2) {
+						throw new InvalidOperationException();
+					}
+					if (!hasAutoKey) {
+						throw new InvalidOperationException();
+					}
+				}
+			}
+			if (count != table.RecordCount()) {
+				throw new InvalidOperationException();
+			}
+			table.DeleteList();
+		}
+
+		public static void CacheBulkUpdate<T>(DbCacheTable<T, CacheItem<T>> table, List<T> list, Random random) where T : class, IDto<T>, new()
+		{
+			list = CloneList(list);
+			table.BulkInsert(list);
+			if (list.Count != table.RecordCount()) {
+				throw new InvalidOperationException();
+			}
+			list = table.Access.GetList().ToList();
+			using (DbCacheTransaction trans = table.BeginTransaction()) {
+				List<T> updatedList = new List<T>();
+				List<T> originalList = new List<T>();
+				foreach (var item in table.Items.Values.Select(c => c.CacheValue)) {
+					originalList.Add(item);
+					T updated = item.UpdateRandomize(random);
+					updatedList.Add(updated);
+				}
+				table.BulkUpdate(updatedList);
+				for (int i = 0; i < updatedList.Count; i++) {
+					T get = table.Access.Get(originalList[i]);
+					T updated = updatedList[i];
+					if (!get.IsUpdated(updated)) {
+						throw new InvalidOperationException();
+					}
+				}
+			}
+			if (list.Count != table.RecordCount()) {
+				throw new InvalidOperationException();
+			}
+			for (int i = 0; i < list.Count; i++) {
+				T original = list[i];
+				CacheItem<T> get = table.Get(original);
+				if (!get.CacheValue.IsIdentical(list[i])) {
+					throw new InvalidOperationException();
+				}
+			}
+			table.DeleteList();
+		}
+
+		public static void CacheBulkGet<T>(DbCacheTable<T, CacheItem<T>> table, List<T> list) where T : class, IDto<T>, new()
+		{
+			list = CloneList(list);
+			table.Access.BulkInsert(list);
+			if (list.Count != table.RecordCount()) {
+				throw new InvalidOperationException();
+			}
+			if (table.Items.Count != 0) {
+				throw new InvalidOperationException();
+			}
+			list = table.Items.Values.Select(c => c.CacheValue).AsList();
+			using (DbCacheTransaction trans = table.BeginTransaction()) {
+				IEnumerable<T> tmp = list;
+				int total = 0;
+				while (tmp.Any()) {
+					var tmp20 = tmp.Take(20).AsList();
+					tmp = tmp.Skip(20);
+					List<T> getList = table.BulkGet(tmp20).Select(c => c.CacheValue).AsList();
+					total += getList.Count;
+					if (getList.Count != tmp20.Count)
+						throw new InvalidCastException();
+					if (table.Items.Count != total) {
+						throw new InvalidOperationException();
+					}
+				}
+			}
+			if (table.Items.Count != 0) {
+				throw new InvalidOperationException();
 			}
 			table.DeleteList();
 		}
@@ -176,6 +297,61 @@ namespace ConsoleTests
 				}
 			}
 			table.DeleteList();
+		}
+
+		public static void CacheTransactions<T>(DbCacheTable<T, CacheItem<T>> table, List<T> list, Random random) where T : class, IDto<T>, new()
+		{
+			list = CloneList(list);
+			if (table.GetList().Count() != 0) {
+				throw new InvalidOperationException();
+			}
+			if (table.Items.Count != table.RecordCount()) {
+				throw new InvalidOperationException();
+			}
+			table.BulkInsert(list.Take(list.Count / 2));
+			if (table.Items.Count != table.RecordCount()) {
+				throw new InvalidOperationException();
+			}
+			List<T> list2 = table.GetList().Select(c => c.CacheValue.Clone()).AsList();
+			using (DbCacheTransaction trans = table.BeginTransaction()) {
+				if (list2.Count != table.RecordCount()) {
+					throw new InvalidOperationException();
+				}
+				table.BulkInsert(list.Skip(list.Count / 2));
+				for(int i = 0; i < list.Count; i++) {
+					list[i] = list[i].UpdateRandomize(random);
+				}
+				table.BulkUpdate(list);
+				if (table.Items.Count != table.RecordCount()) {
+					throw new InvalidOperationException();
+				}
+				for (int i = 0; i < list.Count; i++) {
+					list[i] = list[i].UpdateRandomize(random);
+				}
+				table.BulkUpdate(list);
+				if (table.Items.Count != table.RecordCount()) {
+					throw new InvalidOperationException();
+				}
+				List<T> list3 = table.Items.Values.Select(c => c.CacheValue).Skip(list.Count / 4).Take(list.Count / 2).ToList();
+				int count = table.BulkDelete(list3);
+				if (count != list3.Count)
+					throw new InvalidCastException();
+				if (table.Items.Count != table.RecordCount()) {
+					throw new InvalidOperationException();
+				}
+			}
+			if (table.Items.Count != list.Count / 2) {
+				throw new InvalidOperationException();
+			}
+			if (table.GetList().Count() != list.Count / 2) {
+				throw new InvalidOperationException();
+			}
+			for(int i = 0; i < list2.Count; i++) {
+				if (!table.Items.TryGetValue(list2[i], out CacheItem<T> cache))
+					throw new InvalidOperationException();
+				if (!cache.CacheValue.IsIdentical(list2[i]))
+					throw new InvalidOperationException();
+			}
 		}
 
 		public static void DoTests<T>(Func<T> constructor, Func<T, T> randomize, IFilter<T> filter) where T : class, IDto<T>, new()
@@ -375,11 +551,14 @@ DROP TABLE dbo.{tableName};";
 
 		public static void GetList<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
-			Dictionary<T, T> map = CreateMap<T>(list);
-			var list2 = conn.GetList<T>(trans).AsList();
-			if (map.Count != list2.Count)
+			if (conn.RecordCount<T>(trans) != list.Count) {
 				throw new InvalidOperationException();
-			foreach (T item in list2) {
+			}
+			Dictionary<T, T> map = CreateMap<T>(list);
+			list = conn.GetList<T>(trans).AsList();
+			if (map.Count != list.Count)
+				throw new InvalidOperationException();
+			foreach (T item in list) {
 				if (!map.Remove(item)) {
 					throw new InvalidOperationException();
 				}
@@ -388,10 +567,11 @@ DROP TABLE dbo.{tableName};";
 
 		public static void GetFilter<T>(SqlConnection conn, SqlTransaction trans, List<T> list, IFilter<T> filter) where T : class, IDto<T>
 		{
-			var list2 = conn.GetList<T>(filter.GetType(), "", null, trans).AsList();
-			if (list.Count != list2.Count)
+			if (conn.RecordCount<T>(trans) != list.Count) {
 				throw new InvalidOperationException();
-			foreach (T item in list2) {
+			}
+			list = conn.GetList<T>(filter.GetType(), "", null, trans).AsList();
+			foreach (T item in list) {
 				if (!filter.IsFiltered(item))
 					throw new InvalidOperationException();
 			}
@@ -399,6 +579,10 @@ DROP TABLE dbo.{tableName};";
 
 		public static void Get_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
 		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			list = CloneList(list);
 			foreach (T item in list) {
 				T get = conn.Get<T>(item.GetKey(), trans);
 				if (!item.IsIdentical(get))
@@ -408,6 +592,9 @@ DROP TABLE dbo.{tableName};";
 
 		public static void Delete<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
 			for (int i = 0; i < list.Count; i++) {
 				T t = conn.Get(list[i], trans);
 				if (t == null)
@@ -446,6 +633,9 @@ DROP TABLE dbo.{tableName};";
 
 		public static void DeleteList<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
 			int count = conn.DeleteList<T>(trans);
 			if (count != list.Count)
 				throw new InvalidOperationException();
@@ -453,6 +643,9 @@ DROP TABLE dbo.{tableName};";
 
 		public static void Delete_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
 		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
 			//bool Delete<KeyType>(KeyType key, int commandTimeout = 30);
 			for (int i = 0; i < list.Count; i++) {
 				var key = list[i].GetKey();
@@ -472,6 +665,10 @@ DROP TABLE dbo.{tableName};";
 
 		public static void GetLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			list = CloneList(list);
 			int max = Math.Min(list.Count, 20);
 			for (int i = 0; i < max; i++) {
 				List<T> items = conn.GetLimit<T>(i, trans).AsList();
@@ -482,6 +679,9 @@ DROP TABLE dbo.{tableName};";
 
 		public static void GetFilterLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list, IFilter<T> filter) where T : class, IDto<T>
 		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
 			int max = Math.Min(list.Count, 20);
 			for (int i = 0; i < max; i++) {
 				List<T> items = conn.GetLimit<T>(i, filter.GetType(), "", null, trans).AsList();
@@ -503,6 +703,10 @@ DROP TABLE dbo.{tableName};";
 
 		public static void Update<T>(SqlConnection conn, SqlTransaction trans, List<T> list, Func<T, T> randomize) where T : class, IDto<T>
 		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			list = CloneList(list);
 			//bool Update(T obj, int commandTimeout = 30);
 			List<T> failures = new List<T>();
 			foreach (T item in list) {
@@ -554,6 +758,9 @@ DROP TABLE dbo.{tableName};";
 
 		public static void GetDistinct<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
 			//requires IgnoreSelect to be useful
 			Dictionary<T, T> map = CreateMap<T>(list);
 			List<T> list2 = conn.GetDistinct<T>(typeof(T), trans).AsList();
@@ -568,6 +775,10 @@ DROP TABLE dbo.{tableName};";
 
 		public static void GetDistinctLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			list = CloneList(list);
 			int max = Math.Min(list.Count, 10);
 			for (int i = 2; i < max; i++) {
 				Dictionary<T, T> map = CreateMap<T>(list);
@@ -584,6 +795,10 @@ DROP TABLE dbo.{tableName};";
 
 		public static void GetFilterDistinctLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list, IFilter<T> filter) where T : class, IDto<T>
 		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			list = CloneList(list);
 			int max = Math.Min(list.Count, 10);
 			for (int i = 2; i < max; i++) {
 				Dictionary<T, T> map = CreateMap<T>(list);
@@ -597,6 +812,10 @@ DROP TABLE dbo.{tableName};";
 		#region Tested Bulk
 		public static void BulkGet<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			list = CloneList(list);
 			//List<T> BulkGet(IEnumerable<T> keys, int commandTimeout = 30);
 			int max = Math.Min(list.Count, 10);
 			for (int i = 2; i < max; i++) {
@@ -611,7 +830,10 @@ DROP TABLE dbo.{tableName};";
 
 		public static void BulkGet_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
 		{
-			//public static List<T> BulkGet<KeyType>(IEnumerable<KeyType> keys, int commandTimeout = 30);
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			list = CloneList(list);
 			int max = Math.Min(list.Count, 10);
 			for (int i = 2; i < max; i++) {
 				List<T> limited = list.Take(i).ToList();
@@ -660,6 +882,9 @@ DROP TABLE dbo.{tableName};";
 
 		public static void BulkDelete_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans) where T : class, IDtoKey<T, KeyType>
 		{
+			if (conn.RecordCount<T>(trans) == 0) {
+				throw new InvalidOperationException();
+			}
 			//int BulkDelete<KeyType>(IEnumerable<KeyType> keys, int commandTimeout = 30);
 			List<KeyType> keys = conn.GetList<T>(trans).Select(t => t.GetKey()).AsList();
 			int count = conn.BulkDelete<T>(keys.Select(k => (object)k), trans);

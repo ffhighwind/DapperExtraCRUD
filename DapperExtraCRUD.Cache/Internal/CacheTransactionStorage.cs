@@ -183,7 +183,7 @@ namespace Dapper.Extra.Cache.Internal
 		public void Remove(IEnumerable<T> values)
 		{
 			foreach (T value in values) {
-				_ = RemoveKey(value);
+				_ = Remove(value);
 			}
 		}
 

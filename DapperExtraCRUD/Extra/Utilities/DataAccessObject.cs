@@ -250,7 +250,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The rows that match the given condition.</returns>
 		public override IEnumerable<T> GetDistinct(Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
 		{
-			List<T> list = Queries.GetDistinct(Connection, columnFilter, whereCondition, param, Transaction, true, commandTimeout).AsList();
+			IEnumerable<T> list = Queries.GetDistinct(Connection, columnFilter, whereCondition, param, Transaction, buffered, commandTimeout);
 			return list;
 		}
 
@@ -266,7 +266,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The rows that match the given condition.</returns>
 		public override IEnumerable<T> GetDistinctLimit(int limit, Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
 		{
-			List<T> list = Queries.GetDistinctLimit(Connection, limit, columnFilter, whereCondition, param, Transaction, buffered, commandTimeout).AsList();
+			IEnumerable<T> list = Queries.GetDistinctLimit(Connection, limit, columnFilter, whereCondition, param, Transaction, buffered, commandTimeout);
 			return list;
 		}
 
@@ -281,8 +281,16 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The keys that match the given condition.</returns>
 		public override IEnumerable<KeyType> GetKeys<KeyType>(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
 		{
-			IEnumerable<object> keys = Queries.GetKeysKeys(Connection, whereCondition, param, Transaction, true, commandTimeout);
-			List<KeyType> castedKeys = keys.Select(k => (KeyType)k).AsList();
+			IEnumerable<object> keys = Queries.GetKeysKeys(Connection, whereCondition, param, Transaction, buffered, commandTimeout);
+			if (typeof(KeyType) == typeof(long)) {
+				if (keys.Any()) {
+					Type type = keys.First().GetType();
+					if (type == typeof(int)) {
+						keys = keys.Select(k => (object)(long)(int)k);
+					}
+				}
+			}
+			IEnumerable<KeyType> castedKeys = keys.Select(k => (KeyType)k);
 			return castedKeys;
 		}
 
@@ -296,7 +304,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The keys that match the given condition.</returns>
 		public override IEnumerable<T> GetKeys(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
 		{
-			IEnumerable<T> keys = Queries.GetKeys(Connection, whereCondition, param, Transaction, true, commandTimeout);
+			IEnumerable<T> keys = Queries.GetKeys(Connection, whereCondition, param, Transaction, buffered, commandTimeout);
 			return keys;
 		}
 
@@ -311,7 +319,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The limited number of rows that match the given condition.</returns>
 		public override IEnumerable<T> GetLimit(int limit, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
 		{
-			List<T> list = Queries.GetLimit(Connection, limit, whereCondition, param, Transaction, true, commandTimeout).AsList();
+			IEnumerable<T> list = Queries.GetLimit(Connection, limit, whereCondition, param, Transaction, buffered, commandTimeout);
 			return list;
 		}
 
@@ -327,7 +335,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>A limited number of rows that match the given condition.</returns>
 		public override IEnumerable<T> GetLimit(int limit, Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
 		{
-			List<T> list = Queries.GetFilterLimit(Connection, limit, columnFilter, whereCondition, param, Transaction, true, commandTimeout).AsList();
+			IEnumerable<T> list = Queries.GetFilterLimit(Connection, limit, columnFilter, whereCondition, param, Transaction, buffered, commandTimeout);
 			return list;
 		}
 
@@ -341,7 +349,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The rows that match the given condition.</returns>
 		public override IEnumerable<T> GetList(string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
 		{
-			List<T> list = Queries.GetList(Connection, whereCondition, param, Transaction, true, commandTimeout).AsList();
+			IEnumerable<T> list = Queries.GetList(Connection, whereCondition, param, Transaction, buffered, commandTimeout);
 			return list;
 		}
 
@@ -356,7 +364,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The rows that match the given condition.</returns>
 		public override IEnumerable<T> GetList(Type columnFilter, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
 		{
-			List<T> list = Queries.GetFilter(Connection, columnFilter, whereCondition, param, Transaction, true, commandTimeout).AsList();
+			IEnumerable<T> list = Queries.GetFilter(Connection, columnFilter, whereCondition, param, Transaction, buffered, commandTimeout);
 			return list;
 		}
 

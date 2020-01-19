@@ -88,7 +88,12 @@ namespace Dapper.Extra.Internal.Adapters
 				foreach (SqlColumn column in columns) {
 					bulkCopy.ColumnMappings.Add(column.Property.Name, column.ColumnName);
 				}
+				bool wasClosed = connection.State != ConnectionState.Open;
+				if (wasClosed)
+					connection.Open();
 				bulkCopy.WriteToServer(dataReader);
+				if(wasClosed)
+					connection.Close();
 			}
 		}
 

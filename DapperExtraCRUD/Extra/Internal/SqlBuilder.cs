@@ -441,6 +441,9 @@ namespace Dapper.Extra.Internal
 			string selectEqualityIntoStagingCmd = SelectIntoStagingTable(EqualityColumns);
 			string equalsTables = WhereEqualsTables(EqualityColumns);
 			return (connection, objs, transaction, commandTimeout) => {
+				bool wasClosed = connection.State != ConnectionState.Open;
+				if (wasClosed)
+					connection.Open();
 				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 				connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
 				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, EqualityColumns, commandTimeout,
@@ -448,6 +451,8 @@ namespace Dapper.Extra.Internal
 				string bulkDeleteCmd = $"DELETE FROM {TableName} FROM {TableName} INNER JOIN {BulkStagingTable} ON {equalsTables}";
 				int count = connection.Execute(bulkDeleteCmd, null, transaction, commandTimeout);
 				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+				if (wasClosed)
+					connection.Close();
 				return count;
 			};
 		}
@@ -480,6 +485,9 @@ namespace Dapper.Extra.Internal
 			string paramsSelectFromTableBulk = ParamsSelectFromTableBulk();
 			string equalsTables = WhereEqualsTables(EqualityColumns);
 			return (connection, objs, transaction, commandTimeout) => {
+				bool wasClosed = connection.State != ConnectionState.Open;
+				if (wasClosed)
+					connection.Open();
 				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 				connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
 				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, EqualityColumns, commandTimeout,
@@ -487,6 +495,8 @@ namespace Dapper.Extra.Internal
 				string bulkGetQuery = $"SELECT {paramsSelectFromTableBulk}\tINNER JOIN {BulkStagingTable} ON {equalsTables}";
 				List<T> result = connection.Query<T>(bulkGetQuery, null, transaction, true, commandTimeout).AsList();
 				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+				if (wasClosed)
+					connection.Close();
 				return result;
 			};
 		}
@@ -527,6 +537,9 @@ namespace Dapper.Extra.Internal
 			string insertIntoCmd = InsertIntoCmd();
 			string insertedValues = InsertedValues(Info.InsertColumns);
 			return (connection, objs, transaction, commandTimeout) => {
+				bool wasClosed = connection.State != ConnectionState.Open;
+				if (wasClosed)
+					connection.Open();
 				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 				connection.Execute(selectInsertIntoStagingCmd, null, transaction, commandTimeout);
 				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.BulkInsertIfNotExistsColumns, commandTimeout,
@@ -534,6 +547,8 @@ namespace Dapper.Extra.Internal
 				string bulkInsertIfNotExistsCmd = $"{insertIntoCmd}\nSELECT {insertColumns}\nFROM {BulkStagingTable}\nWHERE NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{equalsTables})";
 				int count = connection.Execute(bulkInsertIfNotExistsCmd, null, transaction, commandTimeout);
 				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+				if (wasClosed)
+					connection.Close();
 				return count;
 			};
 		}
@@ -547,6 +562,9 @@ namespace Dapper.Extra.Internal
 			string selectEqualityIntoStagingCmd = SelectIntoStagingTable(Info.BulkUpdateColumns);
 			string updateEquals = WhereEqualsTables(Info.UpdateKeyColumns);
 			return (connection, objs, transaction, commandTimeout) => {
+				bool wasClosed = connection.State != ConnectionState.Open;
+				if (wasClosed)
+					connection.Open();
 				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 				connection.Execute(selectEqualityIntoStagingCmd, null, transaction, commandTimeout);
 				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.BulkUpdateColumns, commandTimeout,
@@ -554,6 +572,8 @@ namespace Dapper.Extra.Internal
 				string bulkUpdateCmd = $"UPDATE {TableName}{bulkUpdateSetParams}\nFROM {BulkStagingTable}\nWHERE \t{updateEquals}";
 				int count = connection.Execute(bulkUpdateCmd, null, transaction, commandTimeout);
 				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+				if (wasClosed)
+					connection.Close();
 				return count;
 			};
 		}
@@ -583,6 +603,9 @@ namespace Dapper.Extra.Internal
 			string insertIntoCmd = InsertIntoCmd();
 			string insertColumns = ColumnNames(Info.InsertColumns);
 			return (connection, objs, transaction, commandTimeout) => {
+				bool wasClosed = connection.State != ConnectionState.Open;
+				if (wasClosed)
+					connection.Open();
 				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
 				connection.Execute(selectUpsertIntoStagingCmd, null, transaction, commandTimeout);
 				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.UpsertColumns, commandTimeout,
@@ -592,6 +615,8 @@ namespace Dapper.Extra.Internal
 				string bulkInsertIfNotExistsCmd = $"{insertIntoCmd}\nSELECT {insertColumns}\nFROM {BulkStagingTable}\nWHERE NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{equalsTables})";
 				int countInsert = connection.Execute(bulkInsertIfNotExistsCmd, null, transaction, commandTimeout);
 				connection.Execute(dropBulkTableCmd, null, transaction, commandTimeout);
+				if (wasClosed)
+					connection.Close();
 				return countInsert;
 			};
 		}
