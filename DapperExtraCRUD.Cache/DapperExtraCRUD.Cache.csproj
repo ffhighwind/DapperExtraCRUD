@@ -2,11 +2,11 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netcoreapp2.0;net461</TargetFrameworks>
     <AssemblyName>Dapper.ExtraCRUD.Cache</AssemblyName>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <Authors>Wesley Hamilton</Authors>
     <Description>A Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more.</Description>
     <NeutralLanguage>en-us</NeutralLanguage>
-    <PackageReleaseNotes>Fixed Update.</PackageReleaseNotes>
+    <PackageReleaseNotes>Added icons</PackageReleaseNotes>
     <PackageTags>dapper orm micro-orm sql</PackageTags>
     <PackageLicense>Apache-2.0</PackageLicense>
     <PackageProjectUrl>https://github.com/ffhighwind/DapperExtraCRUD</PackageProjectUrl>
@@ -17,9 +17,11 @@
     <DelaySign>false</DelaySign>
     <RootNamespace>Dapper.ExtraCRUD.Cache</RootNamespace>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <AssemblyVersion>1.1.1.0</AssemblyVersion>
-    <FileVersion>1.1.1.0</FileVersion>
+    <AssemblyVersion>1.1.2.0</AssemblyVersion>
+    <FileVersion>1.1.2.0</FileVersion>
     <ProjectGuid>{3059BA7E-5590-4BBC-A38E-1AEDC7D8A8A1}</ProjectGuid>
+    <PackageIcon>DapperExtraCRUD-200x200.png</PackageIcon>
+    <PackageIconUrl />
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
@@ -51,8 +53,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dapper.ExtraCRUD" Version="1.1.0" />
+    <PackageReference Include="Dapper.ExtraCRUD" Version="1.1.1" />
     <PackageReference Include="Dapper.StrongName" Version="2.0.30" />
     <PackageReference Include="Fasterflect.Reflect" Version="3.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\Images\DapperExtraCRUD-200x200.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 </Project>
