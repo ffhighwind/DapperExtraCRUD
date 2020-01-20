@@ -47,6 +47,8 @@ namespace ConsoleTests
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
 				conn.Open();
 
+				DoBadTests();
+
 				Recreate<TestDTO>(conn, null);
 				DoCacheTests<TestDTO>(() => new TestDTO(random));
 				DoTests<TestDTO>(() => new TestDTO(random), (t) => t.UpdateRandomize(random), new TestDTOfilter());
@@ -111,6 +113,34 @@ namespace ConsoleTests
 				list2.Add(list[i].Clone());
 			}
 			return list2;
+		}
+
+		internal class BadException : Exception
+		{
+		}
+
+		public static void DoBadTests()
+		{
+			try {
+				_ = ExtraCrud.Builder<Bad1>();
+				throw new BadException();
+			}
+			catch (BadException ex) {
+				throw ex;
+			}
+			catch {
+				// ignore
+			}
+			try {
+				_ = ExtraCrud.Builder<Bad2>();
+				throw new BadException();
+			}
+			catch (BadException ex) {
+				throw ex;
+			}
+			catch {
+				// ignore
+			}
 		}
 
 		public static void DoCacheTests<T>(Func<T> constructor) where T : class, IDto<T>, new()
