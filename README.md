@@ -50,12 +50,28 @@ Annotations map classes to a database tables and properties to table columns.
 | MatchUpdate | Treats a column as a primary key for updates. A raw SQL string can replace the value. |
 | MatchDelete | Treats a column as a primary key for deletes. |
 
-## Annotation Priority:
+#### Priority:
 
-[NotMapped] > [Key] > ... \
-[IgnoreSelect] > [AutoSync] \
-[IgnoreInsert] > [MatchInsert] \
-[IgnoreUpdate] > [MatchUpdate]
+NotMapped > Key > ... \
+IgnoreSelect > AutoSync \
+IgnoreInsert > MatchInsert \
+IgnoreUpdate > MatchUpdate
+
+#### Alternatives:
+
+Some annotations from System.ComponentModel are supported as replacements for Dapper.Extra.Annotations. 
+
+| System.ComponentModel | Dapper.Extra.Annotations |
+| --- | --- |
+| \[Table] | \[Table] |
+| \[Required] | \[Key(false)] |
+| \[Key] | \[Key(true)] |
+| \[Column] | \[Column]
+| \[Editable(false)] | \[IgnoreInsert][IgnoreUpdate] |
+| \[ReadOnly(true)] (property) | \[IgnoreInsert]\[IgnoreUpdate] |
+| \[ReadOnly(true)] (class) | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
+| public int Property { set; private get; } | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
+| \[NotMapped] | \[NotMapped] |
 
 ## Example:
 
@@ -106,23 +122,6 @@ public static class Program {
 	}
 }
 ```
-
-## Alternative Annotations
-
-Some annotations from System.ComponentModel are supported as replacements for Dapper.Extra.Annotations. 
-
-| System.ComponentModel | Dapper.Extra.Annotations |
-| --- | --- |
-| \[Table("name")] | \[Table("name")] |
-| \[Required] | \[Key(false)] |
-| \[Key] | \[Key(true)] |
-| \[Column("name")] | \[Column("name")]
-| \[Editable(false)] | \[IgnoreInsert][IgnoreUpdate] |
-| \[ReadOnly(true)] (property) | \[IgnoreInsert]\[IgnoreUpdate] |
-| \[ReadOnly(true)] (class) | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
-| public int Property { set; private get; } | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
-| \[NotMapped] | \[NotMapped] |
-
 ## Utilities
 
 #### AutoAccessObject<T> / DataAccessObject<T>
