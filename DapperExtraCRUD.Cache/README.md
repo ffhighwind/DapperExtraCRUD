@@ -3,11 +3,7 @@
 [Nuget: Dapper.ExtraCRUD.Cache](https://www.nuget.org/packages/Dapper.ExtraCRUD.Cache/)
 <img  align="right" src="https://raw.githubusercontent.com/ffhighwind/DapperExtraCRUD/master/Images/DapperExtraCRUD-200x200.png" alt="ExtraCRUD">
 
-A cache framework for Dapper.ExtraCRUD. This combines the an AutoAccessObject, DataAccessObject, and Dictionary together with support for transactions and rollbacks. The cache is not thread-safe. It is recommended that you keep a separate cache for each thread.
-
-#### Notes
-
-Using caching on databases where multiple users will simultaneously update/delete data is not recommended. If you are going to do this then you should be very careful. Refresh caches for tables that are modified often. Always refresh or double-check for changes before performing updates and deletes.
+A cache framework for Dapper.ExtraCRUD. This combines the an AutoAccessObject, DataAccessObject, and Dictionary together with support for transactions and rollbacks. The cache is not thread-safe. Make sure to keep a separate cache for each thread.
 
 ## Example
 
