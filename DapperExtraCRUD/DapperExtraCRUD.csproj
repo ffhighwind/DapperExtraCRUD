@@ -6,7 +6,7 @@
     <Authors>Wesley Hamilton</Authors>
     <Description>A Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more.</Description>
     <NeutralLanguage>en-us</NeutralLanguage>
-    <PackageReleaseNotes>Moved namespace most of Dapper.Extra.Internal to Dapper.Extra.</PackageReleaseNotes>
+    <PackageReleaseNotes>Moved most some classes from Dapper.Extra.Internal to Dapper.Extra.</PackageReleaseNotes>
     <PackageTags>dapper orm micro-orm sql</PackageTags>
     <PackageLicense>Apache-2.0</PackageLicense>
     <PackageProjectUrl>https://github.com/ffhighwind/DapperExtraCRUD</PackageProjectUrl>
