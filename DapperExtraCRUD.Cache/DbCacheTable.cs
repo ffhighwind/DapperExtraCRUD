@@ -77,6 +77,11 @@ namespace Dapper.Extra.Cache
 		private readonly SqlColumn AutoKeyColumn;
 		private readonly bool AutoSyncInsert;
 		private readonly bool AutoSyncUpdate;
+
+		/// <summary>
+		/// The current transaction for the cache.
+		/// </summary>
+		/// <returns>The current transaction for the cache if it exists; otherwise null.</returns>
 		public DbCacheTransaction Transaction { get; private set; }
 
 		private long MaxAutoKey()
@@ -162,12 +167,13 @@ namespace Dapper.Extra.Cache
 
 		private void CloseTransaction()
 		{
-			if (DAO.Transaction != null) {
+			if (Transaction != null) {
 				DAO.Transaction.Dispose();
 				DAO.Connection.Close();
 				DAO.Transaction = null;
 				Items = AutoCache;
 				Access = AAO;
+				Transaction = null;
 			}
 		}
 

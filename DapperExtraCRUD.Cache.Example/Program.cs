@@ -37,7 +37,7 @@ public class EmployeeItem : CacheItem<Employee>
 	public DateTime ModifiedDate => CacheValue.ModifiedDate;
 	public DateTime CreatedDate => CacheValue.CreatedDate;
 	private Lazy<EmployeeItem> LazyManager;
-	protected override void ValueChanged()
+	protected override void OnValueChanged()
 	{
 		// Lazy is required here or this could be costly
 		LazyManager = new Lazy<EmployeeItem>(() => DB.Employees[CacheValue.ManagerID], false);

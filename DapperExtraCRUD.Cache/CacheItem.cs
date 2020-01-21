@@ -33,23 +33,26 @@ namespace Dapper.Extra.Cache
 	/// <typeparam name="T">The table type.</typeparam>
 	public class CacheItem<T> where T : class
 	{
-		private T _value;
+		/// <summary>
+		/// The row value.
+		/// </summary>
+		protected T cacheValue;
 
 		/// <summary>
-		/// Null if deleted.
+		/// The row value.
 		/// </summary>
 		public T CacheValue {
-			get => _value;
-			internal set {
-				_value = value;
-				ValueChanged();
+			get => cacheValue;
+			protected internal set {
+				cacheValue = value;
+				OnValueChanged();
 			}
 		}
 
 		/// <summary>
-		/// Called after <see cref="CacheValue"/> changes.
+		/// Called after <see cref="CacheValue"/> is set. This is not called if the row is deleted.
 		/// </summary>
-		protected virtual void ValueChanged()
+		protected virtual void OnValueChanged()
 		{
 		}
 	}

@@ -110,9 +110,6 @@ namespace Dapper.Extra.Cache.Internal
 
 		public void Clear()
 		{
-			foreach (CacheItem<T> value in Cache.Values) {
-				value.CacheValue = null;
-			}
 			Cache.Clear();
 		}
 

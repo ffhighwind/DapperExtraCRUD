@@ -40,8 +40,8 @@ namespace Dapper.Extra.Cache.Internal
 		/// </summary>
 		private Dictionary<T, R> Cache { get; set; }
 		/// <summary>
-		///  A backup of what was changed in the Cache in case a rollback is needed. A CacheValue will be null if an item was added
-		///  during the transaction and needs to be removed on a rollback.
+		///  A backup of what was changed in the Cache in case a rollback is needed. The savepoint value will be null if the cache
+		///  did not have a value before the transaction.
 		/// </summary>
 		private Dictionary<T, CItem> SavePoint { get; set; } = new Dictionary<T, CItem>();
 		/// <summary>
@@ -126,6 +126,7 @@ namespace Dapper.Extra.Cache.Internal
 		public void Commit()
 		{
 			if (SavePoint != null) {
+				SavePoint.Clear();
 				SavePoint = null;
 				Cache = null;
 				OnClose();
@@ -213,7 +214,7 @@ namespace Dapper.Extra.Cache.Internal
 
 		public void Add(T key, R value)
 		{
-			Add(key);
+			_ = Add(key);
 		}
 
 		public bool Remove(T key)
@@ -223,7 +224,6 @@ namespace Dapper.Extra.Cache.Internal
 					CItem citem = new CItem() { value = item.CacheValue };
 					SavePoint.Add(key, citem);
 				}
-				item.CacheValue = null;
 				_ = Cache.Remove(key);
 				return true;
 			}
