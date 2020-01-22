@@ -100,6 +100,8 @@ namespace Dapper.Extra.Cache
 		/// <returns>The selected row if it exists; otherwise null.</returns>
 		public R this[T obj, int commandTimeout = 30] {
 			get {
+				if (obj == null)
+					return null;
 				if (!Items.TryGetValue(obj, out R value)) {
 					value = Get(obj, commandTimeout);
 				}

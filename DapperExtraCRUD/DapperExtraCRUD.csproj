@@ -6,7 +6,7 @@
     <Authors>Wesley Hamilton</Authors>
     <Description>A Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more.</Description>
     <NeutralLanguage>en-us</NeutralLanguage>
-    <PackageReleaseNotes></PackageReleaseNotes>
+    <PackageReleaseNotes>No change from 1.2. Needed to update assembly version because the Cache nuget requires this assembly version.</PackageReleaseNotes>
     <PackageTags>dapper orm micro-orm sql</PackageTags>
     <PackageLicense>Apache-2.0</PackageLicense>
     <PackageProjectUrl>https://github.com/ffhighwind/DapperExtraCRUD</PackageProjectUrl>
@@ -17,8 +17,8 @@
     <DelaySign>false</DelaySign>
     <RootNamespace>Dapper</RootNamespace>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <AssemblyVersion>1.2.0.0</AssemblyVersion>
-    <FileVersion>1.2.0.0</FileVersion>
+    <AssemblyVersion>1.2.1.0</AssemblyVersion>
+    <FileVersion>1.2.1.0</FileVersion>
     <ProjectGuid>{4DBE71C1-2ECD-4192-BC66-E4D1C8DCEC08}</ProjectGuid>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>

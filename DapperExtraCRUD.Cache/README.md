@@ -16,8 +16,8 @@ using Dapper;
 
 namespace Example
 {
-public class Employee
-{
+public class Employee : IEquatable<Employee>
+	{
 	[Key]
 	public int EmployeeID { get; set; }
 	public string UserName { get; set; }
@@ -33,10 +33,26 @@ public class Employee
 	[IgnoreInsert(value: "getdate()", autoSync: true)]
 	[IgnoreUpdate]
 	public DateTime CreatedDate { get; set; }
+
+	public override bool Equals(object obj)
+	{
+		return Equals(obj as Employee);
+	}
+
+	public bool Equals(Employee other)
+	{
+		return other != null &&
+				EmployeeID == other.EmployeeID;
+	}
+
+	public override int GetHashCode()
+	{
+		return -1708179596 + EmployeeID.GetHashCode();
+	}
 }
 
-public class EmployeeItem : CacheItem<Employee>
-{
+public class EmployeeItem : CacheItem<Employee>, IEquatable<CacheItem<Employee>>
+	{
 	public int ID => CacheValue.EmployeeID;
 	public string UserName => CacheValue.UserName;
 	public string Name => CacheValue.FirstName + " " + CacheValue.LastName;
@@ -62,6 +78,21 @@ public class EmployeeItem : CacheItem<Employee>
 	{
 		EmployeeItem value = DB.Employees.Get(CacheValue);
 		return value == this;
+	}
+
+	public bool Equals(CacheItem<Employee> other)
+	{
+		return other != null && other.CacheValue.EmployeeID == cacheValue.EmployeeID;
+	}
+
+	public override bool Equals(object obj)
+	{
+		return Equals(obj as CacheItem<Employee>);
+	}
+
+	public override int GetHashCode()
+	{
+		return cacheValue.GetHashCode();
 	}
 }
 
