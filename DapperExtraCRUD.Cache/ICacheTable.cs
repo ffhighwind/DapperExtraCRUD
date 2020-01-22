@@ -56,6 +56,19 @@ namespace Dapper.Extra.Cache
 		/// The table information.
 		/// </summary>
 		SqlTypeInfo Info { get; }
+
+		/// <summary>
+		/// Attempts to remove an object matching a key.
+		/// </summary>
+		/// <param name="key">The key to remove.</param>
+		/// <returns>True if the object was removed; false otherwise.</returns>
+		bool RemoveKey(object key);
+
+		/// <summary>
+		/// Removes the objects matching the specified keys from the cache.
+		/// </summary>
+		/// <param name="keys">The keys of the objects to remove.</param>
+		void RemoveKeys(IEnumerable<object> keys);
 	}
 
 	/// <summary>
@@ -63,14 +76,32 @@ namespace Dapper.Extra.Cache
 	/// </summary>
 	/// <typeparam name="T">The table type.</typeparam>
 	/// <typeparam name="R">The cached item type.</typeparam>
-	public interface ICacheTable<T, R>
+	public interface ICacheTable<T, R> : IEnumerable<R>
 		where T : class
 		where R : CacheItem<T>, new()
 	{
 		/// <summary>
-		/// The internal cache storage.
+		/// The cached dictionary of key value pairs.
 		/// </summary>
 		ICacheStorage<T, R> Items { get; }
+
+		/// <summary>
+		/// Removes the object from the cache.
+		/// </summary>
+		/// <param name="value">The object to remove.</param>
+		bool Remove(T value);
+
+		/// <summary>
+		/// Removes the objects from the cache.
+		/// </summary>
+		/// <param name="values">The objects to remove.</param>
+		void Remove(IEnumerable<T> values);
+
+		/// <summary>
+		/// Removes the objects from the cache matching the predicate.
+		/// </summary>
+		/// <param name="predicate">The function that determines what to remove.</param>
+		void Remove(Func<R, bool> predicate);
 
 		/// <summary>
 		/// Returns a cached object by key if it exists, otherwise it calls <see cref="Get(object, int)"/>.

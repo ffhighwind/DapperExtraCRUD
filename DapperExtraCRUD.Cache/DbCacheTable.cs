@@ -31,6 +31,7 @@ using Dapper.Extra.Utilities;
 using Fasterflect;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Collections;
 
 namespace Dapper.Extra.Cache
 {
@@ -62,10 +63,12 @@ namespace Dapper.Extra.Cache
 		private readonly Func<object, T> CreateFromKey;
 
 		/// <summary>
-		/// The internal cache storage.
+		/// The cached dictionary of key value pairs.
 		/// </summary>
 		public ICacheStorage<T, R> Items { get; private set; }
+
 		private readonly CacheAutoStorage<T, R> AutoCache;
+
 		/// <summary>
 		/// The access object currently being used by the cache. This can be used if you do not want to store
 		/// the results of a query in the cache.
@@ -84,9 +87,77 @@ namespace Dapper.Extra.Cache
 		/// <returns>The current transaction for the cache if it exists; otherwise null.</returns>
 		public DbCacheTransaction Transaction { get; private set; }
 
+		/// <summary>
+		/// Returns an enumerator that iterates through the collection.
+		/// </summary>
+		/// <returns>An enumerator that iterates through the collection.</returns>
+		public IEnumerator<R> GetEnumerator()
+		{
+			return Items.Values.GetEnumerator();
+		}
+
+		/// <summary>
+		/// Returns an enumerator that iterates through the collection.
+		/// </summary>
+		/// <returns>An enumerator that iterates through the collection.</returns>
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return Items.Values.GetEnumerator();
+		}
+
+		/// <summary>
+		/// Attempts to remove an object matching a key.
+		/// </summary>
+		/// <param name="key">The key to remove.</param>
+		/// <returns>True if the object was removed; false otherwise.</returns>
+		public bool RemoveKey(object key)
+		{
+			bool success = Items.RemoveKey(key);
+			return success;
+		}
+
+		/// <summary>
+		/// Removes the objects matching the specified keys from the cache.
+		/// </summary>
+		/// <param name="keys">The keys of the objects to remove.</param>
+		public void RemoveKeys(IEnumerable<object> keys)
+		{
+			Items.RemoveKeys(keys);
+		}
+
+		/// <summary>
+		/// Removes the object from the cache.
+		/// </summary>
+		/// <param name="value">The object to remove.</param>
+		public bool Remove(T value)
+		{
+			bool success = Items.Remove(value);
+			return success;
+		}
+
+		/// <summary>
+		/// Removes the objects from the cache.
+		/// </summary>
+		/// <param name="values">The objects to remove.</param>
+		public void Remove(IEnumerable<T> values)
+		{
+			Items.Remove(values);
+		}
+
+		/// <summary>
+		/// Removes the objects from the cache matching the predicate.
+		/// </summary>
+		/// <param name="predicate">The function that determines what to remove.</param>
+		public void Remove(Func<R, bool> predicate)
+		{
+			foreach (R item in Items.Values.Where(predicate).ToList()) {
+				Items.Remove(item.CacheValue);
+			}
+		}
+
 		private long MaxAutoKey()
 		{
-			IEnumerable<long> max = Access.GetKeys<long>("WHERE " + AutoKeyColumn.ColumnName + " = (SELECT MAX(" + AutoKeyColumn.ColumnName + ") FROM " + Info.TableName + ")");
+			IEnumerable<long> max = Access.GetKeys<long>($"WHERE {AutoKeyColumn.ColumnName} = (SELECT MAX({AutoKeyColumn.ColumnName}) FROM {Info.TableName})");
 			if (max.Any())
 				return max.First();
 			return long.MinValue;
@@ -249,7 +320,7 @@ namespace Dapper.Extra.Cache
 			if (AutoKeyColumn != null) {
 				long maxAutoKey = MaxAutoKey();
 				Access.BulkInsert(objs, commandTimeout);
-				GetList("WHERE " + AutoKeyColumn.ColumnName + " > " + maxAutoKey, commandTimeout);
+				GetList($"WHERE {AutoKeyColumn.ColumnName} > {maxAutoKey}", commandTimeout);
 			}
 			else {
 				Access.BulkInsert(objs, commandTimeout);
@@ -272,7 +343,7 @@ namespace Dapper.Extra.Cache
 			if (AutoKeyColumn != null) {
 				long maxAutoKey = MaxAutoKey();
 				count = Access.BulkInsertIfNotExists(objs, commandTimeout);
-				GetList("WHERE " + AutoKeyColumn.ColumnName + " > " + maxAutoKey, commandTimeout);
+				GetList($"WHERE {AutoKeyColumn.ColumnName} > {maxAutoKey}", commandTimeout);
 			}
 			else {
 				count = Access.BulkInsertIfNotExists(objs, commandTimeout);
@@ -315,7 +386,7 @@ namespace Dapper.Extra.Cache
 				long maxAutoKey = MaxAutoKey();
 				Items.Add(objs);
 				count = Access.BulkUpsert(objs, commandTimeout);
-				GetList("WHERE " + AutoKeyColumn.ColumnName + " > " + maxAutoKey, commandTimeout);
+				GetList($"WHERE {AutoKeyColumn.ColumnName} > {maxAutoKey}", commandTimeout);
 			}
 			else {
 				count = Access.BulkUpsert(objs, commandTimeout);
