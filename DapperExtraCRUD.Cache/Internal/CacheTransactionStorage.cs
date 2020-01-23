@@ -43,7 +43,7 @@ namespace Dapper.Extra.Cache.Internal
 		///  A backup of what was changed in the Cache in case a rollback is needed. The savepoint value will be null if the cache
 		///  did not have a value before the transaction.
 		/// </summary>
-		private Dictionary<T, CItem> SavePoint { get; set; } = new Dictionary<T, CItem>();
+		private readonly Dictionary<T, CItem> SavePoint;
 		/// <summary>
 		/// Resets the state of the DbCacheTable that created this object. The AccessObject will be changed back to the 
 		/// <see cref="Utilities.AutoAccessObject{T}"/> and the <see cref="ICacheStorage{T, R}"/> will be changed back to 
@@ -59,12 +59,13 @@ namespace Dapper.Extra.Cache.Internal
 		/// </summary>
 		private readonly Func<object, T> CreateFromKey;
 
-		public CacheTransactionStorage(Dictionary<T, R> cache, IDbTransaction transaction, Func<object, T> createFromKey, Action onClose)
+		public CacheTransactionStorage(SqlBuilder<T> builder, Dictionary<T, R> cache, IDbTransaction transaction, Action onClose)
 		{
+			SavePoint = new Dictionary<T, CItem>(builder.EqualityComparer);
 			Cache = cache;
 			Transaction = transaction;
 			OnClose = onClose;
-			CreateFromKey = createFromKey;
+			CreateFromKey = builder.ObjectFromKey;
 		}
 
 		public IDbConnection Connection => Transaction.Connection;
@@ -97,8 +98,11 @@ namespace Dapper.Extra.Cache.Internal
 			if (!disposedValue) {
 				if (disposing) {
 					// dispose managed state (managed objects).
-					OnClose();
-					Rollback();
+					if(Cache != null) {
+						Rollback();
+						OnClose();
+						Cache = null;
+					}
 				}
 				// free unmanaged resources (unmanaged objects) and override a finalizer below.
 				// set large fields to null.
@@ -125,17 +129,16 @@ namespace Dapper.Extra.Cache.Internal
 
 		public void Commit()
 		{
-			if (SavePoint != null) {
-				SavePoint.Clear();
-				SavePoint = null;
-				Cache = null;
-				OnClose();
-			}
+			if (Cache == null)
+				return;
+			SavePoint.Clear();
+			Cache = null;
+			OnClose();
 		}
 
 		public void Rollback()
 		{
-			if (SavePoint == null)
+			if (Cache == null)
 				return;
 			foreach (var kv in SavePoint) {
 				if (kv.Value.value == null)
@@ -144,8 +147,6 @@ namespace Dapper.Extra.Cache.Internal
 					Cache[kv.Key] = new R() { CacheValue = kv.Key };
 			}
 			SavePoint.Clear();
-			SavePoint = null;
-			Cache = null;
 		}
 
 		public R Add(T value)

@@ -86,6 +86,20 @@ namespace Dapper.Extra.Cache
 		ICacheStorage<T, R> Items { get; }
 
 		/// <summary>
+		/// Returns a cached object if it exists, otherwise null.
+		/// </summary>
+		/// <param name="key">The object to select.</param>
+		/// <returns>The object if it exists in the cache; otherwise null.</returns>
+		R TryGet(T key);
+
+		/// <summary>
+		/// Returns a cached object by key if it exists, otherwise null.
+		/// </summary>
+		/// <param name="key">The key of the row to select.</param>
+		/// <returns>The object if it exists in the cache; otherwise null.</returns>
+		R TryGet(object key);
+
+		/// <summary>
 		/// Removes the object from the cache.
 		/// </summary>
 		/// <param name="value">The object to remove.</param>

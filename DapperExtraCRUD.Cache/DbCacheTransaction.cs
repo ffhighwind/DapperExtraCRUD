@@ -41,7 +41,7 @@ namespace Dapper.Extra.Cache
 			Transaction = transaction;
 		}
 
-		internal readonly List<IDbTransaction> TransactionStorage = new List<IDbTransaction>();
+		internal List<IDbTransaction> TransactionStorage { get; set; } = new List<IDbTransaction>();
 
 		/// <summary>
 		/// Adds tables to the transaction.
@@ -56,7 +56,7 @@ namespace Dapper.Extra.Cache
 			return this;
 		}
 
-		internal readonly IDbTransaction Transaction;
+		internal IDbTransaction Transaction { get; set; }
 		/// <summary>
 		/// Specifies the Connection object to associate with the transaction.
 		/// </summary>
@@ -71,12 +71,15 @@ namespace Dapper.Extra.Cache
 		/// </summary>
 		public void Commit()
 		{
+			if (Transaction == null)
+				return;
 			Transaction.Commit();
 			foreach (IDbTransaction storage in TransactionStorage) {
 				storage.Commit();
 				storage.Dispose();
 			}
 			TransactionStorage.Clear();
+			Transaction = null;
 		}
 
 		/// <summary>
@@ -84,8 +87,10 @@ namespace Dapper.Extra.Cache
 		/// </summary>
 		public void Rollback()
 		{
+			if (Transaction == null)
+				return;
 			foreach (IDbTransaction storage in TransactionStorage) {
-				storage.Dispose();
+				storage.Rollback();
 			}
 			Transaction.Rollback();
 		}
@@ -101,8 +106,16 @@ namespace Dapper.Extra.Cache
 			if (!disposedValue) {
 				if (disposing) {
 					// TODO: dispose managed state (managed objects).
-					Rollback();
-					Transaction.Dispose();
+					if(Transaction != null) {
+						IDbConnection connection = Connection;
+						foreach (IDbTransaction storage in TransactionStorage) {
+							storage.Dispose();
+						}
+						Transaction.Dispose();
+						Transaction = null;
+						if (connection.State == ConnectionState.Open)
+							connection.Close();
+					}
 				}
 				// TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
 				// TODO: set large fields to null.

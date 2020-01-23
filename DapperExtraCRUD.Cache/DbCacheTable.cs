@@ -32,6 +32,8 @@ using Fasterflect;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Collections;
+using System.Data;
+using System.Data.SqlClient;
 
 namespace Dapper.Extra.Cache
 {
@@ -46,6 +48,7 @@ namespace Dapper.Extra.Cache
 	{
 		internal DbCacheTable(string connectionString)
 		{
+			ConnectionString = connectionString;
 			Builder = ExtraCrud.Builder<T>();
 			if (Builder.Info.KeyColumns.Count == 0)
 				throw new InvalidOperationException(typeof(T).FullName + " is not usable without a valid key.");
@@ -68,6 +71,8 @@ namespace Dapper.Extra.Cache
 		public ICacheStorage<T, R> Items { get; private set; }
 
 		private readonly CacheAutoStorage<T, R> AutoCache;
+
+		private readonly string ConnectionString;
 
 		/// <summary>
 		/// The access object currently being used by the cache. This can be used if you do not want to store
@@ -103,6 +108,33 @@ namespace Dapper.Extra.Cache
 		IEnumerator IEnumerable.GetEnumerator()
 		{
 			return Items.Values.GetEnumerator();
+		}
+
+		/// <summary>
+		/// Returns a cached object if it exists, otherwise null.
+		/// </summary>
+		/// <param name="key">The object to select.</param>
+		/// <returns>The object if it exists in the cache; otherwise null.</returns>
+		public R TryGet(T key)
+		{
+			if (key == null)
+				return null;
+			Items.TryGetValue(key, out R value);
+			return value;
+		}
+
+		/// <summary>
+		/// Returns a cached object by key if it exists, otherwise null.
+		/// </summary>
+		/// <param name="key">The key of the row to select.</param>
+		/// <returns>The object if it exists in the cache; otherwise null.</returns>
+		public R TryGet(object key)
+		{
+			if (key == null)
+				return null;
+			T obj = CreateFromKey(key);
+			Items.TryGetValue(obj, out R value);
+			return value;
 		}
 
 		/// <summary>
@@ -188,6 +220,8 @@ namespace Dapper.Extra.Cache
 		/// <returns>The selected row if it exists; otherwise null.</returns>
 		public R this[object key, int commandTimeout = 30] {
 			get {
+				if (key == null)
+					return null;
 				T obj = CreateFromKey(key);
 				R ret = this[obj, commandTimeout];
 				return ret;
@@ -201,23 +235,17 @@ namespace Dapper.Extra.Cache
 		/// <returns>The transaction.</returns>
 		public DbCacheTransaction BeginTransaction()
 		{
-			if (Access != AAO)
-				throw new InvalidOperationException("Cache is already part of a transaction.");
 			try {
 				DAO.Connection.Open();
 				DAO.Transaction = DAO.Connection.BeginTransaction();
 				DbCacheTransaction transaction = new DbCacheTransaction(DAO.Transaction);
-				CacheTransactionStorage<T, R> storage = new CacheTransactionStorage<T, R>(AutoCache.Cache, transaction, CreateFromKey, CloseTransaction);
-				Items = storage;
-				transaction.TransactionStorage.Add(storage);
-				Access = DAO;
-				Transaction = transaction;
+				BeginTransaction(transaction);
 				return transaction;
 			}
-			catch {
+			catch (Exception ex) {
 				DAO.Transaction = null;
 				Transaction = null;
-				if (DAO.Connection.State == System.Data.ConnectionState.Open) {
+				if (DAO.Connection.State == ConnectionState.Open) {
 					DAO.Connection.Close();
 				}
 				throw;
@@ -234,19 +262,26 @@ namespace Dapper.Extra.Cache
 				throw new InvalidOperationException("Cache is already part of a transaction.");
 			DAO.Connection = transaction.Transaction.Connection;
 			DAO.Transaction = transaction.Transaction;
-			Items = new CacheTransactionStorage<T, R>(AutoCache.Cache, transaction, CreateFromKey, CloseTransaction);
+			CacheTransactionStorage<T, R> storage = new CacheTransactionStorage<T, R>(Builder, AutoCache.Cache, transaction, CloseTransaction);
+			Items = storage;
+			transaction.TransactionStorage.Add(storage);
 			Access = DAO;
+			Transaction = transaction;
 		}
 
 		private void CloseTransaction()
 		{
 			if (Transaction != null) {
-				DAO.Transaction.Dispose();
-				DAO.Connection.Close();
+				IDbConnection connection = DAO.Connection;
+				IDbTransaction transaction = DAO.Transaction;
 				DAO.Transaction = null;
 				Items = AutoCache;
 				Access = AAO;
+				DAO.Transaction = null;
 				Transaction = null;
+				DAO.Connection = new SqlConnection(ConnectionString);
+				transaction?.Dispose();
+				connection?.Close();
 			}
 		}
 

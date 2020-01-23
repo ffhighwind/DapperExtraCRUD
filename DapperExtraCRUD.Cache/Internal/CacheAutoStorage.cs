@@ -34,7 +34,7 @@ namespace Dapper.Extra.Cache.Internal
 		where T : class
 		where R : CacheItem<T>, new()
 	{
-		public readonly Dictionary<T, R> Cache = new Dictionary<T, R>();
+		public readonly Dictionary<T, R> Cache;
 
 		internal CacheAutoStorage()
 		{
@@ -42,6 +42,7 @@ namespace Dapper.Extra.Cache.Internal
 			if (builder.Info.KeyColumns.Count == 1) {
 				ObjectFromKey = builder.ObjectFromKey;
 			}
+			Cache = new Dictionary<T, R>(builder.EqualityComparer);
 		}
 
 		private Func<object, T> ObjectFromKey { get; }

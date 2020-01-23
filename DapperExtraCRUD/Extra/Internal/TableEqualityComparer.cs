@@ -40,12 +40,12 @@ namespace Dapper.Extra
 		public TableEqualityComparer(string tableName, IReadOnlyList<SqlColumn> equalityColumns)
 		{
 			Getters = equalityColumns.Select(c => c.Getter).ToArray();
-			InitialHash = tableName.GetHashCode();
+			InitialHash = tableName.GetHashCode() * -29986577;
 		}
 
-		private IReadOnlyList<MemberGetter> Getters { get; set; }
+		private readonly IReadOnlyList<MemberGetter> Getters;
 
-		private int InitialHash { get; set; }
+		private readonly int InitialHash;
 
 		/// <summary>
 		/// Determines whether the specified object is equal to the current object.
@@ -56,7 +56,7 @@ namespace Dapper.Extra
 		public bool Equals(T x, T y)
 		{
 			foreach (MemberGetter getter in Getters) {
-				if (!object.Equals(getter(x), getter(y)))
+				if (!Equals(getter(x), getter(y)))
 					return false;
 			}
 			return true;
@@ -72,9 +72,8 @@ namespace Dapper.Extra
 			int hashCode = InitialHash;
 			foreach (MemberGetter getter in Getters) {
 				object value = getter(obj);
-				hashCode *= 31619117;
 				if (value != null) {
-					hashCode ^= value.GetHashCode();
+					hashCode = hashCode * 126247697 + value.GetHashCode();
 				}
 			}
 			return hashCode;
@@ -91,12 +90,12 @@ namespace Dapper.Extra
 		public TableKeyEqualityComparer(string tableName, SqlColumn equalityColumn)
 		{
 			Getter = equalityColumn.Getter;
-			InitialHash = tableName.GetHashCode() * 31619117;
+			InitialHash = tableName.GetHashCode() * -29986577;
 		}
 
-		private MemberGetter Getter { get; set; }
+		private readonly MemberGetter Getter;
 
-		private int InitialHash { get; set; }
+		private readonly int InitialHash;
 
 		/// <summary>
 		/// Determines whether the specified object is equal to the current object.
@@ -106,7 +105,7 @@ namespace Dapper.Extra
 		/// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
 		public bool Equals(T x, T y)
 		{
-			bool success = object.Equals(Getter(x), Getter(y));
+			bool success = Equals(Getter(x), Getter(y));
 			return success;
 		}
 
@@ -120,7 +119,7 @@ namespace Dapper.Extra
 			int hashCode = InitialHash;
 			object value = Getter(obj);
 			if (value != null) {
-				hashCode ^= value.GetHashCode();
+				hashCode = hashCode * 126247697 + value.GetHashCode();
 			}
 			return hashCode;
 		}

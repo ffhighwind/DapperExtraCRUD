@@ -50,31 +50,40 @@ namespace ConsoleTests
 				DoBadTests();
 
 				Recreate<TestDTO>(conn, null);
+				Recreate<TestDTO2>(conn, null);
+				Recreate<Test3>(conn, null);
+				Recreate<TestDTO4>(conn, null);
+				Recreate<TestDTO5>(conn, null);
+
 				DoCacheTests<TestDTO>(() => new TestDTO(random));
 				DoTests<TestDTO>(() => new TestDTO(random), (t) => t.UpdateRandomize(random), new TestDTOfilter());
 				DoTests<TestDTO, int>(conn);
-				DropTable<TestDTO>(conn);
 
-				Recreate<TestDTO2>(conn, null);
 				DoCacheTests<TestDTO2>(() => new TestDTO2(random));
 				DoTests<TestDTO2>(() => new TestDTO2(random), (t) => t.UpdateRandomize(random), new TestDTO2filter());
-				DropTable<TestDTO2>(conn);
 
-				Recreate<Test3>(conn, null);
 				DoCacheTests<Test3>(() => new Test3(random));
 				DoTests<Test3>(() => new Test3(random), (t) => t.UpdateRandomize(random), new Test3filter());
-				DropTable<Test3>(conn);
 
-				Recreate<TestDTO4>(conn, null);
 				DoCacheTests<TestDTO4>(() => new TestDTO4(random));
 				DoTests<TestDTO4>(() => new TestDTO4(random), (t) => t.UpdateRandomize(random), new TestDTO4filter());
 				DoTests<TestDTO4, int>(conn);
-				DropTable<TestDTO4>(conn);
 
-				Recreate<TestDTO5>(conn, null);
 				DoCacheTests<TestDTO5>(() => new TestDTO5(random));
 				DoTests<TestDTO5>(() => new TestDTO5(random), (t) => t.UpdateRandomize(random), new TestDTO5filter());
 				DoTests<TestDTO5, int>(conn);
+
+				DoMultiCacheTest<TestDTO, TestDTO2>(() => new TestDTO(random), () => new TestDTO2(random));
+				DoMultiCacheTest<TestDTO, Test3>(() => new TestDTO(random), () => new Test3(random));
+				DoMultiCacheTest<TestDTO, TestDTO4>(() => new TestDTO(random), () => new TestDTO4(random));
+				DoMultiCacheTest<TestDTO, TestDTO5>(() => new TestDTO(random), () => new TestDTO5(random));
+				DoMultiCacheTest<TestDTO2, TestDTO5>(() => new TestDTO2(random), () => new TestDTO5(random));
+				DoMultiCacheTest<Test3, TestDTO4>(() => new Test3(random), () => new TestDTO4(random));
+
+				DropTable<TestDTO>(conn);
+				DropTable<TestDTO2>(conn);
+				DropTable<Test3>(conn);
+				DropTable<TestDTO4>(conn);
 				DropTable<TestDTO5>(conn);
 			}
 		}
@@ -117,6 +126,90 @@ namespace ConsoleTests
 
 		internal class BadException : Exception
 		{
+		}
+
+		public static void DoMultiCacheTest<T1, T2>(Func<T1> constructor1, Func<T2> constructor2)
+			where T1 : class, IDto<T1>
+			where T2 : class, IDto<T2>
+		{
+			Random random = new Random(512851);
+			DbCache cache = new DbCache(ConnString);
+			DbCacheTable<T1, CacheItem<T1>> table1 = cache.CreateTable<T1>();
+			List<T1> list1 = CreateList<T1>(TestAmount + (int)((random.Next() % TestAmount) * 0.1), () => constructor1());
+			DbCacheTable<T2, CacheItem<T2>> table2 = cache.CreateTable<T2>();
+			List<T2> list2 = CreateList<T2>(TestAmount + (int)((random.Next() % TestAmount) * 0.1), () => constructor2());
+
+			table1.Truncate();
+			table2.Truncate();
+
+			if (table1.GetList().Count() != 0) {
+				throw new InvalidOperationException();
+			}
+			if (table1.Items.Count != table1.RecordCount()) {
+				throw new InvalidOperationException();
+			}
+			if (table2.GetList().Count() != 0) {
+				throw new InvalidOperationException();
+			}
+			if (table2.Items.Count != table2.RecordCount()) {
+				throw new InvalidOperationException();
+			}
+			table1.BulkInsert(list1.Take(list1.Count / 2));
+			table2.BulkInsert(list2.Take(list2.Count / 2));
+
+			using (DbCacheTransaction trans = table1.BeginTransaction().Add(table2)) {
+				if (table1.Items.Count != table1.RecordCount()) {
+					throw new InvalidOperationException();
+				}
+				if (table2.Items.Count != table2.RecordCount()) {
+					throw new InvalidOperationException();
+				}
+				table1.BulkInsert(list1.Skip(list1.Count / 2).Take(list1.Count / 3));
+				table2.BulkInsert(list2.Skip(list2.Count / 2).Take(list2.Count / 4));
+				if (table1.Items.Count != table1.RecordCount()) {
+					throw new InvalidOperationException();
+				}
+				if (table2.Items.Count != table2.RecordCount()) {
+					throw new InvalidOperationException();
+				}
+				if (table1.GetList().Count() != (list1.Count / 2) + (list1.Count / 3)) {
+					throw new InvalidOperationException();
+				}
+				if (table2.GetList().Count() != (list2.Count / 2) + (list2.Count / 4)) {
+					throw new InvalidOperationException();
+				}
+				for (int i = 0; i < Math.Min(Math.Min(list1.Count, list2.Count), 15); i++) {
+					table1.Delete(list1[i]);
+					table2.Delete(list2[i]);
+					if (table1.Items.Count != table1.RecordCount()) {
+						throw new InvalidOperationException();
+					}
+					if (table2.Items.Count != table2.RecordCount()) {
+						throw new InvalidOperationException();
+					}
+				}
+				trans.Commit();
+			}
+			if (table1.Items.Count != table1.RecordCount()) {
+				throw new InvalidOperationException();
+			}
+			if (table2.Items.Count != table2.RecordCount()) {
+				throw new InvalidOperationException();
+			}
+			table1.Truncate();
+			table2.Truncate();
+			if (table1.GetList().Count() != 0) {
+				throw new InvalidOperationException();
+			}
+			if (table1.Items.Count != table1.RecordCount()) {
+				throw new InvalidOperationException();
+			}
+			if (table2.GetList().Count() != 0) {
+				throw new InvalidOperationException();
+			}
+			if (table2.Items.Count != table2.RecordCount()) {
+				throw new InvalidOperationException();
+			}
 		}
 
 		public static void DoBadTests()
@@ -354,7 +447,7 @@ namespace ConsoleTests
 					throw new InvalidOperationException();
 				}
 				table.BulkInsert(list.Skip(list.Count / 2));
-				for(int i = 0; i < list.Count; i++) {
+				for (int i = 0; i < list.Count; i++) {
 					list[i] = list[i].UpdateRandomize(random);
 				}
 				table.BulkUpdate(list);
@@ -382,7 +475,7 @@ namespace ConsoleTests
 			if (table.GetList().Count() != list.Count / 2) {
 				throw new InvalidOperationException();
 			}
-			for(int i = 0; i < list2.Count; i++) {
+			for (int i = 0; i < list2.Count; i++) {
 				if (!table.Items.TryGetValue(list2[i], out CacheItem<T> cache))
 					throw new InvalidOperationException();
 				if (!cache.CacheValue.IsIdentical(list2[i]))
