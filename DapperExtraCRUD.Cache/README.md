@@ -17,7 +17,7 @@ using Dapper;
 namespace Example
 {
 [Table("Employees")]
-public class Employee : IEquatable<Employee>
+public class Employee
 {
 	[Key]
 	public int EmployeeID { get; set; }
@@ -36,7 +36,7 @@ public class Employee : IEquatable<Employee>
 	public DateTime CreatedDate { get; set; }
 }
 
-public class EmployeeItem : CacheItem<Employee>, IEquatable<CacheItem<Employee>>
+public class EmployeeItem : CacheItem<Employee>
 {
 	public int ID => CacheValue.EmployeeID;
 	public string UserName => CacheValue.UserName;
