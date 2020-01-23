@@ -44,17 +44,18 @@ namespace Dapper.Extra.Utilities
 
 		private readonly StringBuilder Results = new StringBuilder(150);
 
-		private readonly string TableName;
+		private string TableName => TypeInfo.TableName;
 
 		private ParameterExpression InputParam;
+
+		private readonly SqlTypeInfo TypeInfo;
 
 		/// <summary>
 		/// Prevents a default instance of the <see cref="WhereConditionGenerator{T}"/> class from being created.
 		/// </summary>
 		private WhereConditionGenerator() : base()
 		{
-			SqlTypeInfo typeInfo = ExtraCrud.TypeInfo<T>();
-			TableName = typeInfo.TableName;
+			TypeInfo = ExtraCrud.TypeInfo<T>();
 		}
 
 		/// <summary>
@@ -140,10 +141,16 @@ namespace Dapper.Extra.Utilities
 					op = " >= ";
 					break;
 				case ExpressionType.Equal: // a == b
-					op = " = ";
+					if (node.Right is ConstantExpression ce && ce.Value == null)
+						op = " is ";
+					else
+						op = " = ";
 					break;
 				case ExpressionType.NotEqual: // a != b
-					op = " <> ";
+					if (node.Right is ConstantExpression ce2 && ce2.Value == null)
+						op = " is not ";
+					else
+						op = " <> ";
 					break;
 				case ExpressionType.Coalesce: // a ?? b
 					Results.Append("COALESCE(");
@@ -397,6 +404,10 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
 		protected override Expression VisitMember(MemberExpression node)
 		{
+			if (node.CanReduce) {
+				base.Visit(node.Reduce());
+				return null;
+			}
 			// a.b
 			if (node.Expression.NodeType == ExpressionType.MemberAccess) {
 				string msg = node.ToString();
@@ -409,7 +420,8 @@ namespace Dapper.Extra.Utilities
 			else if (node.Expression.NodeType == ExpressionType.Parameter) {
 				base.Visit(node.Expression);
 				Results.Append(".");
-				Results.Append(node.Member.Name);
+				var column = TypeInfo.Columns.First(c => c.Property.Name == node.Member.Name);
+				Results.Append(column.ColumnName);
 				return null;
 			}
 			CompileExpression(node);
@@ -483,12 +495,20 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
 		protected override Expression VisitMethodCall(MethodCallExpression node)
 		{
+			if (node.CanReduce) {
+				base.Visit(node.Reduce());
+				return null;
+			}
 			// a.b(c, d)
 			if (node.Method.Name == "Equals" && node.Arguments.Count == 1) {
 				Results.Append('(');
 				base.Visit(node.Object);
-				Results.Append(" = ");
-				base.Visit(node.Arguments[0]);
+				if (node.Arguments[0] is ConstantExpression ce && ce.Value == null)
+					Results.Append(" is NULL");
+				else {
+					Results.Append(" = ");
+					base.Visit(node.Arguments[0]);
+				}
 				Results.Append(')');
 				return null;
 			}
@@ -496,7 +516,7 @@ namespace Dapper.Extra.Utilities
 				if (node.Arguments.Count > 1) {
 					if (node.Arguments[0] is NewArrayExpression newExp) {
 						base.Visit(node.Arguments[1]);
-						Results.Append(" IN ");
+						Results.Append(" in ");
 						// new a[] { b, c, d }
 						CompileListExpression(newExp.Type.GetElementType(), newExp.Expressions);
 						return null;
@@ -504,7 +524,7 @@ namespace Dapper.Extra.Utilities
 				}
 				else if (node.Arguments.Count == 1) {
 					base.Visit(node.Arguments[0]);
-					Results.Append(" IN ");
+					Results.Append(" in ");
 					CompileExpression(node.Object);
 					return null;
 				}
@@ -731,6 +751,7 @@ namespace Dapper.Extra.Utilities
 				case TypeCode.Byte:
 				case TypeCode.Char:
 				case TypeCode.String:
+					break;
 				case TypeCode.Object:
 					if (type == typeof(TimeSpan) || type == typeof(DateTimeOffset) || type == typeof(Guid)) {
 						break;
@@ -756,6 +777,10 @@ namespace Dapper.Extra.Utilities
 
 		private void CompileValueExpression(Expression expr, Type type, object obj)
 		{
+			if(obj == null) {
+				Results.Append("NULL");
+				return;
+			}
 			TypeCode typeCode = Type.GetTypeCode(type);
 			string value;
 			switch (typeCode) {
