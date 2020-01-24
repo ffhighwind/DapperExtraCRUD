@@ -34,9 +34,8 @@ using System.Text;
 namespace Dapper.Extra.Utilities
 {
 	/// <summary>
-	/// Converts a <see cref="Predicate{T}"/> to a WHERE expression in SQL.
+	/// Converts a predicate to a WHERE expression in SQL.
 	/// </summary>
-	/// <typeparam name="T">The input type.</typeparam>
 	public sealed class WhereConditionGenerator : ExpressionVisitor
 	{
 		private readonly IDictionary<string, object> OutputParam = new ExpandoObject();
@@ -48,7 +47,7 @@ namespace Dapper.Extra.Utilities
 		private readonly Dictionary<Type, SqlTypeInfo> TypeInfosMap = new Dictionary<Type, SqlTypeInfo>();
 
 		/// <summary>
-		/// Prevents a default instance of the <see cref="WhereConditionGenerator{T}"/> class from being created.
+		/// Prevents a default instance of the <see cref="WhereConditionGenerator"/> class from being created.
 		/// </summary>
 		private WhereConditionGenerator() : base()
 		{

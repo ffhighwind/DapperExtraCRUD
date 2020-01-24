@@ -134,14 +134,13 @@ They also perform a slightly better than the extension methods because they stor
 #### WhereConditionGenerator
 
 This generates SQL WHERE conditions from a Linq.Expression<Predicate<T>>. It can be somewhat expensive to generate, so I recommend caching the results when possible.
-The main reason to use this utility is if you need a type-safe query or need to map a predicate to SQL command.
 
 ```csharp
 string condition = WhereConditionGenerator.Create<User>((u) => u.UserName == "jborne"
 	&& (u.FirstName != null || u.Permissions == UserPermissions.Basic) 
 	&& new string[] { "Jason", "Chris", "Zack" }.Contains(u.FirstName),
 	out IDictionary<string, object> param);
-// condition = "(((Users.[Account Name] = 'jborne') AND ((Users.FirstName is not NULL) OR (Users.Permissions = 1))) AND Users.FirstName in @P0)"
+// "(((Users.[Account Name] = 'jborne') AND ((Users.FirstName is not NULL) OR (Users.Permissions = 1))) AND Users.FirstName in @P0)"
 // param = ExpandoObject() { "P0" => List<object>() { "Jason", "Chris", "Zack" } }
 IEnumerable<User> result = conn.Query<User>("SELECT * FROM Test WHERE " + condition, param);
 ```
@@ -186,16 +185,17 @@ in precision for datetime2 vs C# DateTime.
 
 ## Performance:
 
-The Dapper.DapperExtraExtensions methods perform lookups on a ConcurrentDictionary and a cast the results every time they are called. This is
+The extension methods in DapperExtraExtensions perform lookups on a ConcurrentDictionary and a cast the results every time they are called. This is
 negligible, but it can prevented by storing the ISqlQueries object and accessing the delegates directly (e.g. AutoAccessObject/DataAccessObject). 
 Also, less frequently used delegates such as bulk operations have lazy initialization. There is a small synchronization cost every time 
 these are accessed. This can be prevented by storing a reference to each delegate outside of the ISqlQueries object.
 
-## Custom SqlAdapters 
+## Customization
 
-SqlAdapters change the default behavior of Extra CRUD. This is mainly used to support other RDBMS syntaxes such as MySQL and PostgreSQL. However, 
-it could also be used for other purposes. For example, the [BulkOptionsAdapter](https://github.com/ffhighwind/DapperExtraCRUD/blob/master/DapperExtraCRUD/Extra/Adapters/BulkCopyAdapter.cs)
-can be used to prevent bulk insert from firing triggers or checking constraints. However, this will only work for bulk insert as all other bulk operations
+Changing the SqlAdapter using ExtraCrud.SetAdapter<T>() will change the default behavior the methods. 
+This is mainly used to support multiple RDBMS syntaxes such as MySQL and PostgreSQL. However, it could also be used for other purposes. 
+For example, you could use [BulkOptionsAdapter](https://github.com/ffhighwind/DapperExtraCRUD/blob/master/DapperExtraCRUD.Example/BulkOptionsAdapter.cs)
+in order to prevent bulk insert from firing triggers or checking constraints. Note that this will *only* work for bulk insert as other bulk operations
 use a temporary table.
 
 ## Future Plans
