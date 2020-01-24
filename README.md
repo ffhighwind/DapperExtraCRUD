@@ -1,11 +1,11 @@
-# Introduction:
+# Introduction
 
 [Nuget: Dapper.ExtraCRUD](https://www.nuget.org/packages/Dapper.ExtraCRUD/)
 <img  align="right" src="https://raw.githubusercontent.com/ffhighwind/DapperExtraCRUD/master/Images/DapperExtraCRUD-200x200.png" alt="ExtraCRUD">
 
 A thread-safe Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more. Unique additions include Bulk operations, AutoSync, MatchUpdate, MatchDelete, Distinct, Top/Limit, Upsert, and Insert If Not Exists. It also exposes most of the underlying metadata to allow customization and improved performance.
 
-## Extensions:
+## Extensions
 
 Bulk operations are only supported for Microsoft SQL Server. Update and distinct extensions support custom objects in order to filter the properties.
 
@@ -32,7 +32,7 @@ Bulk operations are only supported for Microsoft SQL Server. Update and distinct
 | BulkDelete | Delete from [TABLE] where ... |
 | BulkGet | Select from [TABLE] where ... |
 
-## Annotations:
+## Annotations
 
 Annotations map classes to a database tables and properties to table columns.
 
@@ -50,14 +50,14 @@ Annotations map classes to a database tables and properties to table columns.
 | MatchUpdate | Treats a column as a primary key for updates. A raw SQL string can replace the value. |
 | MatchDelete | Treats a column as a primary key for deletes. |
 
-#### Priority:
+#### Priority
 
 NotMapped > Key > ... \
 IgnoreSelect > AutoSync \
 IgnoreInsert > MatchInsert \
 IgnoreUpdate > MatchUpdate
 
-#### Alternatives:
+#### Alternatives
 
 Some annotations from System.ComponentModel are supported as replacements for Dapper.Extra.Annotations. 
 
@@ -73,7 +73,7 @@ Some annotations from System.ComponentModel are supported as replacements for Da
 | public int Property { set; private get; } | \[IgnoreInsert]\[IgnoreUpdate]\[IgnoreDelete] |
 | \[NotMapped] | \[NotMapped] |
 
-## Example:
+## Example
 
 This example shows how to define a "Users" table and perform some operations on it. You may note that
 the syntax is similar to other Dapper extensions.
@@ -149,7 +149,7 @@ IEnumerable<User> result = conn.Query<User>("SELECT * FROM Test WHERE " + condit
 
 This static class contains a few helper functions such as IsQuotedSqlType, IsSqlIdentifier, SqlValue, etc.
 
-## Accessing Metadata:
+## Accessing Metadata
 
 ```csharp
 public static void Main(string[] args)
@@ -177,13 +177,13 @@ public static void Main(string[] args)
 }
 ```
 
-## Tip:
+## Tips
 
-* MatchUpdate and MatchDelete on DateTime only works on datetime2 for up to 2 decimal places (e.g. datetime2(2)). This is because of differences 
+* MatchUpdate and MatchDelete on DateTime only work on datetime2 for up to 2 decimal places (e.g. datetime2(2)). This is because of differences 
 in precision for datetime2 vs C# DateTime.
 * Use a view if you need joins. Alternatively you can use Dapper's multi-mapping queries or manually map the results.
 
-## Performance:
+## Performance
 
 The extension methods in DapperExtraExtensions perform lookups on a ConcurrentDictionary and a cast the results every time they are called. This is
 negligible, but it can prevented by storing the ISqlQueries object and accessing the delegates directly (e.g. AutoAccessObject/DataAccessObject). 
@@ -206,7 +206,7 @@ use a temporary table.
 * Multi-Mapping/Joins
 * Paged results
 
-# License:
+# License
 
 *MIT License*
 
