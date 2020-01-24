@@ -37,25 +37,21 @@ namespace Dapper.Extra.Utilities
 	/// Converts a <see cref="Predicate{T}"/> to a WHERE expression in SQL.
 	/// </summary>
 	/// <typeparam name="T">The input type.</typeparam>
-	public sealed class WhereConditionGenerator<T> : ExpressionVisitor
-		where T : class
+	public sealed class WhereConditionGenerator : ExpressionVisitor
 	{
 		private readonly IDictionary<string, object> OutputParam = new ExpandoObject();
 
 		private readonly StringBuilder Results = new StringBuilder(150);
 
-		private string TableName => TypeInfo.TableName;
+		private readonly Dictionary<string, SqlTypeInfo> TypeInfos = new Dictionary<string, SqlTypeInfo>();
 
-		private ParameterExpression InputParam;
-
-		private readonly SqlTypeInfo TypeInfo;
+		private readonly Dictionary<Type, SqlTypeInfo> TypeInfosMap = new Dictionary<Type, SqlTypeInfo>();
 
 		/// <summary>
 		/// Prevents a default instance of the <see cref="WhereConditionGenerator{T}"/> class from being created.
 		/// </summary>
 		private WhereConditionGenerator() : base()
 		{
-			TypeInfo = ExtraCrud.TypeInfo<T>();
 		}
 
 		/// <summary>
@@ -64,9 +60,10 @@ namespace Dapper.Extra.Utilities
 		/// <param name="predicate">The predicate.</param>
 		/// <param name="param">The Dapper parameters for the WHERE condition.</param>
 		/// <returns>The WHERE expression in SQL that the predicate represents.</returns>
-		public static string Create(Expression<Predicate<T>> predicate, out IDictionary<string, object> param)
+		public static string Create<T>(Expression<Func<T, bool>> predicate, out IDictionary<string, object> param)
+			where T : class
 		{
-			WhereConditionGenerator<T> obj = new WhereConditionGenerator<T>();
+			WhereConditionGenerator obj = new WhereConditionGenerator();
 			obj.Visit(predicate, out param);
 			return obj.Results.ToString();
 		}
@@ -214,19 +211,13 @@ namespace Dapper.Extra.Utilities
 		protected override Expression VisitConditional(ConditionalExpression node)
 		{
 			// a ? b : c
-			if (node.CanReduce) {
-				base.Visit(node.Reduce());
-				return null;
-			}
-			else {
-				Results.Append(" (SELECT CASE WHEN (");
-				base.Visit(node.Test);
-				Results.Append(") THEN (");
-				base.Visit(node.IfTrue);
-				Results.Append(") ELSE (");
-				base.Visit(node.IfFalse);
-				Results.Append(") END) ");
-			}
+			Results.Append(" (SELECT CASE WHEN (");
+			base.Visit(node.Test);
+			Results.Append(") THEN (");
+			base.Visit(node.IfTrue);
+			Results.Append(") ELSE (");
+			base.Visit(node.IfFalse);
+			Results.Append(") END) ");
 			return null;
 		}
 
@@ -404,10 +395,6 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
 		protected override Expression VisitMember(MemberExpression node)
 		{
-			if (node.CanReduce) {
-				base.Visit(node.Reduce());
-				return null;
-			}
 			// a.b
 			if (node.Expression.NodeType == ExpressionType.MemberAccess) {
 				string msg = node.ToString();
@@ -420,7 +407,8 @@ namespace Dapper.Extra.Utilities
 			else if (node.Expression.NodeType == ExpressionType.Parameter) {
 				base.Visit(node.Expression);
 				Results.Append(".");
-				var column = TypeInfo.Columns.First(c => c.Property.Name == node.Member.Name);
+				var typeInfo = TypeInfosMap[node.Member.DeclaringType];
+				var column = typeInfo.Columns.First(c => c.Property.Name == node.Member.Name);
 				Results.Append(column.ColumnName);
 				return null;
 			}
@@ -495,10 +483,6 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
 		protected override Expression VisitMethodCall(MethodCallExpression node)
 		{
-			if (node.CanReduce) {
-				base.Visit(node.Reduce());
-				return null;
-			}
 			// a.b(c, d)
 			if (node.Method.Name == "Equals" && node.Arguments.Count == 1) {
 				Results.Append('(');
@@ -564,10 +548,10 @@ namespace Dapper.Extra.Utilities
 		protected override Expression VisitParameter(ParameterExpression node)
 		{
 			// x
-			if (node.Name != InputParam.Name) {
-				throw new InvalidOperationException("Variable '" + node.Name + "' is out of scope. Only allowed to access variable " + InputParam.Name + ".");
+			if (!TypeInfos.TryGetValue(node.Name, out SqlTypeInfo typeInfo)) {
+				throw new InvalidOperationException("Variable '" + node.Name + "' is out of scope.");
 			}
-			Results.Append(TableName);
+			Results.Append(typeInfo.TableName);
 			return null;
 		}
 
@@ -636,34 +620,41 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The modified expression, if it or any subexpression was modified; otherwise, returns the original expression.</returns>
 		protected override Expression VisitUnary(UnaryExpression node)
 		{
-			if (node.CanReduce)
+			if (node.CanReduce) {
 				base.Visit(node.Reduce());
-			else {
-				string op;
-				switch (node.NodeType) {
-					case ExpressionType.Negate: // -a
-					case ExpressionType.NegateChecked: // -a (overflow checked)
-						op = "-";
-						break;
-					case ExpressionType.Not: // !a (boolean), ~a (integral)
-						op = " NOT ";
-						break;
-					case ExpressionType.Convert: // (b) a
-					case ExpressionType.ConvertChecked: // (b) a
-					case ExpressionType.ArrayLength: // a.Length
-					case ExpressionType.TypeAs: // a as b
-						CompileExpression(node);
-						return null;
-					case ExpressionType.Quote: // Expression<a>
-					case ExpressionType.UnaryPlus: // +a
-						base.Visit(node.Operand);
-						return null;
-					default:
-						throw new InvalidOperationException("Unknown NodeType " + node.NodeType.ToString());
-				}
-				Results.Append(op);
-				base.Visit(node.Operand);
+				return null;
 			}
+			string op;
+			switch (node.NodeType) {
+				case ExpressionType.Negate: // -a
+				case ExpressionType.NegateChecked: // -a (overflow checked)
+					op = "-";
+					break;
+				case ExpressionType.Not: // !a (boolean), ~a (integral)
+					op = " NOT ";
+					break;
+				case ExpressionType.ArrayLength: // a.Length
+					CompileExpression(node.Operand);
+					return null;
+				case ExpressionType.Convert: // (b) a
+				case ExpressionType.ConvertChecked: // (b) a
+				case ExpressionType.TypeAs: // a as b
+					try {
+						CompileExpression(node.Operand);
+					}
+					catch {
+						base.Visit(node.Operand);
+					}
+					return null;
+				case ExpressionType.Quote: // Expression<a>
+				case ExpressionType.UnaryPlus: // +a
+					base.Visit(node.Operand);
+					return null;
+				default:
+					throw new InvalidOperationException("Unknown NodeType " + node.NodeType.ToString());
+			}
+			Results.Append(op);
+			base.Visit(node.Operand);
 			return null;
 		}
 
@@ -674,7 +665,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The default value for a given type converted to an SQL string if possible.</returns>
 		private static object DefaultValue(Type type)
 		{
-			if (!type.IsValueType)
+			if (!type.IsValueType || Nullable.GetUnderlyingType(type) != null)
 				return "NULL";
 			TypeCode typeCode = Type.GetTypeCode(type);
 			switch (typeCode) {
@@ -836,11 +827,55 @@ namespace Dapper.Extra.Utilities
 			throw new InvalidOperationException("Invalid expression: " + msg);
 		}
 
-		private void Visit(Expression<Predicate<T>> predicate, out IDictionary<string, object> param)
+		private void Visit<T>(Expression<Func<T, bool>> predicate, out IDictionary<string, object> param)
+			where T : class
 		{
-			InputParam = predicate.Parameters[0];
+			AddParamToMaps<T>(predicate.Parameters[0].Name);
 			base.Visit(predicate.Body);
 			param = OutputParam;
+		}
+
+		private void Visit<T1, T2>(Expression<Func<T1, T2, bool>> predicate, out IDictionary<string, object> param)
+			where T1 : class
+			where T2 : class
+		{
+			AddParamToMaps<T1>(predicate.Parameters[0].Name);
+			AddParamToMaps<T2>(predicate.Parameters[1].Name);
+			base.Visit(predicate.Body);
+			param = OutputParam;
+		}
+
+		private void Visit<T1, T2, T3>(Expression<Func<T1, T2, T3, bool>> predicate, out IDictionary<string, object> param)
+			where T1 : class
+			where T2 : class
+			where T3 : class
+		{
+			AddParamToMaps<T1>(predicate.Parameters[0].Name);
+			AddParamToMaps<T2>(predicate.Parameters[1].Name);
+			AddParamToMaps<T3>(predicate.Parameters[2].Name);
+			base.Visit(predicate.Body);
+			param = OutputParam;
+		}
+
+		private void Visit<T1, T2, T3, T4>(Expression<Func<T1, T2, T3, T4, bool>> predicate, out IDictionary<string, object> param)
+			where T1 : class
+			where T2 : class
+			where T3 : class
+			where T4 : class
+		{
+			AddParamToMaps<T1>(predicate.Parameters[0].Name);
+			AddParamToMaps<T2>(predicate.Parameters[1].Name);
+			AddParamToMaps<T3>(predicate.Parameters[2].Name);
+			AddParamToMaps<T4>(predicate.Parameters[3].Name);
+			base.Visit(predicate.Body);
+			param = OutputParam;
+		}
+
+		private void AddParamToMaps<T>(string name) where T : class
+		{
+			SqlTypeInfo typeInfo = ExtraCrud.TypeInfo<T>();
+			TypeInfos[name] = typeInfo;
+			TypeInfosMap[typeof(T)] = typeInfo;
 		}
 
 		#endregion

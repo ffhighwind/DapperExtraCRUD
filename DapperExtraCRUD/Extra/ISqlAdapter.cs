@@ -67,6 +67,7 @@ namespace Dapper.Extra
 
 		/// <summary>
 		/// Creates a name for a temporary table based on an input table name. This currently only affects SQL Server.
+		/// <code>#{tableName}</code>
 		/// </summary>
 		/// <param name="tableName">The table name.</param>
 		/// <returns>A temporary table name.</returns>
@@ -83,6 +84,8 @@ namespace Dapper.Extra
 
 		/// <summary>
 		/// Quotes an identifier. You can use <see cref="ExtraUtil.IsSqlIdentifier(string)"/> to determine if an identifier needs to be quoted.
+		/// <code>[{0}]</code>
+		/// <code>`{0}`</code>
 		/// </summary>
 		/// <param name="identifier">The identifier.</param>
 		/// <returns>The quoted identifier.</returns>
@@ -99,6 +102,7 @@ namespace Dapper.Extra
 
 		/// <summary>
 		/// Creates an SQL command to clone specific columns from a table into a temporary table.
+		/// <code>tempTable + SqlBuilderHelper.SelectIntoTableQuery(sourceTable, tempTable, columns)</code>
 		/// </summary>
 		/// <param name="sourceTable">The table to clone.</param>
 		/// <param name="tempTable">The temporary to create.</param>
@@ -117,21 +121,25 @@ namespace Dapper.Extra
 
 		/// <summary>
 		/// The SQL command that returns the current date.
+		/// <code>convert(date, getdate())</code>
 		/// </summary>
 		string CurrentDate { get; }
 
 		/// <summary>
 		/// The SQL command that returns the current datetime.
+		/// <code>getdate()</code>
 		/// </summary>
 		string CurrentDateTime { get; }
 
 		/// <summary>
 		/// The SQL command that returns the current UTC datetime.
+		/// <code>getutcdate()</code>
 		/// </summary>
 		string CurrentDateTimeUtc { get; }
 
 		/// <summary>
 		/// The SQL command that returns the current UTC date.
+		/// <code>convert(date, getutcdate())</code>
 		/// </summary>
 		string CurrentDateUtc {get; }
 	}

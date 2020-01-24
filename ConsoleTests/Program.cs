@@ -33,6 +33,7 @@ using Dapper;
 using Dapper.Extra;
 using Dapper.Extra.Utilities;
 using Dapper.Extra.Cache;
+using DapperExtraCRUD.Example;
 
 namespace ConsoleTests
 {
@@ -134,33 +135,41 @@ namespace ConsoleTests
 		{
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
 
-				string str = WhereConditionGenerator<TestDTO>.Create((t) => t.CreatedDt == new DateTime(1900, 5, 9), out IDictionary<string, object> param);
+				string str = WhereConditionGenerator.Create<TestDTO>((t) => t.CreatedDt == new DateTime(1900, 5, 9), out IDictionary<string, object> param);
 				if (str != "(Test.CreatedDt = @P0)")
 					throw new InvalidOperationException();
 				if (param.Any() && (DateTime)param["P0"] != new DateTime(1900, 5, 9))
 					throw new InvalidOperationException();
 				var result = conn.Query<TestDTO>("SELECT * FROM Test WHERE " + str, param);
 
-				str = WhereConditionGenerator<TestDTO>.Create((t) => t.ID > 5 && t.Name == null, out param);
+				str = WhereConditionGenerator.Create<TestDTO>((t) => t.ID > 5 && t.Name == null, out param);
 				if (str != "((Test.ID > 5) AND (Test.FirstName is NULL))")
 					throw new InvalidOperationException();
 				if (param.Any())
 					throw new InvalidOperationException();
 				var result2 = conn.Query<TestDTO>("SELECT * FROM Test WHERE " + str, param);
 
-				str = WhereConditionGenerator<TestDTO2>.Create((t) => t.Col3 <= 5.5f && (t.Col1 == 5 || t.Col2.Equals("ab")), out param);
+				str = WhereConditionGenerator.Create<TestDTO2>((t) => t.Col3 <= 5.5f && (t.Col1 == 5 || t.Col2.Equals("ab")), out param);
 				if (str != "((Test2.Col3 <= @P0) AND ((Test2.Col1 = 5) OR (Test2.Col2 = 'ab')))")
 					throw new InvalidOperationException();
 				if (param.Any() && (float)param["P0"] != 5.5f)
 					throw new InvalidOperationException();
 				var result3 = conn.Query<TestDTO2>("SELECT * FROM Test2 WHERE " + str, param);
 
-				str = WhereConditionGenerator<Test3>.Create((t) => t.Col1 == (-15253 & 155) && (t.Col2 != null || t.Col4 == null) && new string[]{"aa", "bb", "cc"}.Contains(t.Col2) , out param);
+				str = WhereConditionGenerator.Create<Test3>((t) => t.Col1 == (-15253 & 155) && (t.Col2 != null || t.Col4 == null) && new string[]{"aa", "bb", "cc"}.Contains(t.Col2) , out param);
 				if (str != "(((Test3.Col1 = 11) AND ((Test3.Col2 is not NULL) OR (Test3.Col4 is NULL))) AND Test3.Col2 in @P0)")
 					throw new InvalidOperationException();
 				if (param.Any() && ((List<object>)param["P0"]).Any(s => !new string[] { "aa", "bb", "cc" }.Contains(s)))
 					throw new InvalidOperationException();
 				var result4 = conn.Query<Test3>("SELECT * FROM Test3 WHERE " + str, param);
+
+				str = WhereConditionGenerator.Create<User>((u) => u.UserName == "jborne"
+					&& (u.FirstName != null || u.Permissions == UserPermissions.Basic) && new string[] { "Jason", "Chris", "Zack" }.Contains(u.FirstName),
+					out param);
+				if (str != "(((Users.[Account Name] = 'jborne') AND ((Users.FirstName is not NULL) OR (Users.Permissions = 1))) AND Users.FirstName in @P0)")
+					throw new InvalidOperationException();
+				// condition = "(((Users.[Account Name] = 'jborne') AND ((Users.FirstName is not NULL) OR (Users.Permissions = 1))) AND Users.FirstName in @P0)"
+				// param = List<object>() { "Jason", "Chris", "Zack" }
 			}
 		}
 
@@ -690,10 +699,10 @@ DROP TABLE dbo.{tableName};";
 				throw new InvalidOperationException();
 		}
 
-		public static void WhereConditionGen<T>(SqlConnection conn, SqlTransaction trans, List<T> list, Expression<Predicate<T>> predicateExpr) where T : class, IDto<T>
+		public static void WhereConditionGen<T>(SqlConnection conn, SqlTransaction trans, List<T> list, Expression<Func<T, bool>> predicateExpr) where T : class, IDto<T>
 		{
-			string condition = WhereConditionGenerator<T>.Create(predicateExpr, out IDictionary<string, object> param);
-			Predicate<T> predicate = predicateExpr.Compile();
+			string condition = WhereConditionGenerator.Create<T>(predicateExpr, out IDictionary<string, object> param);
+			Func<T, bool> predicate = predicateExpr.Compile();
 			List<T> filtered = list.Where(d => predicate(d)).ToList();
 			int count = conn.RecordCount<T>("WHERE " + condition, param, trans);
 			if (filtered.Count != count)
