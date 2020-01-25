@@ -170,6 +170,25 @@ namespace ConsoleTests
 					throw new InvalidOperationException();
 				// condition = "(((Users.[Account Name] = 'jborne') AND ((Users.FirstName is not NULL) OR (Users.Permissions = 1))) AND Users.FirstName in @P0)"
 				// param = List<object>() { "Jason", "Chris", "Zack" }
+				str = WhereConditionGenerator.Create<TestDTO>((t) => t.IsActive != true && t.IsActive, out param);
+				if (str != "((Test.IsActive <> 1) AND Test.IsActive = 1)")
+					throw new InvalidOperationException();
+				var result5 = conn.Query<TestDTO>("SELECT * FROM Test WHERE " + str, param);
+				str = WhereConditionGenerator.Create<TestDTO>((t) => t.IsActive != true && !t.IsActive, out param);
+				if (str != "((Test.IsActive <> 1) AND NOT Test.IsActive = 1)")
+					throw new InvalidOperationException();
+				var result6 = conn.Query<TestDTO>("SELECT * FROM Test WHERE " + str, param);
+				str = WhereConditionGenerator.Create<TestDTO>((t) => t.IsActive, out param);
+				if (str != "Test.IsActive = 1")
+					throw new InvalidOperationException();
+				var result7 = conn.Query<TestDTO>("SELECT * FROM Test WHERE " + str, param);
+				bool tmp = false;
+				str = WhereConditionGenerator.Create<TestDTO2, TestDTO>((t2, t1) => t2.Col3 <= 5.5f && (t2.Col1 == 5 || t2.Col2.Equals("ab")) && t1.IsActive == tmp, out param);
+				if (str != "(((Test2.Col3 <= @P0) AND ((Test2.Col1 = 5) OR (Test2.Col2 = 'ab'))) AND (Test.IsActive = 0))")
+					throw new InvalidOperationException();
+				var result8 = conn.Query<TestDTO2>("SELECT * FROM Test2 left join Test on Test.ID = Test2.Col1 WHERE\n" + str, param);
+				str = WhereConditionGenerator.Create<TestDTO>((t) => t.IsActive.Equals(true) || t.CreatedDt == new DateTime(2019, 1, 5) && (t.ID > 2), out param);
+				var result9 = conn.Query<TestDTO>("SELECT * FROM Test WHERE\n" + str, param);
 			}
 		}
 

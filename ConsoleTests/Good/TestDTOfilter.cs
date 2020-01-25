@@ -14,7 +14,8 @@ namespace ConsoleTests
 			return obj.CreatedDt != null
 				&& obj.CreatedDt != default(DateTime)
 				&& obj.ID == default(int)
-				&& obj.Name == default(string);
+				&& obj.Name == default(string)
+				&& obj.IsActive == default(bool);
 		}
 	}
 }

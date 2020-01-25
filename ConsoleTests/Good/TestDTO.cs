@@ -48,6 +48,8 @@ namespace ConsoleTests
 		[IgnoreUpdate("getdate()", false)]
 		public DateTime? CreatedDt { get; set; }
 
+		public bool IsActive { get; set; }
+
 		public TestDTO Test { get; set; }
 
 		public string CreateTable()
@@ -57,6 +59,7 @@ CREATE TABLE [dbo].[Test](
 	[ID] [int] IDENTITY(1,1) NOT NULL,
 	[FirstName] [varchar](max) NOT NULL,
 	[CreatedDt] [datetime2](7) NULL,
+	[IsActive] [bit] NOT NULL,
  CONSTRAINT [PK_Test_1] PRIMARY KEY CLUSTERED 
 (
 	[ID] ASC

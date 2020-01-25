@@ -24,6 +24,7 @@
 // SOFTWARE.
 #endregion
 
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -50,6 +51,8 @@ namespace Dapper.Extra.Cache
 		/// <returns>The transaction.</returns>
 		public DbCacheTransaction Add(params ICacheTable[] tables)
 		{
+			if (Transaction == null)
+				throw new InvalidOperationException("The transaction is closed.");
 			foreach (ICacheTable table in tables) {
 				table.BeginTransaction(this);
 			}

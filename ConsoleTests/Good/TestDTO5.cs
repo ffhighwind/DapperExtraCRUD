@@ -17,6 +17,7 @@ namespace ConsoleTests
 
 		public int ID { get; set; }
 
+		[Column("Full Name")]
 		public string Name { get; set; }
 
 		[IgnoreInsert]
@@ -47,7 +48,7 @@ namespace ConsoleTests
 			return @"
 CREATE TABLE [dbo].[TestDTO5](
 	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[Name] [varchar](255) NOT NULL,
+	[Full Name] [varchar](255) NOT NULL,
 	[Created] [datetime2](7) NOT NULL,
 	[Modified] [datetime] NOT NULL,
 	[Modified2] [datetime2](2) NOT NULL,

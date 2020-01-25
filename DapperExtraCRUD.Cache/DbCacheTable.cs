@@ -72,8 +72,6 @@ namespace Dapper.Extra.Cache
 
 		private readonly CacheAutoStorage<T, R> AutoCache;
 
-		private readonly string ConnectionString;
-
 		/// <summary>
 		/// The access object currently being used by the cache. This can be used if you do not want to store
 		/// the results of a query in the cache.
@@ -85,6 +83,7 @@ namespace Dapper.Extra.Cache
 		private readonly SqlColumn AutoKeyColumn;
 		private readonly bool AutoSyncInsert;
 		private readonly bool AutoSyncUpdate;
+		private readonly string ConnectionString;
 
 		/// <summary>
 		/// The current transaction for the cache.
@@ -258,8 +257,10 @@ namespace Dapper.Extra.Cache
 		/// <param name="transaction">The transaction</param>
 		public void BeginTransaction(DbCacheTransaction transaction)
 		{
-			if (Access != AAO)
+			if (Transaction != null)
 				throw new InvalidOperationException("Cache is already part of a transaction.");
+			if (transaction.Connection.State != ConnectionState.Open)
+				throw new InvalidOperationException("The transaction is closed.");
 			DAO.Connection = transaction.Transaction.Connection;
 			DAO.Transaction = transaction.Transaction;
 			CacheTransactionStorage<T, R> storage = new CacheTransactionStorage<T, R>(Builder, AutoCache.Cache, transaction, CloseTransaction);
@@ -272,16 +273,17 @@ namespace Dapper.Extra.Cache
 		private void CloseTransaction()
 		{
 			if (Transaction != null) {
-				IDbConnection connection = DAO.Connection;
+				IDbConnection connection = DAO.Transaction?.Connection;
 				IDbTransaction transaction = DAO.Transaction;
+				Transaction = null;
 				DAO.Transaction = null;
+				DAO.Connection = new SqlConnection(ConnectionString);
 				Items = AutoCache;
 				Access = AAO;
-				DAO.Transaction = null;
-				Transaction = null;
-				DAO.Connection = new SqlConnection(ConnectionString);
 				transaction?.Dispose();
-				connection?.Close();
+				if (connection != null && connection.State == ConnectionState.Open) {
+					connection.Close();
+				}
 			}
 		}
 

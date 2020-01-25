@@ -185,17 +185,9 @@ namespace Dapper.Extra.Utilities
 					op = " >= ";
 					break;
 				case ExpressionType.Equal: // a == b
-					if (node.Right is ConstantExpression ce && ce.Value == null)
-						op = " is ";
-					else
-						op = " = ";
-					break;
 				case ExpressionType.NotEqual: // a != b
-					if (node.Right is ConstantExpression ce2 && ce2.Value == null)
-						op = " is not ";
-					else
-						op = " <> ";
-					break;
+					CompileEqual(node);
+					return null;
 				case ExpressionType.Coalesce: // a ?? b
 					Results.Append("COALESCE(");
 					base.Visit(node.Left);
@@ -210,7 +202,7 @@ namespace Dapper.Extra.Utilities
 				//throw new InvalidOperationException("Invalid operator 'arr[index]'");
 				case ExpressionType.RightShift: // a >> b
 					op = " >> ";
-					break;
+					return null;
 				case ExpressionType.LeftShift: // a << b
 					op = " << ";
 					break;
@@ -226,6 +218,76 @@ namespace Dapper.Extra.Utilities
 			base.Visit(node.Right);
 			Results.Append(')');
 			return null;
+		}
+
+		private void CompileShift(BinaryExpression node)
+		{
+
+		}
+
+		private void CompileEqual(BinaryExpression node)
+		{
+			string op;
+			var left = node.Left;
+			var right = node.Right;
+			if (node.NodeType == ExpressionType.Equal) {
+				// a == b
+				op = " = ";
+				if (node.Right is ConstantExpression ce) {
+					if (ce.Value == null) {
+						op = " is ";
+					}
+				}
+				else if (node.Left is ConstantExpression ce2) {
+					if (ce2.Value == null) {
+						Expression tmp = node.Left;
+						left = right;
+						right = tmp;
+						op = " is ";
+					}
+				}
+			}
+			else {
+				// a != b
+				op = " <> ";
+				if (node.Right is ConstantExpression ce) {
+					if (ce.Value == null) {
+						op = " is not ";
+					}
+				}
+				else if (node.Left is ConstantExpression ce2) {
+					if (ce2.Value == null) {
+						Expression tmp = node.Left;
+						left = right;
+						right = tmp;
+						op = " is not ";
+					}
+				}
+			}
+			Results.Append('(');
+			base.Visit(left);
+			if (EndsWith(Results, "= 1")) {
+				Results.Remove(Results.Length - 4, 4);
+			}
+			Results.Append(op);
+			base.Visit(right);
+			if (right.NodeType != ExpressionType.Constant && EndsWith(Results, "= 1")) {
+				Results.Remove(Results.Length - 4, 4);
+			}
+			Results.Append(')');
+		}
+
+		private static bool EndsWith(StringBuilder sb, string str)
+		{
+			if (sb.Length < str.Length) {
+				return false;
+			}
+			int start = sb.Length - str.Length;
+			for (int i = 0; i < str.Length; i++) {
+				if (sb[start + i] != str[i])
+					return false;
+			}
+			return true;
 		}
 
 		/// <summary>
@@ -457,6 +519,8 @@ namespace Dapper.Extra.Utilities
 				var typeInfo = TypeInfosMap[node.Member.DeclaringType];
 				var column = typeInfo.Columns.First(c => c.Property.Name == node.Member.Name);
 				Results.Append(column.ColumnName);
+				if (column.Type == typeof(bool))
+					Results.Append(" = 1");
 				return null;
 			}
 			CompileExpression(node);
@@ -537,6 +601,9 @@ namespace Dapper.Extra.Utilities
 				if (node.Arguments[0] is ConstantExpression ce && ce.Value == null)
 					Results.Append(" is NULL");
 				else {
+					if (EndsWith(Results, "= 1")) {
+						Results.Remove(Results.Length - 4, 4);
+					}
 					Results.Append(" = ");
 					base.Visit(node.Arguments[0]);
 				}
@@ -678,7 +745,7 @@ namespace Dapper.Extra.Utilities
 					op = "-";
 					break;
 				case ExpressionType.Not: // !a (boolean), ~a (integral)
-					op = " NOT ";
+					op = "NOT ";
 					break;
 				case ExpressionType.ArrayLength: // a.Length
 					CompileExpression(node.Operand);
@@ -815,7 +882,7 @@ namespace Dapper.Extra.Utilities
 
 		private void CompileValueExpression(Expression expr, Type type, object obj)
 		{
-			if(obj == null) {
+			if (obj == null) {
 				Results.Append("NULL");
 				return;
 			}
@@ -830,9 +897,11 @@ namespace Dapper.Extra.Utilities
 				case TypeCode.Int16:
 				case TypeCode.Int32:
 				case TypeCode.Int64:
-				case TypeCode.Boolean:
 				case TypeCode.Byte:
 					value = obj.ToString();
+					break;
+				case TypeCode.Boolean:
+					value = ((bool)obj) ? "1" : "0";
 					break;
 				case TypeCode.Char:
 					char ch = (char)obj;

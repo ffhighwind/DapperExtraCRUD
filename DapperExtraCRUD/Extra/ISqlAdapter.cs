@@ -67,7 +67,7 @@ namespace Dapper.Extra
 
 		/// <summary>
 		/// Creates a name for a temporary table based on an input table name. This currently only affects SQL Server.
-		/// <code>#{tableName}</code>
+		/// <code>#{0}</code>
 		/// </summary>
 		/// <param name="tableName">The table name.</param>
 		/// <returns>A temporary table name.</returns>

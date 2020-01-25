@@ -164,6 +164,8 @@ namespace Dapper.Extra
 				EqualityComparer = new TableEqualityComparer<T>(TableName, EqualityColumns);
 				Create("Composite key does not support this operation", threadSafety);
 			}
+			string paramsSelect = ParamsSelect(Info.SelectColumns);
+			SelectMap.GetOrAdd(typeof(T), paramsSelect);
 		}
 
 		#endregion
@@ -242,7 +244,7 @@ namespace Dapper.Extra
 				return columns;
 			Dictionary<string, SqlColumn> map = new Dictionary<string, SqlColumn>();
 			foreach (SqlColumn column in columns) {
-				map.Add(column.ColumnName, column);
+				map.Add(column.Property.Name, column);
 			}
 			List<SqlColumn> list = new List<SqlColumn>();
 			foreach (PropertyInfo prop in type.GetProperties(BindingFlags.Public | BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(p => p.CanWrite)) {
@@ -624,7 +626,7 @@ namespace Dapper.Extra
 
 		private DbTBool<T> CreateDelete()
 		{
-			if (Info.DeleteKeyColumns.Count == 0) //	NoDeltesAttribute
+			if (Info.DeleteKeyColumns.Count == 0) // NoDeltesAttribute
 				return DoNothing;
 			string deleteCmd = DeleteCmd();
 			string deleteEquals = WhereEquals(Info.DeleteKeyColumns);
@@ -657,7 +659,7 @@ namespace Dapper.Extra
 
 		private DbWhereInt<T> CreateDeleteList()
 		{
-			if (Info.DeleteKeyColumns.Count == 0) //	NoDeltesAttribute
+			if (Info.DeleteKeyColumns.Count == 0) // NoDeletesAttribute
 				return DoNothing;
 			string deleteCmd = DeleteCmd();
 			return (connection, whereCondition, param, transaction, commandTimeout) => {
@@ -680,7 +682,6 @@ namespace Dapper.Extra
 
 		private DbTypeWhereList<T> CreateGetDistinct()
 		{
-			//string paramsSelectFromTable = ParamsSelectFromTable();
 			return (connection, type, whereCondition, param, transaction, buffered, commandTimeout) => {
 				if (!SelectMap.TryGetValue(type, out string paramsSelect)) {
 					paramsSelect = CreateParamsSelect(type);
