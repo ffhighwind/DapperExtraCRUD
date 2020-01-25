@@ -54,13 +54,61 @@ namespace Dapper.Extra.Utilities
 		}
 
 		/// <summary>
-		/// Converts a <see cref="Predicate{T}"/> to a WHERE expression in SQL.
+		/// Converts a <see cref="Func{T, TResult}"/> to a WHERE expression in SQL.
 		/// </summary>
 		/// <param name="predicate">The predicate.</param>
 		/// <param name="param">The Dapper parameters for the WHERE condition.</param>
 		/// <returns>The WHERE expression in SQL that the predicate represents.</returns>
 		public static string Create<T>(Expression<Func<T, bool>> predicate, out IDictionary<string, object> param)
 			where T : class
+		{
+			WhereConditionGenerator obj = new WhereConditionGenerator();
+			obj.Visit(predicate, out param);
+			return obj.Results.ToString();
+		}
+
+		/// <summary>
+		/// Converts a <see cref="Func{T1, T2, TResult}"/> to a WHERE expression in SQL.
+		/// </summary>
+		/// <param name="predicate">The predicate.</param>
+		/// <param name="param">The Dapper parameters for the WHERE condition.</param>
+		/// <returns>The WHERE expression in SQL that the predicate represents.</returns>
+		public static string Create<T1, T2>(Expression<Func<T1, T2, bool>> predicate, out IDictionary<string, object> param)
+			where T1 : class
+			where T2 : class
+		{
+			WhereConditionGenerator obj = new WhereConditionGenerator();
+			obj.Visit(predicate, out param);
+			return obj.Results.ToString();
+		}
+
+		/// <summary>
+		/// Converts a <see cref="Func{T1, T2, T3, TResult}"/> to a WHERE expression in SQL.
+		/// </summary>
+		/// <param name="predicate">The predicate.</param>
+		/// <param name="param">The Dapper parameters for the WHERE condition.</param>
+		/// <returns>The WHERE expression in SQL that the predicate represents.</returns>
+		public static string Create<T1, T2, T3>(Expression<Func<T1, T2, T3, bool>> predicate, out IDictionary<string, object> param)
+			where T1 : class
+			where T2 : class
+			where T3 : class
+		{
+			WhereConditionGenerator obj = new WhereConditionGenerator();
+			obj.Visit(predicate, out param);
+			return obj.Results.ToString();
+		}
+
+		/// <summary>
+		/// Converts a <see cref="Func{T1, T2, T3, T4, TResult}"/> to a WHERE expression in SQL.
+		/// </summary>
+		/// <param name="predicate">The predicate.</param>
+		/// <param name="param">The Dapper parameters for the WHERE condition.</param>
+		/// <returns>The WHERE expression in SQL that the predicate represents.</returns>
+		public static string Create<T1, T2, T3, T4>(Expression<Func<T1, T2, T3, T4, bool>> predicate, out IDictionary<string, object> param)
+			where T1 : class
+			where T2 : class
+			where T3 : class
+			where T4 : class
 		{
 			WhereConditionGenerator obj = new WhereConditionGenerator();
 			obj.Visit(predicate, out param);

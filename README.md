@@ -45,8 +45,8 @@ Annotations map classes to a database tables and properties to table columns.
 | AutoSync | Automatically selects a column/class after an insert/update. Does not occur in bulk operations. Synchronization is a delayed action, which means that the object may contain inaccurate data without a transaction. |
 | IgnoreDelete | Prevents deletes. |
 | IgnoreSelect | Ignores a column for selects. This does not work for primary keys. |
-| IgnoreInsert | Ignores a column for insertions. A raw SQL string can replace the value (e.g. 'getdate()'). This does not work for primary keys. |
-| IgnoreUpdate | Ignores a column for updates. A raw SQL string can replace the value. This does not work for primary keys. |
+| IgnoreInsert | Ignores a column for insertions. A raw SQL string can replace the value. |
+| IgnoreUpdate | Ignores a column for updates. A raw SQL string can replace the value. |
 | MatchUpdate | Treats a column as a primary key for updates. A raw SQL string can replace the value. |
 | MatchDelete | Treats a column as a primary key for deletes. |
 
