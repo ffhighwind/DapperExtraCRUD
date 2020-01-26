@@ -685,6 +685,14 @@ namespace Dapper.Extra.Utilities
 		public IEnumerable<KeyType> GetKeys<KeyType>(IDbTransaction transaction, string whereCondition = "", object param = null, bool buffered = true, int commandTimeout = 30)
 		{
 			IEnumerable<object> keys = Queries.GetKeysKeys(transaction.Connection, whereCondition, param, transaction, buffered, commandTimeout);
+			if (typeof(KeyType) == typeof(long)) {
+				if (keys.Any()) {
+					Type type = keys.First().GetType();
+					if (type == typeof(int)) {
+						keys = keys.Select(k => (object)(long)(int)k);
+					}
+				}
+			}
 			IEnumerable<KeyType> castedKeys = keys.Select(k => (KeyType)k);
 			return castedKeys;
 		}

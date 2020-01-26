@@ -6,7 +6,7 @@
     <Authors>Wesley Hamilton</Authors>
     <Description>A Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more.</Description>
     <NeutralLanguage>en-us</NeutralLanguage>
-    <PackageReleaseNotes>Reworked WhereConditionGenerator and fixed some bugs with it.</PackageReleaseNotes>
+    <PackageReleaseNotes>Reworked WhereConditionGenerator and fixed some bugs with it. Fixed GetKeys&lt;long&gt;.</PackageReleaseNotes>
     <PackageTags>dapper orm micro-orm sql</PackageTags>
     <PackageLicense>Apache-2.0</PackageLicense>
     <PackageProjectUrl>https://github.com/ffhighwind/DapperExtraCRUD</PackageProjectUrl>

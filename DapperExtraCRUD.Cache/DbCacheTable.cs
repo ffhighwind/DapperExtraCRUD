@@ -189,9 +189,7 @@ namespace Dapper.Extra.Cache
 		private long MaxAutoKey()
 		{
 			IEnumerable<long> max = Access.GetKeys<long>($"WHERE {AutoKeyColumn.ColumnName} = (SELECT MAX({AutoKeyColumn.ColumnName}) FROM {Info.TableName})");
-			if (max.Any())
-				return max.First();
-			return long.MinValue;
+			return max.Any() ? max.First() : long.MinValue;
 		}
 
 		/// <summary>

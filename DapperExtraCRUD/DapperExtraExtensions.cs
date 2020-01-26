@@ -652,9 +652,8 @@ namespace Dapper
 		public static IEnumerable<KeyType> GetKeys<T, KeyType>(this IDbConnection connection, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			IEnumerable<object> keys = ExtraCrud.Queries<T>().GetKeysKeys(connection, "", null, transaction, buffered, commandTimeout);
-			IEnumerable<KeyType> castedKeys = keys.Select(k => (KeyType)k);
-			return castedKeys;
+			IEnumerable<KeyType> keys = GetKeys<T, KeyType>(connection, "", null, transaction, buffered, commandTimeout);
+			return keys;
 		}
 
 		/// <summary>
@@ -689,6 +688,14 @@ namespace Dapper
 			where T : class
 		{
 			IEnumerable<object> keys = ExtraCrud.Queries<T>().GetKeysKeys(connection, whereCondition, param, transaction, buffered, commandTimeout);
+			if (typeof(KeyType) == typeof(long)) {
+				if (keys.Any()) {
+					Type type = keys.First().GetType();
+					if (type == typeof(int)) {
+						keys = keys.Select(k => (object)(long)(int)k);
+					}
+				}
+			}
 			IEnumerable<KeyType> castedKeys = keys.Select(k => (KeyType)k);
 			return castedKeys;
 		}

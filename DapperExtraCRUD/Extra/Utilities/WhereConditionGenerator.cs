@@ -220,11 +220,6 @@ namespace Dapper.Extra.Utilities
 			return null;
 		}
 
-		private void CompileShift(BinaryExpression node)
-		{
-
-		}
-
 		private void CompileEqual(BinaryExpression node)
 		{
 			string op;
