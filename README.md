@@ -3,7 +3,8 @@
 [Nuget: Dapper.ExtraCRUD](https://www.nuget.org/packages/Dapper.ExtraCRUD/)
 <img  align="right" src="https://raw.githubusercontent.com/ffhighwind/DapperExtraCRUD/master/Images/DapperExtraCRUD-200x200.png" alt="ExtraCRUD">
 
-A thread-safe Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more. Unique additions include Bulk operations, AutoSync, MatchUpdate, MatchDelete, Distinct, Top/Limit, Upsert, and Insert If Not Exists. It also exposes most of the underlying metadata to allow customization and improved performance.
+A thread-safe Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more. Unique additions include Bulk operations, AutoSync, MatchUpdate, MatchDelete, Distinct, Top/Limit, Upsert, and Insert If Not Exists. 
+It also automatically sets auto-increment keys on insert, supports Enum/string based primary keys, and exposes most of the underlying metadata to allow customization and improved performance.
 
 ## Extensions
 
@@ -136,12 +137,16 @@ They also perform a slightly better than the extension methods because they stor
 This generates SQL WHERE conditions from a Linq.Expression<Predicate<T>>. It can be somewhat expensive to generate, so I recommend caching the results when possible.
 
 ```csharp
-string condition = WhereConditionGenerator.Create<User>((u) => u.UserName == "jborne"
+string condition = WhereConditionGenerator.Create<User>((u) => 
+	u.UserName == "jborne"
 	&& (u.FirstName != null || u.Permissions == UserPermissions.Basic) 
 	&& new string[] { "Jason", "Chris", "Zack" }.Contains(u.FirstName),
 	out IDictionary<string, object> param);
-// "(((Users.[Account Name] = 'jborne') AND ((Users.FirstName is not NULL) OR (Users.Permissions = 1))) AND Users.FirstName in @P0)"
-// param = ExpandoObject() { "P0" => List<object>() { "Jason", "Chris", "Zack" } }
+/*	(((Users.[Account Name] = 'jborne') 
+	AND ((Users.FirstName is not NULL) OR (Users.Permissions = 1))) 
+	AND Users.FirstName in @P0)"
+ param = { "P0" => List<object>() { "Jason", "Chris", "Zack" } }
+*/
 IEnumerable<User> result = conn.Query<User>("SELECT * FROM Test WHERE " + condition, param);
 ```
 

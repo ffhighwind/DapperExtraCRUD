@@ -56,11 +56,9 @@ namespace ConsoleTests
 				Recreate<TestDTO4>(conn, null);
 				Recreate<TestDTO5>(conn, null);
 				Recreate<TestDTO6>(conn, null);
+				Recreate<Test7>(conn, null);
 
-				DoCacheTests<TestDTO6>(() => new TestDTO6(random));
-				DoTests<TestDTO6>(() => new TestDTO6(random), (t) => t.UpdateRandomize(random), new TestDTO6filter());
-				DoTests<TestDTO6, string>(conn);
-
+				TestEnums(conn);
 				DoWhereConditionGenTest();
 
 				DoCacheTests<TestDTO>(() => new TestDTO(random));
@@ -81,6 +79,10 @@ namespace ConsoleTests
 				DoTests<TestDTO5>(() => new TestDTO5(random), (t) => t.UpdateRandomize(random), new TestDTO5filter());
 				DoTests<TestDTO5, int>(conn);
 
+				DoCacheTests<TestDTO6>(() => new TestDTO6(random));
+				DoTests<TestDTO6>(() => new TestDTO6(random), (t) => t.UpdateRandomize(random), new TestDTO6filter());
+				DoTests<TestDTO6, string>(conn);
+
 				DoMultiCacheTest<TestDTO, TestDTO2>(() => new TestDTO(random), () => new TestDTO2(random));
 				DoMultiCacheTest<TestDTO, Test3>(() => new TestDTO(random), () => new Test3(random));
 				DoMultiCacheTest<TestDTO, TestDTO4>(() => new TestDTO(random), () => new TestDTO4(random));
@@ -95,7 +97,38 @@ namespace ConsoleTests
 				DropTable<TestDTO4>(conn);
 				DropTable<TestDTO5>(conn);
 				DropTable<TestDTO6>(conn);
+				DropTable<Test7>(conn);
 			}
+		}
+
+		public static void TestEnums(SqlConnection conn)
+		{
+			IEqualityComparer<Test7> comparer = ExtraCrud.EqualityComparer<Test7>();
+			Dictionary<Test7, Test7> map = new Dictionary<Test7, Test7>(comparer);
+			Dictionary<Test7Type, Test7> map2 = new Dictionary<Test7Type, Test7>();
+			if (conn.RecordCount<Test7>() != 0)
+				throw new InvalidOperationException();
+			using (SqlTransaction trans = conn.BeginTransaction()) {
+				for (int i = (int)Test7Type.ID0; i <= (int)Test7Type.ID19; i+=2) {
+					Test7 test = new Test7();
+					test.ID = (Test7Type)i;
+					map.Add(test, test);
+					map2.Add(test.ID, test);
+					conn.Insert(test, trans);
+				}
+				List<Test7> list = conn.GetList<Test7>(trans).AsList();
+				if (list.Count != map.Count)
+					throw new InvalidOperationException();
+				foreach(var item in list) {
+					if(!map.Remove(item)) {
+						throw new InvalidOperationException();
+					}
+					if (!map2.Remove(item.ID))
+						throw new InvalidOperationException();
+				}
+			}
+			if (conn.RecordCount<Test7>() != 0)
+				throw new InvalidOperationException();
 		}
 
 		public static void TestStringComparer(Random random)
