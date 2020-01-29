@@ -196,7 +196,7 @@ Changing the SqlAdapter using ExtraCrud.SetAdapter<T>() will change the default 
 This is mainly used to support multiple RDBMS syntaxes such as MySQL and PostgreSQL. However, it could also be used for other purposes. 
 For example, you could use [BulkOptionsAdapter](https://github.com/ffhighwind/DapperExtraCRUD/blob/master/DapperExtraCRUD.Example/BulkOptionsAdapter.cs)
 in order to prevent bulk insert from firing triggers or checking constraints. Note that this will *only* work for bulk insert as other bulk operations
-use a temporary table.
+use a temporary table. You can also use this to change the case sensitivity for string comparisons.
 
 ## Future Plans
 

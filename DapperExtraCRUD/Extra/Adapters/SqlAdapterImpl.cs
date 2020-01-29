@@ -99,6 +99,14 @@ namespace Dapper.Extra.Internal.Adapters
 		/// </summary>
 		public string CurrentDateUtc { get; protected set; }
 
+
+		/// <summary>
+		/// The <see cref="System.StringComparer"/> equivalent to the database's string collation. 
+		/// This is used to generate the <see cref="IEqualityComparer{T}"/>.
+		/// By default this is <see cref="StringComparer.OrdinalIgnoreCase"/>.
+		/// </summary>
+		public IEqualityComparer<string> StringComparer => System.StringComparer.OrdinalIgnoreCase;
+
 		#endregion
 
 		#region Methods

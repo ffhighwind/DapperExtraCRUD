@@ -65,6 +65,8 @@ namespace Dapper.Extra.Adapters
 
 		public string CurrentDateUtc => Adapter.CurrentDateUtc;
 
+		public IEqualityComparer<string> StringComparer => Adapter.StringComparer;
+
 		public void BulkInsert<T>(IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction, string tableName, DataReaderFactory factory, IEnumerable<SqlColumn> columns, int commandTimeout = 30, SqlBulkCopyOptions options = SqlBulkCopyOptions.Default) where T : class
 		{
 			Adapter.BulkInsert(connection, objs, transaction, tableName, factory, columns, commandTimeout, options & OptionsMask);

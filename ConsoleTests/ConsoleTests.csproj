@@ -192,6 +192,8 @@
     <Compile Include="Good\TestDTO5filter.cs" />
     <Compile Include="Good\TestDTO4filter.cs" />
     <Compile Include="Good\TestDTO5.cs" />
+    <Compile Include="Good\TestDTO6.cs" />
+    <Compile Include="Good\TestDTO6filter.cs" />
     <Compile Include="Good\TestDTOfilter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

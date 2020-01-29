@@ -32,6 +32,8 @@ namespace ConsoleTests
 {
 	public class Test3 : IDto<Test3>
 	{
+		private static readonly IEqualityComparer<Test3> Comparer = Dapper.Extra.ExtraCrud.EqualityComparer<Test3>();
+
 		public Test3() { }
 		public Test3(Random random)
 		{
@@ -69,28 +71,36 @@ CREATE TABLE [dbo].[Test3](
 ) ON [PRIMARY]";
 		}
 
+		public override bool Equals(object other)
+		{
+			return Equals(other as Test3);
+		}
+
 		public bool Equals(Test3 other)
 		{
-			return other.Col1 == Col1
-				&& other.Col2 == Col2
-				&& other.Col3 == Col3;
+			return Comparer.Equals(this, other);
 		}
 
 		public bool Equals(Test3 x, Test3 y)
 		{
-			return x.Equals(y);
+			return Comparer.Equals(x, y);
 		}
 
 		public int GetHashCode(Test3 obj)
 		{
-			return obj.GetHashCode();
+			return Comparer.GetHashCode(obj);
+		}
+
+		public override int GetHashCode()
+		{
+			return Comparer.GetHashCode(this);
 		}
 
 		public int CompareTo(Test3 other)
 		{
 			int ret = Col1.CompareTo(other.Col1);
 			if (ret == 0) {
-				ret = Col2.CompareTo(other.Col2);
+				ret = string.Compare(Col2, Col2, StringComparison.OrdinalIgnoreCase);
 				if (ret == 0) {
 					ret = Col3.CompareTo(other.Col3);
 				}
@@ -109,15 +119,6 @@ CREATE TABLE [dbo].[Test3](
 				&& other.Col2 == Col2
 				&& other.Col3 == Col3
 				&& other.Col4 == Col4;
-		}
-
-		public override int GetHashCode()
-		{
-			int hashCode = -1473066521;
-			hashCode = hashCode * -1521134295 + Col1.GetHashCode();
-			hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Col2);
-			hashCode = hashCode * -1521134295 + Col3.GetHashCode();
-			return hashCode;
 		}
 
 		public Test3 UpdateRandomize(Random random)

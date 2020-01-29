@@ -33,6 +33,8 @@ namespace ConsoleTests
 	[Table("Test2")]
 	public class TestDTO2 : IDto<TestDTO2>
 	{
+		private static readonly IEqualityComparer<TestDTO2> Comparer = Dapper.Extra.ExtraCrud.EqualityComparer<TestDTO2>();
+
 		public TestDTO2() { }
 		public TestDTO2(Random random)
 		{
@@ -47,20 +49,6 @@ namespace ConsoleTests
 		public string Col2 { get; set; }
 		[Key(false)]
 		public float Col3 { get; set; }
-
-		public override bool Equals(object obj)
-		{
-			return Equals(obj as TestDTO2);
-		}
-
-		public override int GetHashCode()
-		{
-			int hashCode = -1473066521;
-			hashCode = hashCode * -1521134295 + Col1.GetHashCode();
-			hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Col2);
-			hashCode = hashCode * -1521134295 + Col3.GetHashCode();
-			return hashCode;
-		}
 
 		public string CreateTable()
 		{
@@ -78,21 +66,36 @@ CREATE TABLE [dbo].[Test2](
 ) ON [PRIMARY]";
 		}
 
+		public override bool Equals(object other)
+		{
+			return Equals(other as TestDTO2);
+		}
+
+		public bool Equals(TestDTO2 other)
+		{
+			return Comparer.Equals(this, other);
+		}
+
 		public bool Equals(TestDTO2 x, TestDTO2 y)
 		{
-			return x.Equals(y);
+			return Comparer.Equals(x, y);
 		}
 
 		public int GetHashCode(TestDTO2 obj)
 		{
-			return obj.GetHashCode();
+			return Comparer.GetHashCode(obj);
+		}
+
+		public override int GetHashCode()
+		{
+			return Comparer.GetHashCode(this);
 		}
 
 		public int CompareTo(TestDTO2 other)
 		{
 			int ret = Col1.CompareTo(other.Col1);
 			if (ret == 0) {
-				ret = Col2.CompareTo(other.Col2);
+				ret = string.Compare(Col2, other.Col2, StringComparison.OrdinalIgnoreCase);
 				if (ret == 0) {
 					ret = Col3.CompareTo(other.Col3);
 				}
@@ -108,14 +111,6 @@ CREATE TABLE [dbo].[Test2](
 		public bool IsIdentical(TestDTO2 other)
 		{
 			return Equals(other);
-		}
-
-		public bool Equals(TestDTO2 other)
-		{
-			return other != null
-				&& other.Col1 == Col1
-				&& other.Col2 == Col2
-				&& other.Col3 == Col3;
 		}
 
 		public TestDTO2 UpdateRandomize(Random random)

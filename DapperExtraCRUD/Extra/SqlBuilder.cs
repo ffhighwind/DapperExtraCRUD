@@ -59,21 +59,21 @@ namespace Dapper.Extra
 		/// <summary>
 		/// Initializes a new instance of the <see cref="SqlBuilder{T}"/> class.
 		/// </summary>
-		/// <param name="info"></param>
-		/// <param name="threadSafety"></param>
-		public SqlBuilder(SqlTypeInfo info, LazyThreadSafetyMode threadSafety = LazyThreadSafetyMode.ExecutionAndPublication)
+		/// <param name="typeInfo">The information about the table.</param>
+		/// <param name="threadSafety">The thread safety level to assign the lazy delegates.</param>
+		public SqlBuilder(SqlTypeInfo typeInfo, LazyThreadSafetyMode threadSafety = LazyThreadSafetyMode.ExecutionAndPublication)
 		{
-			if (info.Type.IsGenericTypeDefinition && info.Type.GetGenericTypeDefinition() == typeof(List<>))
+			if (typeInfo.Type.IsGenericTypeDefinition && typeInfo.Type.GetGenericTypeDefinition() == typeof(List<>))
 				throw new InvalidOperationException("List<> is not a valid table type.");
-			if (info.Type.IsArray)
+			if (typeInfo.Type.IsArray)
 				throw new InvalidOperationException("Array<> is not a valid table type.");
-			if (info.Type == typeof(string))
+			if (typeInfo.Type == typeof(string))
 				throw new InvalidOperationException("String is not a valid table type.");
-			Info = info;
+			Info = typeInfo;
 			BulkStagingTable = Info.Adapter.CreateTempTableName(Info.Type.Name + (Math.Abs(Info.Type.FullName.GetHashCode()) % 99793));
 			SqlQueries<T> queries = new SqlQueries<T>() {
 				InsertAutoSync = CreateAutoSync(Info.InsertAutoSyncColumns),
-				UpdateAutoSync = CreateAutoSync(info.UpdateAutoSyncColumns),
+				UpdateAutoSync = CreateAutoSync(typeInfo.UpdateAutoSyncColumns),
 				LazyUpdateObj = new Lazy<DbObjBool<T>>(() => CreateUpdateObj()),
 				LazyBulkDelete = new Lazy<DbListInt<T>>(() => CreateBulkDelete(), threadSafety),
 				LazyBulkGet = new Lazy<DbListList<T>>(() => CreateBulkGet(), threadSafety),
@@ -99,11 +99,14 @@ namespace Dapper.Extra
 			queries.Delete = CreateDelete();
 			queries.Get = CreateGet();
 			queries.GetList = CreateGetList();
-			DataReaderFactory = new DataReaderFactory(typeof(T), info.Columns.Select(c => c.Property));
+			DataReaderFactory = new DataReaderFactory(typeof(T), typeInfo.Columns.Select(c => c.Property));
 
-			if (info.EqualityColumns.Count == 1) {
-				EqualityComparer = new TableKeyEqualityComparer<T>(TableName, EqualityColumns[0]);
-				Type type = info.EqualityColumns[0].Type;
+			if (typeInfo.EqualityColumns.Count == 1) {
+				if(EqualityColumns[0].Type == typeof(string) && Adapter.StringComparer != StringComparer.Ordinal)
+					EqualityComparer = new TableEqualityComparer<T>(Info);
+				else
+					EqualityComparer = new TableKeyEqualityComparer<T>(TableName, EqualityColumns[0]);
+				Type type = typeInfo.EqualityColumns[0].Type;
 				TypeCode typeCode = Type.GetTypeCode(type);
 				switch (typeCode) {
 					case TypeCode.Int16:
@@ -161,7 +164,7 @@ namespace Dapper.Extra
 				}
 			}
 			else {
-				EqualityComparer = new TableEqualityComparer<T>(TableName, EqualityColumns);
+				EqualityComparer = new TableEqualityComparer<T>(Info);
 				Create("Composite key does not support this operation", threadSafety);
 			}
 			string paramsSelect = ParamsSelect(Info.SelectColumns);

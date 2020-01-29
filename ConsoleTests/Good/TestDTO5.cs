@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using Dapper.Extra.Annotations;
 
 namespace ConsoleTests
 {
 	public class TestDTO5 : IDtoKey<TestDTO5, int>
 	{
+		private static readonly IEqualityComparer<TestDTO5> Comparer = Dapper.Extra.ExtraCrud.EqualityComparer<TestDTO5>();
+
 		public TestDTO5() { }
 
 		public TestDTO5(Random random)
@@ -65,26 +68,31 @@ ALTER TABLE [dbo].[TestDTO5] ADD  CONSTRAINT [DF_TestDTO5_Modified]  DEFAULT (ge
 ALTER TABLE [dbo].[TestDTO5] ADD  CONSTRAINT [DF_TestDTO5_Modified2]  DEFAULT (getdate()) FOR [Modified2];";
 		}
 
+		public override bool Equals(object other)
+		{
+			return Equals(other as TestDTO5);
+		}
+
 		public bool Equals(TestDTO5 other)
 		{
-			return ID.Equals(other.ID);
+			return Comparer.Equals(this, other);
 		}
 
 		public bool Equals(TestDTO5 x, TestDTO5 y)
 		{
-			return x.Equals(y);
-		}
-
-		public override int GetHashCode()
-		{
-			return -1213502048 + ID.GetHashCode();
+			return Comparer.Equals(x, y);
 		}
 
 		public int GetHashCode(TestDTO5 obj)
 		{
-			return obj.GetHashCode();
+			return Comparer.GetHashCode(obj);
 		}
 
+		public override int GetHashCode()
+		{
+			return Comparer.GetHashCode(this);
+		}
+		
 		public int GetKey()
 		{
 			return ID;

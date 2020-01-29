@@ -38,6 +38,13 @@ namespace Dapper.Extra
 	public interface ISqlAdapter
 	{
 		/// <summary>
+		/// The <see cref="System.StringComparer"/> equivalent to the database's string collation.
+		/// This is used to generate the <see cref="IEqualityComparer{T}"/>.
+		/// By default this is <see cref="StringComparer.OrdinalIgnoreCase"/>.
+		/// </summary>
+		IEqualityComparer<string> StringComparer { get; }
+
+		/// <summary>
 		/// Creates an SQL command to select a limited number of rows.
 		/// <code>"TOP({0}) {1}"</code>
 		/// <code>"{1} LIMIT {0}"</code>

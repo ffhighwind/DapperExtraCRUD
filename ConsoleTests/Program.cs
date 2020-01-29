@@ -45,16 +45,21 @@ namespace ConsoleTests
 		public static void Main()
 		{
 			Random random = new Random(125125);
+			//TestStringComparer(random);
+			DoBadTests();
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
 				conn.Open();
-
-				DoBadTests();
 
 				Recreate<TestDTO>(conn, null);
 				Recreate<TestDTO2>(conn, null);
 				Recreate<Test3>(conn, null);
 				Recreate<TestDTO4>(conn, null);
 				Recreate<TestDTO5>(conn, null);
+				Recreate<TestDTO6>(conn, null);
+
+				DoCacheTests<TestDTO6>(() => new TestDTO6(random));
+				DoTests<TestDTO6>(() => new TestDTO6(random), (t) => t.UpdateRandomize(random), new TestDTO6filter());
+				DoTests<TestDTO6, string>(conn);
 
 				DoWhereConditionGenTest();
 
@@ -82,13 +87,42 @@ namespace ConsoleTests
 				DoMultiCacheTest<TestDTO, TestDTO5>(() => new TestDTO(random), () => new TestDTO5(random));
 				DoMultiCacheTest<TestDTO2, TestDTO5>(() => new TestDTO2(random), () => new TestDTO5(random));
 				DoMultiCacheTest<Test3, TestDTO4>(() => new Test3(random), () => new TestDTO4(random));
+				DoMultiCacheTest<TestDTO6, Test3>(() => new TestDTO6(random), () => new Test3(random));
 
 				DropTable<TestDTO>(conn);
 				DropTable<TestDTO2>(conn);
 				DropTable<Test3>(conn);
 				DropTable<TestDTO4>(conn);
 				DropTable<TestDTO5>(conn);
+				DropTable<TestDTO6>(conn);
 			}
+		}
+
+		public static void TestStringComparer(Random random)
+		{
+			IEqualityComparer<TestDTO> comparer = ExtraCrud.EqualityComparer<TestDTO>();
+			TestDTO test1a = new TestDTO(random);
+			test1a.Name = "ABCDEFG";
+			TestDTO test1b = test1a.Clone();
+			test1b.Name = test1a.Name.ToLower();
+			if (!comparer.Equals(test1a, test1b))
+				throw new InvalidOperationException();
+
+			IEqualityComparer<TestDTO2> comparer2 = ExtraCrud.EqualityComparer<TestDTO2>();
+			TestDTO2 test2a = new TestDTO2(random);
+			test2a.Col2 = "ABCDEFG";
+			TestDTO2 test2b = test2a.Clone();
+			test2b.Col2 = test2b.Col2.ToLower();
+			if (!comparer2.Equals(test2a, test2b))
+				throw new InvalidOperationException();
+
+			IEqualityComparer<TestDTO2> comparer6 = ExtraCrud.EqualityComparer<TestDTO2>();
+			TestDTO6 test6a = new TestDTO6(random);
+			test6a.ID = "ABCDEFG";
+			TestDTO6 test6b = test6a.Clone();
+			test6b.ID = test6b.ID.ToLower();
+			if (!comparer2.Equals(test2a, test2b))
+				throw new InvalidOperationException();
 		}
 
 		public static List<T> CreateList<T>(int count, Func<T> create) where T : class, IDto<T>
@@ -102,7 +136,7 @@ namespace ConsoleTests
 				}
 			}
 			else {
-				Dictionary<T, T> map = new Dictionary<T, T>(create());
+				Dictionary<T, T> map = new Dictionary<T, T>(ExtraCrud.EqualityComparer<T>());
 				T created = null;
 				for (int i = 0; i < count; i++) {
 					for (int fails = 0; fails < 4; ++fails) {
@@ -660,7 +694,7 @@ namespace ConsoleTests
 
 		private static Dictionary<T, T> CreateMap<T>(List<T> list) where T : class, IDto<T>
 		{
-			Dictionary<T, T> map = new Dictionary<T, T>(list[0]);
+			Dictionary<T, T> map = new Dictionary<T, T>(ExtraCrud.EqualityComparer<T>());
 			foreach (T item in list) {
 				map.Add(item, item);
 			}

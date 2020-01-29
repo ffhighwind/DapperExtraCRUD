@@ -25,6 +25,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using Dapper.Extra.Annotations;
 
 namespace ConsoleTests
@@ -32,6 +33,8 @@ namespace ConsoleTests
 	[Table("Test")]
 	public class TestDTO : IDtoKey<TestDTO, int>
 	{
+		private static readonly IEqualityComparer<TestDTO> Comparer = Dapper.Extra.ExtraCrud.EqualityComparer<TestDTO>();
+
 		public TestDTO() { }
 		public TestDTO(Random random)
 		{
@@ -67,29 +70,34 @@ CREATE TABLE [dbo].[Test](
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
 		}
 
-		public int CompareTo(TestDTO other)
+		public override bool Equals(object other)
 		{
-			return ID.CompareTo(other.ID);
+			return Equals(other as TestDTO);
 		}
 
 		public bool Equals(TestDTO other)
 		{
-			return other.ID == ID;
+			return Comparer.Equals(this, other);
 		}
 
 		public bool Equals(TestDTO x, TestDTO y)
 		{
-			return x.Equals(y);
+			return Comparer.Equals(x, y);
 		}
 
 		public int GetHashCode(TestDTO obj)
 		{
-			return obj.GetHashCode();
+			return Comparer.GetHashCode(obj);
 		}
 
 		public override int GetHashCode()
 		{
-			return 1213502048 + ID.GetHashCode();
+			return Comparer.GetHashCode(this);
+		}
+
+		public int CompareTo(TestDTO other)
+		{
+			return ID.CompareTo(other.ID);
 		}
 
 		public int GetKey()

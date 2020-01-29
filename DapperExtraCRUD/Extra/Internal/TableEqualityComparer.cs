@@ -24,8 +24,8 @@
 // SOFTWARE.
 #endregion
 
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using Fasterflect;
 
 namespace Dapper.Extra
@@ -35,15 +35,27 @@ namespace Dapper.Extra
 		/// <summary>
 		/// Initializes a new instance of the <see cref="TableEqualityComparer{T}"/> class.
 		/// </summary>
-		/// <param name="tableName">The tableName<see cref="string"/></param>
-		/// <param name="equalityColumns">The equalityColumns<see cref="IReadOnlyList{SqlColumn}"/></param>
-		public TableEqualityComparer(string tableName, IReadOnlyList<SqlColumn> equalityColumns)
+		/// <param name="typeInfo">The information about the table.</param>
+		public TableEqualityComparer(SqlTypeInfo typeInfo)
 		{
-			Getters = equalityColumns.Select(c => c.Getter).ToArray();
-			InitialHash = tableName.GetHashCode() * -29986577;
+			InitialHash = typeInfo.TableName.GetHashCode() * -1977;
+			StringComparer = typeInfo.Adapter.StringComparer;
+			List<MemberGetter> stringGetters = new List<MemberGetter>();
+			List<MemberGetter> otherGetters = new List<MemberGetter>();
+			foreach (SqlColumn column in typeInfo.EqualityColumns) {
+				MemberGetter getter = column.Getter;
+				if (column.Type == typeof(string) && StringComparer != System.StringComparer.Ordinal)
+					stringGetters.Add(getter);
+				else
+					otherGetters.Add(getter);
+			}
+			StringGetters = stringGetters.Count == 0 ? Array.Empty<MemberGetter>() : stringGetters.ToArray();
+			Getters = otherGetters.Count == 0 ? Array.Empty<MemberGetter>() : otherGetters.ToArray();
 		}
 
-		private readonly IReadOnlyList<MemberGetter> Getters;
+		private readonly MemberGetter[] Getters;
+		private readonly MemberGetter[] StringGetters;
+		private readonly IEqualityComparer<string> StringComparer;
 
 		private readonly int InitialHash;
 
@@ -59,6 +71,10 @@ namespace Dapper.Extra
 				if (!Equals(getter(x), getter(y)))
 					return false;
 			}
+			foreach (MemberGetter getter in StringGetters) {
+				if (!StringComparer.Equals(getter(x) as string, getter(y) as string))
+					return false;
+			}
 			return true;
 		}
 
@@ -72,9 +88,13 @@ namespace Dapper.Extra
 			int hashCode = InitialHash;
 			foreach (MemberGetter getter in Getters) {
 				object value = getter(obj);
-				if (value != null) {
+				if (value != null)
 					hashCode = hashCode * 126247697 + value.GetHashCode();
-				}
+			}
+			foreach (MemberGetter getter in StringGetters) {
+				object value = getter(obj);
+				if (value != null)
+					hashCode = hashCode * 126247697 + StringComparer.GetHashCode(value as string);
 			}
 			return hashCode;
 		}
@@ -90,7 +110,7 @@ namespace Dapper.Extra
 		public TableKeyEqualityComparer(string tableName, SqlColumn equalityColumn)
 		{
 			Getter = equalityColumn.Getter;
-			InitialHash = tableName.GetHashCode() * -29986577;
+			InitialHash = tableName.GetHashCode() * -1977;
 		}
 
 		private readonly MemberGetter Getter;
