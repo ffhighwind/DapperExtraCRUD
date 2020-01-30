@@ -902,9 +902,15 @@ DROP TABLE dbo.{tableName};";
 
 		public static void GetKeys_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
 		{
-			if (typeof(KeyType) == typeof(byte[]))
-				return;
-			Dictionary<KeyType, T> map = CreateMap<T, KeyType>(list);
+			Dictionary<KeyType, T> map;
+			if (typeof(KeyType) == typeof(byte[])) {
+				map = new Dictionary<KeyType, T>((IEqualityComparer<KeyType>)(object)ArrayEqualityComparer<byte>.Default);
+				foreach(var item in list) {
+					map.Add(item.GetKey(), item);
+				}
+			}
+			else
+				map = CreateMap<T, KeyType>(list);
 			IEnumerable<KeyType> keys = conn.GetKeys<T, KeyType>(trans);
 			foreach (KeyType key in keys) {
 				if (!map.Remove(key))

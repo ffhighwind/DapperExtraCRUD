@@ -190,6 +190,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArrayEqualityComparer.cs" />
     <Compile Include="Bad\Bad1.cs" />
     <Compile Include="Bad\Bad2.cs" />
     <Compile Include="Good\IDto.cs" />
