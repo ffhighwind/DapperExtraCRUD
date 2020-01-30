@@ -26,6 +26,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Fasterflect;
 
 namespace Dapper.Extra
@@ -42,19 +43,24 @@ namespace Dapper.Extra
 			StringComparer = typeInfo.Adapter.StringComparer;
 			List<MemberGetter> stringGetters = new List<MemberGetter>();
 			List<MemberGetter> otherGetters = new List<MemberGetter>();
+			List<MemberGetter> byteGetters = new List<MemberGetter>();
 			foreach (SqlColumn column in typeInfo.EqualityColumns) {
 				MemberGetter getter = column.Getter;
-				if (column.Type == typeof(string) && StringComparer != System.StringComparer.Ordinal)
+				if (column.Type == typeof(byte[]))
+					byteGetters.Add(getter);
+				else if (column.Type == typeof(string) && StringComparer != System.StringComparer.Ordinal)
 					stringGetters.Add(getter);
 				else
 					otherGetters.Add(getter);
 			}
 			StringGetters = stringGetters.Count == 0 ? Array.Empty<MemberGetter>() : stringGetters.ToArray();
 			Getters = otherGetters.Count == 0 ? Array.Empty<MemberGetter>() : otherGetters.ToArray();
+			ByteArrayGetters = byteGetters.Count == 0 ? Array.Empty<MemberGetter>() : byteGetters.ToArray();
 		}
 
 		private readonly MemberGetter[] Getters;
 		private readonly MemberGetter[] StringGetters;
+		private readonly MemberGetter[] ByteArrayGetters;
 		private readonly IEqualityComparer<string> StringComparer;
 
 		private readonly int InitialHash;
@@ -75,6 +81,16 @@ namespace Dapper.Extra
 				if (!StringComparer.Equals(getter(x) as string, getter(y) as string))
 					return false;
 			}
+			foreach (MemberGetter getter in ByteArrayGetters) {
+				byte[] xVal = getter(x) as byte[];
+				byte[] yVal = getter(y) as byte[];
+				if (xVal != yVal) {
+					if (xVal == null || yVal == null || xVal.Length != yVal.Length)
+						return false;
+					if (!xVal.SequenceEqual(yVal))
+						return false;
+				}
+			}
 			return true;
 		}
 
@@ -87,14 +103,24 @@ namespace Dapper.Extra
 		{
 			int hashCode = InitialHash;
 			foreach (MemberGetter getter in Getters) {
+				hashCode *= 125235693;
 				object value = getter(obj);
 				if (value != null)
-					hashCode = hashCode * 126247697 + value.GetHashCode();
+					hashCode += value.GetHashCode();
 			}
 			foreach (MemberGetter getter in StringGetters) {
-				object value = getter(obj);
-				if (value != null)
-					hashCode = hashCode * 126247697 + StringComparer.GetHashCode(value as string);
+				hashCode *= 126247697;
+				if (getter(obj) is string value)
+					hashCode += StringComparer.GetHashCode(value);
+			}
+			// byte[] is an awful key choice
+			foreach (MemberGetter getter in ByteArrayGetters) {
+				hashCode *= 126147695;
+				if (getter(obj) is byte[] value) {
+					for (int i = 0; i < value.Length; i++) {
+						hashCode = hashCode * 5315137 + value[i].GetHashCode();
+					}
+				}
 			}
 			return hashCode;
 		}

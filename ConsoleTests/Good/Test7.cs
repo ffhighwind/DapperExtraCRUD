@@ -32,6 +32,13 @@ namespace ConsoleTests
 	{
 		private static readonly IEqualityComparer<Test7> Comparer = Dapper.Extra.ExtraCrud.EqualityComparer<Test7>();
 
+		public Test7() { }
+
+		public Test7(Random random) 
+		{
+			ID = (Test7Type)random.Next();
+		}
+
 		[Key(false)]
 		public Test7Type ID { get; set; }
 

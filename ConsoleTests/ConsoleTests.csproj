@@ -198,6 +198,11 @@
     <Compile Include="Good\Test3.cs" />
     <Compile Include="Good\Test3filter.cs" />
     <Compile Include="Good\Test7.cs" />
+    <Compile Include="Good\Test7filter.cs" />
+    <Compile Include="Good\Test8.cs" />
+    <Compile Include="Good\Test8filter.cs" />
+    <Compile Include="Good\Test9.cs" />
+    <Compile Include="Good\Test9filter.cs" />
     <Compile Include="Good\TestDTO.cs" />
     <Compile Include="Good\TestDTO2.cs" />
     <Compile Include="Good\TestDTO2filter.cs" />

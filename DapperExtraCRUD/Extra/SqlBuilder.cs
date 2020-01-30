@@ -102,7 +102,7 @@ namespace Dapper.Extra
 			DataReaderFactory = new DataReaderFactory(typeof(T), typeInfo.Columns.Select(c => c.Property));
 
 			if (typeInfo.EqualityColumns.Count == 1) {
-				if(EqualityColumns[0].Type == typeof(string) && Adapter.StringComparer != StringComparer.Ordinal)
+				if((EqualityColumns[0].Type == typeof(string) && Adapter.StringComparer != StringComparer.Ordinal) || EqualityColumns[0].Type == typeof(byte[]))
 					EqualityComparer = new TableEqualityComparer<T>(Info);
 				else
 					EqualityComparer = new TableKeyEqualityComparer<T>(TableName, EqualityColumns[0]);
@@ -158,6 +158,8 @@ namespace Dapper.Extra
 							Create<DateTimeOffset>(threadSafety);
 						else if (type == typeof(TimeSpan))
 							Create<TimeSpan>(threadSafety);
+						else if (type == typeof(byte[]))
+							Create<byte[]>(threadSafety);
 						else
 							Create("Unsupported SQL key type: " + type, threadSafety);
 						break;

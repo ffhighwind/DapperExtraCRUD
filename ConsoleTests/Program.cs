@@ -45,7 +45,7 @@ namespace ConsoleTests
 		public static void Main()
 		{
 			Random random = new Random(125125);
-			//TestStringComparer(random);
+			TestStringComparer(random);
 			DoBadTests();
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
 				conn.Open();
@@ -57,6 +57,8 @@ namespace ConsoleTests
 				Recreate<TestDTO5>(conn, null);
 				Recreate<TestDTO6>(conn, null);
 				Recreate<Test7>(conn, null);
+				Recreate<Test8>(conn, null);
+				Recreate<Test9>(conn, null);
 
 				TestEnums(conn);
 				DoWhereConditionGenTest();
@@ -83,6 +85,18 @@ namespace ConsoleTests
 				DoTests<TestDTO6>(() => new TestDTO6(random), (t) => t.UpdateRandomize(random), new TestDTO6filter());
 				DoTests<TestDTO6, string>(conn);
 
+				DoCacheTests<Test7>(() => new Test7(random));
+				DoTests<Test7>(() => new Test7(random), (t) => t.UpdateRandomize(random), new Test7filter());
+				DoTests<Test7, Test7Type>(conn);
+
+				DoCacheTests<Test8>(() => new Test8(random));
+				DoTests<Test8>(() => new Test8(random), (t) => t.UpdateRandomize(random), new Test8filter());
+				DoTests<Test8, long>(conn);
+
+				DoCacheTests<Test9>(() => new Test9(random));
+				DoTests<Test9>(() => new Test9(random), (t) => t.UpdateRandomize(random), new Test9filter());
+				DoTests<Test9, byte[]>(conn);
+
 				DoMultiCacheTest<TestDTO, TestDTO2>(() => new TestDTO(random), () => new TestDTO2(random));
 				DoMultiCacheTest<TestDTO, Test3>(() => new TestDTO(random), () => new Test3(random));
 				DoMultiCacheTest<TestDTO, TestDTO4>(() => new TestDTO(random), () => new TestDTO4(random));
@@ -90,6 +104,9 @@ namespace ConsoleTests
 				DoMultiCacheTest<TestDTO2, TestDTO5>(() => new TestDTO2(random), () => new TestDTO5(random));
 				DoMultiCacheTest<Test3, TestDTO4>(() => new Test3(random), () => new TestDTO4(random));
 				DoMultiCacheTest<TestDTO6, Test3>(() => new TestDTO6(random), () => new Test3(random));
+				DoMultiCacheTest<Test7, TestDTO2>(() => new Test7(random), () => new TestDTO2(random));
+				DoMultiCacheTest<Test8, TestDTO6>(() => new Test8(random), () => new TestDTO6(random));
+				DoMultiCacheTest<Test9, TestDTO4>(() => new Test9(random), () => new TestDTO4(random));
 
 				DropTable<TestDTO>(conn);
 				DropTable<TestDTO2>(conn);
@@ -98,6 +115,8 @@ namespace ConsoleTests
 				DropTable<TestDTO5>(conn);
 				DropTable<TestDTO6>(conn);
 				DropTable<Test7>(conn);
+				DropTable<Test8>(conn);
+				DropTable<Test9>(conn);
 			}
 		}
 
@@ -883,6 +902,8 @@ DROP TABLE dbo.{tableName};";
 
 		public static void GetKeys_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
 		{
+			if (typeof(KeyType) == typeof(byte[]))
+				return;
 			Dictionary<KeyType, T> map = CreateMap<T, KeyType>(list);
 			IEnumerable<KeyType> keys = conn.GetKeys<T, KeyType>(trans);
 			foreach (KeyType key in keys) {
@@ -1096,8 +1117,8 @@ DROP TABLE dbo.{tableName};";
 			list = CloneList(list);
 			int max = Math.Min(list.Count, 10);
 			for (int i = 2; i < max; i++) {
-				List<T> limited = list.Take(i).ToList();
-				List<T> bulk = conn.BulkGet<T>(limited.Select(c => (object)c.GetKey()), trans).AsList();
+				List<T> limited = list.Take(i).OrderBy(x => x).ToList();
+				List<T> bulk = conn.BulkGet<T>(limited.Select(c => (object)c.GetKey()), trans).OrderBy(x => x).AsList();
 				for (int j = 0; j < i; j++) {
 					if (!limited[j].IsIdentical(bulk[j]))
 						throw new InvalidOperationException();

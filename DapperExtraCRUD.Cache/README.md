@@ -69,7 +69,6 @@ public class EmployeeItem : CacheItem<Employee>
 
 public static class DB
 {
-	// Please do not hard code your passwords like this ;)
 	private const string ConnString = "Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;";
 	private static readonly DbCache Cache = new DbCache(ConnString);
 	public static readonly DbCacheTable<Employee, EmployeeItem> Employees = Cache.CreateTable<Employee, EmployeeItem>();
