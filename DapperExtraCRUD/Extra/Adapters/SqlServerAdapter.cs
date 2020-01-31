@@ -69,7 +69,7 @@ namespace Dapper.Extra.Internal.Adapters
 		/// <summary>
 		/// Bulk copies rows into a table.
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="T">The table type.</typeparam>
 		/// <param name="connection">The connection<see cref="IDbConnection"/></param>
 		/// <param name="objs">The objs<see cref="IEnumerable{T}"/></param>
 		/// <param name="transaction">The transaction<see cref="IDbTransaction"/></param>

@@ -489,7 +489,14 @@ namespace Dapper.Extra.Cache
 		public R Get(object key, int commandTimeout = 30)
 		{
 			T obj = Access.Get(key, commandTimeout);
-			R item = obj == null ? null : Items.Add(obj);
+			R item;
+			if (obj == null) {
+				item = null;
+				Items.Remove(obj);
+			}
+			else {
+				item = Items.Add(obj);
+			}
 			return item;
 		}
 
@@ -502,7 +509,14 @@ namespace Dapper.Extra.Cache
 		public R Get(T obj, int commandTimeout = 30)
 		{
 			obj = Access.Get(obj, commandTimeout);
-			R item = obj == null ? null : Items.Add(obj);
+			R item;
+			if (obj == null) {
+				item = null;
+				Items.Remove(obj);
+			}
+			else {
+				item = Items.Add(obj);
+			}
 			return item;
 		}
 
