@@ -8,7 +8,7 @@ namespace DapperExtraCRUD.Example
 	public class User
 	{
 		[Key]
-		public int UserID { get; set; }
+		public int UserID { get; private set; }
 
 		public string FirstName { get; set; }
 
@@ -22,10 +22,10 @@ namespace DapperExtraCRUD.Example
 		[IgnoreInsert(value: null, autoSync: true)]
 		[MatchUpdate(value: "getdate()", autoSync: true)]
 		[MatchDelete]
-		public DateTime Modified { get; set; }
+		public DateTime Modified { get; protected set; }
 
 		[IgnoreUpdate]
 		[IgnoreInsert("getdate()")]
-		public DateTime Created { get; set; }
+		public DateTime Created { get; private set; }
 	}
 }

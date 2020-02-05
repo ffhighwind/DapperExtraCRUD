@@ -84,7 +84,7 @@ the syntax is similar to other Dapper extensions.
 public class User
 {
 	[Key]
-	public int UserID { get; set; }
+	public int UserID { get; private set; } // private is OKAY
 
 	public string FirstName { get; set; }
 
@@ -98,11 +98,11 @@ public class User
 	[IgnoreInsert(value: null, autoSync: true)]
 	[MatchUpdate(value: "getdate()", autoSync: true)]
 	[MatchDelete]
-	public DateTime Modified { get; set; }
+	public DateTime Modified { get; protected set; }
 
 	[IgnoreUpdate]
 	[IgnoreInsert("getdate()")]
-	public DateTime Created { get; set; }
+	public DateTime Created { get; private set; }
 }
 
 public static class Program {
@@ -185,7 +185,9 @@ public static void Main(string[] args)
 
 * MatchUpdate and MatchDelete on DateTime only work on datetime2 for up to 2 decimal places (e.g. datetime2(2)). This is because of differences 
 in precision for datetime2 vs C# DateTime.
-* Use a view if you need joins. Alternatively you can use Dapper's multi-mapping queries or manually map the results.
+* Dapper supports all setters including protected, private, and internal. However, it only supports public getters.
+* You can use joins in the where condition.
+* Fields are not supported due to the fact that Dapper only supports them for select queries.
 
 ## Performance
 

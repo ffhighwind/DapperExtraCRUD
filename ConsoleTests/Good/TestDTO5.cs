@@ -23,9 +23,7 @@ namespace ConsoleTests
 		[Column("Full Name")]
 		public string Name { get; set; }
 
-		[IgnoreInsert]
-		[IgnoreUpdate]
-		public DateTime Created { get; set; }
+		internal DateTime Created { get; private set; }
 
 		[MatchUpdate("getdate()", true)]
 		[IgnoreInsert("getdate()")]

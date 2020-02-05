@@ -117,7 +117,7 @@ namespace Dapper.Extra
 		/// <returns>True if the given property will be mapped; otherwise false.</returns>
 		public static bool IsValidProperty(PropertyInfo property)
 		{
-			if (!property.CanWrite)
+			if (!property.CanWrite || property.SetMethod.IsStatic)
 				return false;
 			bool success = IsValidType(property.PropertyType);
 			return success;

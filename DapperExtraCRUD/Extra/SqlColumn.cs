@@ -47,6 +47,10 @@ namespace Dapper.Extra
 			Property = property;
 			ColumnName = columnName;
 			Ordinal = ordinal;
+			if (property.CanWrite && !property.SetMethod.IsStatic)
+				Setter = Reflect.PropertySetter(Property);
+			if (property.CanRead && !property.GetMethod.IsStatic)
+				Getter = Reflect.PropertyGetter(property);
 		}
 
 		/// <summary>
@@ -62,7 +66,7 @@ namespace Dapper.Extra
 		/// <summary>
 		/// Gets the value of the property for an object.
 		/// </summary>
-		public MemberGetter Getter => Property.CanRead ? Reflect.PropertyGetter(Property) : null;
+		public MemberGetter Getter { get; }
 
 		/// <summary>
 		/// Ignores the column for inserts.
@@ -132,7 +136,7 @@ namespace Dapper.Extra
 		/// <summary>
 		/// Sets the value of athe property for an object.
 		/// </summary>
-		public MemberSetter Setter => Property.CanWrite ? Reflect.PropertySetter(Property) : null;
+		public MemberSetter Setter { get; }
 
 		/// <summary>
 		/// The <see cref="System.Reflection.PropertyInfo"/> type.

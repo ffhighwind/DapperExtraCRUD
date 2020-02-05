@@ -128,7 +128,7 @@ namespace ConsoleTests
 			if (conn.RecordCount<Test7>() != 0)
 				throw new InvalidOperationException();
 			using (SqlTransaction trans = conn.BeginTransaction()) {
-				for (int i = (int)Test7Type.ID0; i <= (int)Test7Type.ID19; i+=2) {
+				for (int i = (int)Test7Type.ID0; i <= (int)Test7Type.ID19; i += 2) {
 					Test7 test = new Test7();
 					test.ID = (Test7Type)i;
 					map.Add(test, test);
@@ -138,8 +138,8 @@ namespace ConsoleTests
 				List<Test7> list = conn.GetList<Test7>(trans).AsList();
 				if (list.Count != map.Count)
 					throw new InvalidOperationException();
-				foreach(var item in list) {
-					if(!map.Remove(item)) {
+				foreach (var item in list) {
+					if (!map.Remove(item)) {
 						throw new InvalidOperationException();
 					}
 					if (!map2.Remove(item.ID))
@@ -216,7 +216,7 @@ namespace ConsoleTests
 		internal class BadException : Exception
 		{
 		}
-		
+
 		public static void DoWhereConditionGenTest()
 		{
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
@@ -242,7 +242,7 @@ namespace ConsoleTests
 					throw new InvalidOperationException();
 				var result3 = conn.Query<TestDTO2>("SELECT * FROM Test2 WHERE " + str, param);
 
-				str = WhereConditionGenerator.Create<Test3>((t) => t.Col1 == (-15253 & 155) && (t.Col2 != null || t.Col4 == null) && new string[]{"aa", "bb", "cc"}.Contains(t.Col2) , out param);
+				str = WhereConditionGenerator.Create<Test3>((t) => t.Col1 == (-15253 & 155) && (t.Col2 != null || t.Col4 == null) && new string[] { "aa", "bb", "cc" }.Contains(t.Col2), out param);
 				if (str != "(((Test3.Col1 = 11) AND ((Test3.Col2 is not NULL) OR (Test3.Col4 is NULL))) AND Test3.Col2 in @P0)")
 					throw new InvalidOperationException();
 				if (param.Any() && ((List<object>)param["P0"]).Any(s => !new string[] { "aa", "bb", "cc" }.Contains(s)))
@@ -384,6 +384,36 @@ namespace ConsoleTests
 			catch {
 				// ignore
 			}
+			try {
+				_ = ExtraCrud.Builder<Bad3>();
+				throw new BadException();
+			}
+			catch (BadException ex) {
+				throw ex;
+			}
+			catch {
+				// ignore
+			}
+			try {
+				_ = ExtraCrud.Builder<Bad4>();
+				throw new BadException();
+			}
+			catch (BadException ex) {
+				throw ex;
+			}
+			catch {
+				// ignore
+			}
+			try {
+				_ = ExtraCrud.Builder<Bad5>();
+				throw new BadException();
+			}
+			catch (BadException ex) {
+				throw ex;
+			}
+			catch {
+				// ignore
+			}
 		}
 
 		public static void DoCacheTests<T>(Func<T> constructor) where T : class, IDto<T>, new()
@@ -404,7 +434,7 @@ namespace ConsoleTests
 
 		public static void CacheInsert<T>(DbCacheTable<T, CacheItem<T>> table, List<T> list) where T : class, IDto<T>, new()
 		{
-			list = CloneList(list);
+			list = CloneList(list).Take(200).ToList();
 			for (int i = 0; i < list.Count; i++) {
 				table.Insert(list[i]);
 				if (!table.Access.Get(list[i]).IsInserted(list[i])) {
@@ -415,7 +445,7 @@ namespace ConsoleTests
 					throw new InvalidOperationException();
 				}
 				using (DbCacheTransaction trans = table.BeginTransaction()) {
-					for (int j = i + 1; j < i + 5 && j < list.Count; j++) {
+					for (int j = i + 1; j < i + 5 && j < list.Count; j += list.Count / 2) {
 						table.Insert(list[j]);
 						count = table.RecordCount();
 						if (table.Items.Count != count) {
@@ -559,7 +589,7 @@ namespace ConsoleTests
 			for (int i = 0; i < list.Count; i++) {
 				table.Delete(list[i]);
 				using (DbCacheTransaction trans = table.BeginTransaction()) {
-					for (int j = i + 1; j < i + 5 && j < list.Count; j++) {
+					for (int j = i + 1; j < i + 5 && j < list.Count; j += list.Count / 2) {
 						table.Delete(list[j]);
 						if (table.Items.Count != table.RecordCount()) {
 							throw new InvalidOperationException();
@@ -905,7 +935,7 @@ DROP TABLE dbo.{tableName};";
 			Dictionary<KeyType, T> map;
 			if (typeof(KeyType) == typeof(byte[])) {
 				map = new Dictionary<KeyType, T>((IEqualityComparer<KeyType>)(object)ArrayEqualityComparer<byte>.Default);
-				foreach(var item in list) {
+				foreach (var item in list) {
 					map.Add(item.GetKey(), item);
 				}
 			}

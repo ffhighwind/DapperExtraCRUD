@@ -154,7 +154,7 @@ namespace Dapper.Extra
 				}
 				if (column.IsKey) {
 					keys.Add(column);
-					if (!prop.CanRead) {
+					if (!prop.CanRead || !prop.GetMethod.IsPublic || prop.GetMethod.IsStatic) {
 						Attributes |= SqlTableAttributes.IgnoreInsert | SqlTableAttributes.IgnoreUpdate | SqlTableAttributes.IgnoreDelete;
 					}
 				}
@@ -193,10 +193,19 @@ namespace Dapper.Extra
 			foreach (SqlColumn column in columns.Where(c => !c.IsKey)) {
 				PropertyInfo prop = column.Property;
 
+				bool selectOnly = !prop.CanRead || !prop.GetMethod.IsPublic || prop.GetMethod.IsStatic;
+				if (selectOnly)
+					column.Attributes |= SqlColumnAttributes.IgnoreInsert | SqlColumnAttributes.IgnoreUpdate | SqlColumnAttributes.IgnoreDelete;
+
 				// Selects
 				IgnoreSelectAttribute selectAttr = prop.GetCustomAttribute<IgnoreSelectAttribute>(inherit);
-				if (selectAttr != null)
+				if (selectAttr != null) {
 					column.Attributes |= SqlColumnAttributes.IgnoreSelect;
+					if (selectOnly)
+						continue;
+				}
+				else if (selectOnly)
+					continue;
 				else {
 					AutoSyncAttribute autoSyncAttr = prop.GetCustomAttribute<AutoSyncAttribute>(inherit);
 					if (autoSyncAttr != null) {

@@ -193,6 +193,9 @@
     <Compile Include="ArrayEqualityComparer.cs" />
     <Compile Include="Bad\Bad1.cs" />
     <Compile Include="Bad\Bad2.cs" />
+    <Compile Include="Bad\Bad3.cs" />
+    <Compile Include="Bad\Bad4.cs" />
+    <Compile Include="Bad\Bad5.cs" />
     <Compile Include="Good\IDto.cs" />
     <Compile Include="Good\IDtoKey.cs" />
     <Compile Include="Good\IFilter.cs" />

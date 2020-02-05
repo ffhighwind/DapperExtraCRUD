@@ -43,15 +43,15 @@ namespace ConsoleTests
 		}
 
 		[Key]
-		public int ID { get; set; }
+		public int ID { get; internal set; }
 
 		[Column("FirstName")]
 		public string Name { get; set; }
 		[IgnoreInsert("getdate()", false)]
 		[IgnoreUpdate("getdate()", false)]
-		public DateTime? CreatedDt { get; set; }
+		public DateTime? CreatedDt { get; private set; }
 
-		public bool IsActive { get; set; }
+		public bool IsActive { get; protected set; }
 
 		public TestDTO Test { get; set; }
 
