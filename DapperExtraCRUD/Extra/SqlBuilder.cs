@@ -99,7 +99,7 @@ namespace Dapper.Extra
 			queries.Delete = CreateDelete();
 			queries.Get = CreateGet();
 			queries.GetList = CreateGetList();
-			DataReaderFactory = new DataReaderFactory(typeof(T), typeInfo.Columns.Select(c => c.Property));
+			DataReaderFactory = new DataReaderFactory(typeof(T), typeInfo.Columns.Where(c => c.Getter != null).Select(c => c.Property));
 
 			if (typeInfo.EqualityColumns.Count == 1) {
 				if((EqualityColumns[0].Type == typeof(string) && Adapter.StringComparer != StringComparer.Ordinal) || EqualityColumns[0].Type == typeof(byte[]))

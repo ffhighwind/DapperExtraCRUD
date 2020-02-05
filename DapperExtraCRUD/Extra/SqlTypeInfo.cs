@@ -61,7 +61,7 @@ namespace Dapper.Extra
 			Type = type;
 			Adapter = adapter ?? SqlAdapter.SQLServer;
 			TableAttribute tableAttr = type.GetCustomAttribute<TableAttribute>(false);
-			BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty;
+			BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty | BindingFlags.NonPublic;
 			bool inherit = false;
 			if (tableAttr == null) {
 				var tableAttr2 = type.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.TableAttribute>(false);

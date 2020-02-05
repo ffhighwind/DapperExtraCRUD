@@ -50,6 +50,8 @@ namespace ConsoleTests
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
 				conn.Open();
 
+				_ = ExtraCrud.Builder<Dto10>();
+
 				Recreate<TestDTO>(conn, null);
 				Recreate<TestDTO2>(conn, null);
 				Recreate<Test3>(conn, null);
