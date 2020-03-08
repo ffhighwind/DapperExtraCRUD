@@ -198,7 +198,7 @@ these are accessed. This can be prevented by storing a reference to each delegat
 
 ## Customization
 
-Changing the SqlAdapter using ExtraCrud.SetAdapter<T>() will change the default behavior the methods. 
+Changing the SqlAdapter using ExtraCrud.SetAdapter<T>() will change the default behavior of the delegates. 
 This is mainly used to support multiple RDBMS syntaxes such as MySQL and PostgreSQL. However, it could also be used for other purposes. 
 For example, you could use [BulkOptionsAdapter](https://github.com/ffhighwind/DapperExtraCRUD/blob/master/DapperExtraCRUD.Example/BulkOptionsAdapter.cs)
 in order to prevent bulk insert from firing triggers or checking constraints. Note that this will *only* work for bulk insert as other bulk operations
