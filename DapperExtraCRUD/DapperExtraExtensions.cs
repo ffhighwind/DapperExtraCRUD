@@ -83,7 +83,7 @@ namespace Dapper
 		public static async Task<int> BulkDeleteAsync<T>(this IDbConnection connection, IEnumerable<object> keys, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => BulkDelete<T>(connection, keys, transaction, commandTimeout));
+			return await Task.Run(() => BulkDelete<T>(connection, keys, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -98,7 +98,7 @@ namespace Dapper
 		public static async Task<int> BulkDeleteAsync<T>(this IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => BulkDelete<T>(connection, objs, transaction, commandTimeout));
+			return await Task.Run(() => BulkDelete<T>(connection, objs, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -145,7 +145,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> BulkGetAsync<T>(this IDbConnection connection, IEnumerable<object> keys, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => BulkGet<T>(connection, keys, transaction, commandTimeout));
+			return await Task.Run(() => BulkGet<T>(connection, keys, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -160,7 +160,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> BulkGetAsync<T>(this IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => BulkGet<T>(connection, objs, transaction, commandTimeout));
+			return await Task.Run(() => BulkGet<T>(connection, objs, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -188,7 +188,7 @@ namespace Dapper
 		public static async Task BulkInsertAsync<T>(this IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			await Task.Run(() => BulkInsert(connection, objs, transaction, commandTimeout));
+			await Task.Run(() => BulkInsert(connection, objs, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -218,7 +218,7 @@ namespace Dapper
 		public static async Task<int> BulkInsertIfNotExistsAsync<T>(this IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => BulkInsertIfNotExists(connection, objs, transaction, commandTimeout));
+			return await Task.Run(() => BulkInsertIfNotExists(connection, objs, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -249,7 +249,7 @@ namespace Dapper
 		public static async Task<int> BulkUpdateAsync<T>(this IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => BulkUpdate(connection, objs, transaction, commandTimeout));
+			return await Task.Run(() => BulkUpdate(connection, objs, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -280,7 +280,7 @@ namespace Dapper
 		public static async Task<int> BulkUpsertAsync<T>(this IDbConnection connection, IEnumerable<T> objs, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => BulkUpsert(connection, objs, transaction, commandTimeout));
+			return await Task.Run(() => BulkUpsert(connection, objs, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -338,7 +338,7 @@ namespace Dapper
 		public static async Task TruncateAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			await Task.Run(() => Truncate<T>(connection, transaction, commandTimeout));
+			await Task.Run(() => Truncate<T>(connection, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -353,7 +353,7 @@ namespace Dapper
 		public static async Task<bool> DeleteAsync<T>(this IDbConnection connection, object key, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => Delete<T>(connection, key, transaction, commandTimeout));
+			return await Task.Run(() => Delete<T>(connection, key, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -368,7 +368,7 @@ namespace Dapper
 		public static async Task<bool> DeleteAsync<T>(this IDbConnection connection, T obj, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => Delete<T>(connection, obj, transaction, commandTimeout));
+			return await Task.Run(() => Delete<T>(connection, obj, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -414,7 +414,7 @@ namespace Dapper
 		public static async Task<int> DeleteListAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => DeleteList<T>(connection, "", null, transaction, commandTimeout));
+			return await Task.Run(() => DeleteList<T>(connection, "", null, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -430,7 +430,7 @@ namespace Dapper
 		public static async Task<int> DeleteListAsync<T>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => DeleteList<T>(connection, whereCondition, param, transaction, commandTimeout));
+			return await Task.Run(() => DeleteList<T>(connection, whereCondition, param, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -477,7 +477,7 @@ namespace Dapper
 		public static async Task<T> GetAsync<T>(this IDbConnection connection, object key, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => Get<T>(connection, key, transaction, commandTimeout));
+			return await Task.Run(() => Get<T>(connection, key, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -492,7 +492,7 @@ namespace Dapper
 		public static async Task<T> GetAsync<T>(this IDbConnection connection, T obj, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => Get(connection, obj, transaction, commandTimeout));
+			return await Task.Run(() => Get(connection, obj, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -544,7 +544,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetDistinctAsync<T>(this IDbConnection connection, Type columnFilter, IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetDistinct<T>(connection, columnFilter, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetDistinct<T>(connection, columnFilter, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -562,7 +562,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetDistinctAsync<T>(this IDbConnection connection, Type columnFilter, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetDistinct<T>(connection, columnFilter, whereCondition, param, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetDistinct<T>(connection, columnFilter, whereCondition, param, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -617,7 +617,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetDistinctLimitAsync<T>(this IDbConnection connection, int limit, Type columnFilter, IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetDistinctLimit<T>(connection, limit, columnFilter, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetDistinctLimit<T>(connection, limit, columnFilter, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -636,7 +636,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetDistinctLimitAsync<T>(this IDbConnection connection, int limit, Type columnFilter, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetDistinctLimit<T>(connection, limit, columnFilter, whereCondition, param, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetDistinctLimit<T>(connection, limit, columnFilter, whereCondition, param, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -731,7 +731,7 @@ namespace Dapper
 		public static async Task<IEnumerable<KeyType>> GetKeysAsync<T, KeyType>(this IDbConnection connection, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetKeys<T, KeyType>(connection, "", null, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetKeys<T, KeyType>(connection, "", null, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -746,7 +746,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetKeysAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetKeys<T>(connection, "", null, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetKeys<T>(connection, "", null, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -764,7 +764,7 @@ namespace Dapper
 		public static async Task<IEnumerable<KeyType>> GetKeysAsync<T, KeyType>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetKeys<T, KeyType>(connection, whereCondition, param, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetKeys<T, KeyType>(connection, whereCondition, param, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -781,7 +781,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetKeysAsync<T>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetKeys<T>(connection, whereCondition, param, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetKeys<T>(connection, whereCondition, param, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -871,7 +871,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetLimitAsync<T>(this IDbConnection connection, int limit, IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetLimit<T>(connection, limit, "", null, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetLimit<T>(connection, limit, "", null, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -889,7 +889,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetLimitAsync<T>(this IDbConnection connection, int limit, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetLimit<T>(connection, limit, whereCondition, param, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetLimit<T>(connection, limit, whereCondition, param, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -906,7 +906,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetLimitAsync<T>(this IDbConnection connection, int limit, Type columnFilter, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetLimit<T>(connection, limit, columnFilter, "", null, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetLimit<T>(connection, limit, columnFilter, "", null, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -925,7 +925,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetLimitAsync<T>(this IDbConnection connection, int limit, Type columnFilter, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetLimit<T>(connection, limit, columnFilter, whereCondition, param, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetLimit<T>(connection, limit, columnFilter, whereCondition, param, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -1010,7 +1010,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetListAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetList<T>(connection, "", null, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetList<T>(connection, "", null, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -1027,7 +1027,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetListAsync<T>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetList<T>(connection, whereCondition, param, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetList<T>(connection, whereCondition, param, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -1043,7 +1043,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetListAsync<T>(this IDbConnection connection, Type columnFilter, IDbTransaction transaction, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetList<T>(connection, columnFilter, "", null, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetList<T>(connection, columnFilter, "", null, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -1061,7 +1061,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetListAsync<T>(this IDbConnection connection, Type columnFilter, string whereCondition, object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetList<T>(connection, columnFilter, whereCondition, param, transaction, buffered, commandTimeout));
+			return await Task.Run(() => GetList<T>(connection, columnFilter, whereCondition, param, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -1089,7 +1089,7 @@ namespace Dapper
 		public static async Task InsertAsync<T>(this IDbConnection connection, T obj, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			await Task.Run(() => Insert(connection, obj, transaction, commandTimeout));
+			await Task.Run(() => Insert(connection, obj, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -1119,7 +1119,7 @@ namespace Dapper
 		public static async Task<bool> InsertIfNotExistsAsync<T>(this IDbConnection connection, T obj, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => InsertIfNotExists(connection, obj, transaction, commandTimeout));
+			return await Task.Run(() => InsertIfNotExists(connection, obj, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -1165,7 +1165,7 @@ namespace Dapper
 		public static async Task<int> RecordCountAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => RecordCount<T>(connection, "", null, transaction, commandTimeout));
+			return await Task.Run(() => RecordCount<T>(connection, "", null, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -1181,7 +1181,7 @@ namespace Dapper
 		public static async Task<int> RecordCountAsync<T>(this IDbConnection connection, string whereCondition, object param = null, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => RecordCount<T>(connection, whereCondition, param, transaction, commandTimeout));
+			return await Task.Run(() => RecordCount<T>(connection, whereCondition, param, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -1228,7 +1228,7 @@ namespace Dapper
 		public static async Task<bool> UpdateAsync<T>(this IDbConnection connection, object obj, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => Update<T>(connection, obj, transaction, commandTimeout));
+			return await Task.Run(() => Update<T>(connection, obj, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -1243,7 +1243,7 @@ namespace Dapper
 		public static async Task<bool> UpdateAsync<T>(this IDbConnection connection, T obj, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => Update<T>(connection, obj, transaction, commandTimeout));
+			return await Task.Run(() => Update<T>(connection, obj, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -1274,7 +1274,7 @@ namespace Dapper
 		public static async Task<bool> UpsertAsync<T>(this IDbConnection connection, T obj, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => Upsert(connection, obj, transaction, commandTimeout));
+			return await Task.Run(() => Upsert(connection, obj, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 	}
 }
