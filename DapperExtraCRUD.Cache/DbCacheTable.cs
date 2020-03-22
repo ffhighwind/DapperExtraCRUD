@@ -34,6 +34,7 @@ using System.Linq;
 using System.Collections;
 using System.Data;
 using System.Data.SqlClient;
+using System.Threading.Tasks;
 
 namespace Dapper.Extra.Cache
 {
@@ -59,7 +60,7 @@ namespace Dapper.Extra.Cache
 			Items = AutoCache;
 			CreateFromKey = Builder.ObjectFromKey;
 			AutoKeyColumn = Builder.Info.AutoKeyColumn;
-			AutoSyncInsert = Builder.Queries.InsertAutoSync == null;
+			AutoSyncInsert = Builder.Queries.InsertAutoSync != null;
 			AutoSyncUpdate = Builder.Queries.UpdateAutoSync != null;
 		}
 
@@ -76,7 +77,7 @@ namespace Dapper.Extra.Cache
 		/// The access object currently being used by the cache. This can be used if you do not want to store
 		/// the results of a query in the cache.
 		/// </summary>
-		public IAccessObjectSync<T> Access { get; private set; }
+		public IAccessObject<T> Access { get; private set; }
 		private readonly DataAccessObject<T> DAO;
 		private readonly AutoAccessObject<T> AAO;
 		private readonly SqlBuilder<T> Builder;
@@ -437,7 +438,7 @@ namespace Dapper.Extra.Cache
 
 		#endregion Bulk
 
-		#region Other Methods
+		#region Sync
 
 		/// <summary>
 		/// Deletes the row with the given key.
@@ -474,7 +475,13 @@ namespace Dapper.Extra.Cache
 		/// <returns>The number of deleted rows.</returns>
 		public int DeleteList(string whereCondition = "", object param = null, int commandTimeout = 30)
 		{
-			List<T> keys = Access.GetKeys(whereCondition, param, true, commandTimeout).AsList();
+			List<T> keys;
+			if (string.IsNullOrWhiteSpace(whereCondition)) {
+				Items.Clear();
+				keys = new List<T>();
+			}
+			else
+				keys = Access.GetKeys(whereCondition, param, true, commandTimeout).AsList();
 			int count = Access.DeleteList(whereCondition, param, commandTimeout);
 			Items.Remove(keys);
 			return count;
@@ -654,9 +661,8 @@ namespace Dapper.Extra.Cache
 		/// <returns>True if the the row was inserted; false otherwise.</returns>
 		public R InsertIfNotExists(T obj, int commandTimeout = 30)
 		{
-			if (!Access.InsertIfNotExists(obj, commandTimeout)) {
+			if (!Access.InsertIfNotExists(obj, commandTimeout))
 				return null;
-			}
 			R item = Items.Add(obj);
 			return item;
 		}
@@ -713,7 +719,7 @@ namespace Dapper.Extra.Cache
 					mapperPair.ValueMapper = Reflect.Mapper(type, typeof(T), props);
 					_ = mappers.TryAdd(type, mapperPair);
 				}
-				T value = (T)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(T));
+				T value = (T) System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(T));
 				mapperPair.KeyMapper(obj, value);
 				if (Items.TryGetValue(value, out R item)) {
 					mapperPair.ValueMapper(obj, item.CacheValue);
@@ -751,6 +757,236 @@ namespace Dapper.Extra.Cache
 			return success;
 		}
 
-		#endregion Other Methods
+		#endregion Sync
+
+		#region Async
+
+		/// <summary>
+		/// Deletes the row with the given key asynchronously.
+		/// </summary>
+		/// <param name="key">The key of the row to delete.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the row was deleted; false otherwise.</returns>
+		public async Task<bool> DeleteAsync(object key, int commandTimeout = 30)
+		{
+			return await Task.Run(() => Delete(key, commandTimeout));
+		}
+
+		/// <summary>
+		/// Deletes the given row asynchronously.
+		/// </summary>
+		/// <param name="obj">The object to delete.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the row was deleted; false otherwise.</returns>
+		public async Task<bool> DeleteAsync(T obj, int commandTimeout = 30)
+		{
+			return await Task.Run(() => Delete(obj, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects the row with the given key asynchronously.
+		/// </summary>
+		/// <param name="key">The key of the row to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The row with the given key.</returns>
+		public async Task<R> GetAsync(object key, int commandTimeout = 30)
+		{
+			return await Task.Run(() => Get(key, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects a row asynchronously.
+		/// </summary>
+		/// <param name="obj">The object to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The selected row if it exists; otherwise null.</returns>
+		public async Task<R> GetAsync(T obj, int commandTimeout = 30)
+		{
+			return await Task.Run(() => Get(obj, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public async Task<IEnumerable<T>> GetDistinctAsync(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetDistinct(columnFilter, whereCondition, param, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public async Task<IEnumerable<T>> GetDistinctLimitAsync(int limit, Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetDistinctLimit(limit, columnFilter, whereCondition, param, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects the rows with the given keys asynchronously.
+		/// </summary>
+		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		public async Task<IEnumerable<KeyType>> GetKeysAsync<KeyType>(string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetKeys<KeyType>(whereCondition, param, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects the keys that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		public async Task<IEnumerable<T>> GetKeysAsync(string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetKeys(whereCondition, param, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The limited number of rows that match the given condition.</returns>
+		public async Task<IEnumerable<R>> GetLimitAsync(int limit, string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetLimit(limit, whereCondition, param, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition asynchronously.
+		/// </summary>
+		///  <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>A limited number of rows that match the given condition.</returns>
+		public async Task<IEnumerable<T>> GetLimitAsync(int limit, Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetLimit(limit, columnFilter, whereCondition, param, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public async Task<IEnumerable<R>> GetListAsync(string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetList(whereCondition, param, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public async Task<IEnumerable<T>> GetListAsync(Type columnFilter, string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetList(columnFilter, whereCondition, param, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Inserts a row asynchronously.
+		/// </summary>
+		/// <param name="obj">The object to insert.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		public async Task<R> InsertAsync(T obj, int commandTimeout = 30)
+		{
+			return await Task.Run(() => Insert(obj, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Inserts a row if it does not exist asynchronously.
+		/// </summary>
+		/// <param name="obj">The object to insert.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the the row was inserted; false otherwise.</returns>
+		public async Task<R> InsertIfNotExistsAsync(T obj, int commandTimeout = 30)
+		{
+			return await Task.Run(() => InsertIfNotExists(obj, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Counts the number of rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of rows that match the given condition.</returns>
+		public async Task<int> RecordCountAsync(string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			return await Task.Run(() => RecordCount(whereCondition, param, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Updates a row asynchronously.
+		/// </summary>
+		/// <param name="obj">The object to update.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the row was updated; false otherwise.</returns>
+		public async Task<bool> UpdateAsync(object obj, int commandTimeout = 30)
+		{
+			return await Task.Run(() => Update(obj, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Updates a row asynchronously.
+		/// </summary>
+		/// <param name="obj">The object to update.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the row was updated; false otherwise.</returns>
+		public async Task<bool> UpdateAsync(T obj, int commandTimeout = 30)
+		{
+			return await Task.Run(() => Update(obj, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Upserts a row asynchronously.
+		/// </summary>
+		/// <param name="obj">The object to upsert.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>True if the object was upserted; false otherwise.</returns>
+		public async Task<bool> UpsertAsync(T obj, int commandTimeout = 30)
+		{
+			return await Task.Run(() => Upsert(obj, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Deletes the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="whereCondition">The where condition to use for this query.</param>
+		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		public async Task<int> DeleteListAsync(string whereCondition = "", object param = null, int commandTimeout = 30)
+		{
+			return await Task.Run(() => DeleteList(whereCondition, param, commandTimeout)).ConfigureAwait(false);
+		}
+
+		#endregion Async
 	}
 }
