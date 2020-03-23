@@ -34,6 +34,7 @@ using Dapper.Extra;
 using Dapper.Extra.Utilities;
 using Dapper.Extra.Cache;
 using DapperExtraCRUD.Example;
+using System.Threading.Tasks;
 
 namespace ConsoleTests
 {
@@ -61,6 +62,7 @@ namespace ConsoleTests
 				Recreate<Test7>(conn, null);
 				Recreate<Test8>(conn, null);
 				Recreate<Test9>(conn, null);
+				/*
 
 				TestEnums(conn);
 				DoWhereConditionGenTest();
@@ -74,7 +76,7 @@ namespace ConsoleTests
 
 				DoCacheTests<Test3>(() => new Test3(random));
 				DoTests<Test3>(() => new Test3(random), (t) => t.UpdateRandomize(random), new Test3filter());
-
+	
 				DoCacheTests<TestDTO4>(() => new TestDTO4(random));
 				DoTests<TestDTO4>(() => new TestDTO4(random), (t) => t.UpdateRandomize(random), new TestDTO4filter());
 				DoTests<TestDTO4, int>(conn);
@@ -109,6 +111,27 @@ namespace ConsoleTests
 				DoMultiCacheTest<Test7, TestDTO2>(() => new Test7(random), () => new TestDTO2(random));
 				DoMultiCacheTest<Test8, TestDTO6>(() => new Test8(random), () => new TestDTO6(random));
 				DoMultiCacheTest<Test9, TestDTO4>(() => new Test9(random), () => new TestDTO4(random));
+				*/
+
+				DoAsyncTests<TestDTO>(() => new TestDTO(random));
+				DoAsyncTests<TestDTO2>(() => new TestDTO2(random));
+				DoAsyncTests<Test3>(() => new Test3(random));
+				DoAsyncTests<TestDTO4>(() => new TestDTO4(random));
+				DoAsyncTests<TestDTO5>(() => new TestDTO5(random));
+				DoAsyncTests<TestDTO6>(() => new TestDTO6(random));
+				DoAsyncTests<Test7>(() => new Test7(random));
+				DoAsyncTests<Test8>(() => new Test8(random));
+				DoAsyncTests<Test9>(() => new Test9(random));
+
+				DoCacheAsyncTests<TestDTO>(() => new TestDTO(random));
+				DoCacheAsyncTests<TestDTO2>(() => new TestDTO2(random));
+				DoCacheAsyncTests<Test3>(() => new Test3(random));
+				DoCacheAsyncTests<TestDTO4>(() => new TestDTO4(random));
+				DoCacheAsyncTests<TestDTO5>(() => new TestDTO5(random));
+				DoCacheAsyncTests<TestDTO6>(() => new TestDTO6(random));
+				DoCacheAsyncTests<Test7>(() => new Test7(random));
+				DoCacheAsyncTests<Test8>(() => new Test8(random));
+				DoCacheAsyncTests<Test9>(() => new Test9(random));
 
 				DropTable<TestDTO>(conn);
 				DropTable<TestDTO2>(conn);
@@ -122,62 +145,7 @@ namespace ConsoleTests
 			}
 		}
 
-		public static void TestEnums(SqlConnection conn)
-		{
-			IEqualityComparer<Test7> comparer = ExtraCrud.EqualityComparer<Test7>();
-			Dictionary<Test7, Test7> map = new Dictionary<Test7, Test7>(comparer);
-			Dictionary<Test7Type, Test7> map2 = new Dictionary<Test7Type, Test7>();
-			if (conn.RecordCount<Test7>() != 0)
-				throw new InvalidOperationException();
-			using (SqlTransaction trans = conn.BeginTransaction()) {
-				for (int i = (int)Test7Type.ID0; i <= (int)Test7Type.ID19; i += 2) {
-					Test7 test = new Test7();
-					test.ID = (Test7Type)i;
-					map.Add(test, test);
-					map2.Add(test.ID, test);
-					conn.Insert(test, trans);
-				}
-				List<Test7> list = conn.GetList<Test7>(trans).AsList();
-				if (list.Count != map.Count)
-					throw new InvalidOperationException();
-				foreach (var item in list) {
-					if (!map.Remove(item)) {
-						throw new InvalidOperationException();
-					}
-					if (!map2.Remove(item.ID))
-						throw new InvalidOperationException();
-				}
-			}
-			if (conn.RecordCount<Test7>() != 0)
-				throw new InvalidOperationException();
-		}
-
-		public static void TestStringComparer(Random random)
-		{
-			IEqualityComparer<TestDTO> comparer = ExtraCrud.EqualityComparer<TestDTO>();
-			TestDTO test1a = new TestDTO(random);
-			test1a.Name = "ABCDEFG";
-			TestDTO test1b = test1a.Clone();
-			test1b.Name = test1a.Name.ToLower();
-			if (!comparer.Equals(test1a, test1b))
-				throw new InvalidOperationException();
-
-			IEqualityComparer<TestDTO2> comparer2 = ExtraCrud.EqualityComparer<TestDTO2>();
-			TestDTO2 test2a = new TestDTO2(random);
-			test2a.Col2 = "ABCDEFG";
-			TestDTO2 test2b = test2a.Clone();
-			test2b.Col2 = test2b.Col2.ToLower();
-			if (!comparer2.Equals(test2a, test2b))
-				throw new InvalidOperationException();
-
-			IEqualityComparer<TestDTO2> comparer6 = ExtraCrud.EqualityComparer<TestDTO2>();
-			TestDTO6 test6a = new TestDTO6(random);
-			test6a.ID = "ABCDEFG";
-			TestDTO6 test6b = test6a.Clone();
-			test6b.ID = test6b.ID.ToLower();
-			if (!comparer2.Equals(test2a, test2b))
-				throw new InvalidOperationException();
-		}
+		#region Utilities
 
 		public static List<T> CreateList<T>(int count, Func<T> create) where T : class, IDto<T>
 		{
@@ -219,66 +187,52 @@ namespace ConsoleTests
 		{
 		}
 
-		public static void DoWhereConditionGenTest()
+
+		private static Dictionary<T, T> CreateMap<T>(List<T> list) where T : class, IDto<T>
 		{
-			using (SqlConnection conn = new SqlConnection(ConnString)) {
-
-				string str = WhereConditionGenerator.Create<TestDTO>((t) => t.CreatedDt == new DateTime(1900, 5, 9), out IDictionary<string, object> param);
-				if (str != "(Test.CreatedDt = @P0)")
-					throw new InvalidOperationException();
-				if (param.Any() && (DateTime)param["P0"] != new DateTime(1900, 5, 9))
-					throw new InvalidOperationException();
-				var result = conn.Query<TestDTO>("SELECT * FROM Test WHERE " + str, param);
-
-				str = WhereConditionGenerator.Create<TestDTO>((t) => t.ID > 5 && t.Name == null, out param);
-				if (str != "((Test.ID > 5) AND (Test.FirstName is NULL))")
-					throw new InvalidOperationException();
-				if (param.Any())
-					throw new InvalidOperationException();
-				var result2 = conn.Query<TestDTO>("SELECT * FROM Test WHERE " + str, param);
-
-				str = WhereConditionGenerator.Create<TestDTO2>((t) => t.Col3 <= 5.5f && (t.Col1 == 5 || t.Col2.Equals("ab")), out param);
-				if (str != "((Test2.Col3 <= @P0) AND ((Test2.Col1 = 5) OR (Test2.Col2 = 'ab')))")
-					throw new InvalidOperationException();
-				if (param.Any() && (float)param["P0"] != 5.5f)
-					throw new InvalidOperationException();
-				var result3 = conn.Query<TestDTO2>("SELECT * FROM Test2 WHERE " + str, param);
-
-				str = WhereConditionGenerator.Create<Test3>((t) => t.Col1 == (-15253 & 155) && (t.Col2 != null || t.Col4 == null) && new string[] { "aa", "bb", "cc" }.Contains(t.Col2), out param);
-				if (str != "(((Test3.Col1 = 11) AND ((Test3.Col2 is not NULL) OR (Test3.Col4 is NULL))) AND Test3.Col2 in @P0)")
-					throw new InvalidOperationException();
-				if (param.Any() && ((List<object>)param["P0"]).Any(s => !new string[] { "aa", "bb", "cc" }.Contains(s)))
-					throw new InvalidOperationException();
-				var result4 = conn.Query<Test3>("SELECT * FROM Test3 WHERE " + str, param);
-
-				str = WhereConditionGenerator.Create<User>((u) => u.UserName == "jborne"
-					&& (u.FirstName != null || u.Permissions == UserPermissions.Basic) && new string[] { "Jason", "Chris", "Zack" }.Contains(u.FirstName),
-					out param);
-				if (str != "(((Users.[Account Name] = 'jborne') AND ((Users.FirstName is not NULL) OR (Users.Permissions = 1))) AND Users.FirstName in @P0)")
-					throw new InvalidOperationException();
-				// condition = "(((Users.[Account Name] = 'jborne') AND ((Users.FirstName is not NULL) OR (Users.Permissions = 1))) AND Users.FirstName in @P0)"
-				// param = List<object>() { "Jason", "Chris", "Zack" }
-				str = WhereConditionGenerator.Create<TestDTO>((t) => t.IsActive != true && t.IsActive, out param);
-				if (str != "((Test.IsActive <> 1) AND Test.IsActive = 1)")
-					throw new InvalidOperationException();
-				var result5 = conn.Query<TestDTO>("SELECT * FROM Test WHERE " + str, param);
-				str = WhereConditionGenerator.Create<TestDTO>((t) => t.IsActive != true && !t.IsActive, out param);
-				if (str != "((Test.IsActive <> 1) AND NOT Test.IsActive = 1)")
-					throw new InvalidOperationException();
-				var result6 = conn.Query<TestDTO>("SELECT * FROM Test WHERE " + str, param);
-				str = WhereConditionGenerator.Create<TestDTO>((t) => t.IsActive, out param);
-				if (str != "Test.IsActive = 1")
-					throw new InvalidOperationException();
-				var result7 = conn.Query<TestDTO>("SELECT * FROM Test WHERE " + str, param);
-				bool tmp = false;
-				str = WhereConditionGenerator.Create<TestDTO2, TestDTO>((t2, t1) => t2.Col3 <= 5.5f && (t2.Col1 == 5 || t2.Col2.Equals("ab")) && t1.IsActive == tmp, out param);
-				if (str != "(((Test2.Col3 <= @P0) AND ((Test2.Col1 = 5) OR (Test2.Col2 = 'ab'))) AND (Test.IsActive = 0))")
-					throw new InvalidOperationException();
-				var result8 = conn.Query<TestDTO2>("SELECT * FROM Test2 left join Test on Test.ID = Test2.Col1 WHERE\n" + str, param);
-				str = WhereConditionGenerator.Create<TestDTO>((t) => t.IsActive.Equals(true) || t.CreatedDt == new DateTime(2019, 1, 5) && (t.ID > 2), out param);
-				var result9 = conn.Query<TestDTO>("SELECT * FROM Test WHERE\n" + str, param);
+			Dictionary<T, T> map = new Dictionary<T, T>(ExtraCrud.EqualityComparer<T>());
+			foreach (T item in list) {
+				map.Add(item, item);
 			}
+			return map;
 		}
+
+		private static Dictionary<KeyType, T> CreateMap<T, KeyType>(List<T> list) where T : class, IDtoKey<T, KeyType>
+		{
+			Dictionary<KeyType, T> map = new Dictionary<KeyType, T>();
+			foreach (T item in list) {
+				map.Add(item.GetKey(), item);
+			}
+			return map;
+		}
+
+		private static void DropTable<T>(SqlConnection conn, SqlTransaction trans = null) where T : class
+		{
+			string tableName = ExtraCrud.TypeInfo<T>().TableName;
+			string str = $@"
+IF EXISTS (
+	SELECT * from INFORMATION_SCHEMA.TABLES 
+WHERE TABLE_NAME = '{tableName}' 
+	AND TABLE_SCHEMA = 'dbo'
+) 
+DROP TABLE dbo.{tableName};";
+			conn.Execute(str, null, trans);
+		}
+
+		private static void CreateTable<T>(SqlConnection conn, SqlTransaction trans = null) where T : class, IDto<T>, new()
+		{
+			conn.Execute(new T().CreateTable(), null, trans);
+		}
+
+		private static void Recreate<T>(SqlConnection conn, SqlTransaction trans) where T : class, IDto<T>, new()
+		{
+			DropTable<T>(conn, trans);
+			CreateTable<T>(conn, trans);
+		}
+
+		#endregion Utilities
+
+		#region Main Tests
 
 		public static void DoMultiCacheTest<T1, T2>(Func<T1> constructor1, Func<T2> constructor2)
 			where T1 : class, IDto<T1>
@@ -287,9 +241,9 @@ namespace ConsoleTests
 			Random random = new Random(512851);
 			DbCache cache = new DbCache(ConnString);
 			DbCacheTable<T1, CacheItem<T1>> table1 = cache.CreateTable<T1>();
-			List<T1> list1 = CreateList<T1>(TestAmount + (int)((random.Next() % TestAmount) * 0.1), () => constructor1());
+			List<T1> list1 = CreateList<T1>(TestAmount + (int) ((random.Next() % TestAmount) * 0.1), () => constructor1());
 			DbCacheTable<T2, CacheItem<T2>> table2 = cache.CreateTable<T2>();
-			List<T2> list2 = CreateList<T2>(TestAmount + (int)((random.Next() % TestAmount) * 0.1), () => constructor2());
+			List<T2> list2 = CreateList<T2>(TestAmount + (int) ((random.Next() % TestAmount) * 0.1), () => constructor2());
 
 			table1.Truncate();
 			table2.Truncate();
@@ -423,7 +377,7 @@ namespace ConsoleTests
 			DbCache cache = new DbCache(ConnString);
 			DbCacheTable<T, CacheItem<T>> table = cache.CreateTable<T>();
 			Random random = new Random(512851);
-			List<T> list = CreateList<T>(TestAmount + (int)((random.Next() % TestAmount) * 0.1), () => constructor());
+			List<T> list = CreateList<T>(TestAmount + (int) ((random.Next() % TestAmount) * 0.1), () => constructor());
 
 			CacheInsert(table, list);
 			CacheDelete(table, list);
@@ -433,6 +387,694 @@ namespace ConsoleTests
 			CacheBulkGet(table, list);
 			CacheTransactions(table, list, random);
 		}
+
+		public static void DoWhereConditionGenTest()
+		{
+			using (SqlConnection conn = new SqlConnection(ConnString)) {
+
+				string str = WhereConditionGenerator.Create<TestDTO>((t) => t.CreatedDt == new DateTime(1900, 5, 9), out IDictionary<string, object> param);
+				if (str != "(Test.CreatedDt = @P0)")
+					throw new InvalidOperationException();
+				if (param.Any() && (DateTime) param["P0"] != new DateTime(1900, 5, 9))
+					throw new InvalidOperationException();
+				var result = conn.Query<TestDTO>("SELECT * FROM Test WHERE " + str, param);
+
+				str = WhereConditionGenerator.Create<TestDTO>((t) => t.ID > 5 && t.Name == null, out param);
+				if (str != "((Test.ID > 5) AND (Test.FirstName is NULL))")
+					throw new InvalidOperationException();
+				if (param.Any())
+					throw new InvalidOperationException();
+				var result2 = conn.Query<TestDTO>("SELECT * FROM Test WHERE " + str, param);
+
+				str = WhereConditionGenerator.Create<TestDTO2>((t) => t.Col3 <= 5.5f && (t.Col1 == 5 || t.Col2.Equals("ab")), out param);
+				if (str != "((Test2.Col3 <= @P0) AND ((Test2.Col1 = 5) OR (Test2.Col2 = 'ab')))")
+					throw new InvalidOperationException();
+				if (param.Any() && (float) param["P0"] != 5.5f)
+					throw new InvalidOperationException();
+				var result3 = conn.Query<TestDTO2>("SELECT * FROM Test2 WHERE " + str, param);
+
+				str = WhereConditionGenerator.Create<Test3>((t) => t.Col1 == (-15253 & 155) && (t.Col2 != null || t.Col4 == null) && new string[] { "aa", "bb", "cc" }.Contains(t.Col2), out param);
+				if (str != "(((Test3.Col1 = 11) AND ((Test3.Col2 is not NULL) OR (Test3.Col4 is NULL))) AND Test3.Col2 in @P0)")
+					throw new InvalidOperationException();
+				if (param.Any() && ((List<object>) param["P0"]).Any(s => !new string[] { "aa", "bb", "cc" }.Contains(s)))
+					throw new InvalidOperationException();
+				var result4 = conn.Query<Test3>("SELECT * FROM Test3 WHERE " + str, param);
+
+				str = WhereConditionGenerator.Create<User>((u) => u.UserName == "jborne"
+					&& (u.FirstName != null || u.Permissions == UserPermissions.Basic) && new string[] { "Jason", "Chris", "Zack" }.Contains(u.FirstName),
+					out param);
+				if (str != "(((Users.[Account Name] = 'jborne') AND ((Users.FirstName is not NULL) OR (Users.Permissions = 1))) AND Users.FirstName in @P0)")
+					throw new InvalidOperationException();
+				// condition = "(((Users.[Account Name] = 'jborne') AND ((Users.FirstName is not NULL) OR (Users.Permissions = 1))) AND Users.FirstName in @P0)"
+				// param = List<object>() { "Jason", "Chris", "Zack" }
+				str = WhereConditionGenerator.Create<TestDTO>((t) => t.IsActive != true && t.IsActive, out param);
+				if (str != "((Test.IsActive <> 1) AND Test.IsActive = 1)")
+					throw new InvalidOperationException();
+				var result5 = conn.Query<TestDTO>("SELECT * FROM Test WHERE " + str, param);
+				str = WhereConditionGenerator.Create<TestDTO>((t) => t.IsActive != true && !t.IsActive, out param);
+				if (str != "((Test.IsActive <> 1) AND NOT Test.IsActive = 1)")
+					throw new InvalidOperationException();
+				var result6 = conn.Query<TestDTO>("SELECT * FROM Test WHERE " + str, param);
+				str = WhereConditionGenerator.Create<TestDTO>((t) => t.IsActive, out param);
+				if (str != "Test.IsActive = 1")
+					throw new InvalidOperationException();
+				var result7 = conn.Query<TestDTO>("SELECT * FROM Test WHERE " + str, param);
+				bool tmp = false;
+				str = WhereConditionGenerator.Create<TestDTO2, TestDTO>((t2, t1) => t2.Col3 <= 5.5f && (t2.Col1 == 5 || t2.Col2.Equals("ab")) && t1.IsActive == tmp, out param);
+				if (str != "(((Test2.Col3 <= @P0) AND ((Test2.Col1 = 5) OR (Test2.Col2 = 'ab'))) AND (Test.IsActive = 0))")
+					throw new InvalidOperationException();
+				var result8 = conn.Query<TestDTO2>("SELECT * FROM Test2 left join Test on Test.ID = Test2.Col1 WHERE\n" + str, param);
+				str = WhereConditionGenerator.Create<TestDTO>((t) => t.IsActive.Equals(true) || t.CreatedDt == new DateTime(2019, 1, 5) && (t.ID > 2), out param);
+				var result9 = conn.Query<TestDTO>("SELECT * FROM Test WHERE\n" + str, param);
+			}
+		}
+
+		public static void TestEnums(SqlConnection conn)
+		{
+			IEqualityComparer<Test7> comparer = ExtraCrud.EqualityComparer<Test7>();
+			Dictionary<Test7, Test7> map = new Dictionary<Test7, Test7>(comparer);
+			Dictionary<Test7Type, Test7> map2 = new Dictionary<Test7Type, Test7>();
+			if (conn.RecordCount<Test7>() != 0)
+				throw new InvalidOperationException();
+			using (SqlTransaction trans = conn.BeginTransaction()) {
+				for (int i = (int) Test7Type.ID0; i <= (int) Test7Type.ID19; i += 2) {
+					Test7 test = new Test7();
+					test.ID = (Test7Type) i;
+					map.Add(test, test);
+					map2.Add(test.ID, test);
+					conn.Insert(test, trans);
+				}
+				List<Test7> list = conn.GetList<Test7>(trans).AsList();
+				if (list.Count != map.Count)
+					throw new InvalidOperationException();
+				foreach (Test7 item in list) {
+					if (!map.Remove(item)) {
+						throw new InvalidOperationException();
+					}
+					if (!map2.Remove(item.ID))
+						throw new InvalidOperationException();
+				}
+			}
+			if (conn.RecordCount<Test7>() != 0)
+				throw new InvalidOperationException();
+		}
+
+		public static void TestStringComparer(Random random)
+		{
+			IEqualityComparer<TestDTO> comparer = ExtraCrud.EqualityComparer<TestDTO>();
+			TestDTO test1a = new TestDTO(random);
+			test1a.Name = "ABCDEFG";
+			TestDTO test1b = test1a.Clone();
+			test1b.Name = test1a.Name.ToLower();
+			if (!comparer.Equals(test1a, test1b))
+				throw new InvalidOperationException();
+
+			IEqualityComparer<TestDTO2> comparer2 = ExtraCrud.EqualityComparer<TestDTO2>();
+			TestDTO2 test2a = new TestDTO2(random);
+			test2a.Col2 = "ABCDEFG";
+			TestDTO2 test2b = test2a.Clone();
+			test2b.Col2 = test2b.Col2.ToLower();
+			if (!comparer2.Equals(test2a, test2b))
+				throw new InvalidOperationException();
+
+			IEqualityComparer<TestDTO2> comparer6 = ExtraCrud.EqualityComparer<TestDTO2>();
+			TestDTO6 test6a = new TestDTO6(random);
+			test6a.ID = "ABCDEFG";
+			TestDTO6 test6b = test6a.Clone();
+			test6b.ID = test6b.ID.ToLower();
+			if (!comparer2.Equals(test2a, test2b))
+				throw new InvalidOperationException();
+		}
+
+
+		public static void DoTests<T>(Func<T> constructor, Func<T, T> randomize, IFilter<T> filter) where T : class, IDto<T>, new()
+		{
+			Random random = new Random(512851);
+			using (SqlConnection conn = new SqlConnection(ConnString)) {
+				conn.Open();
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					Recreate<T>(conn, trans);
+					Insert<T>(conn, trans, TestAmount + (int) ((random.Next() % TestAmount) * 0.1), constructor);
+					trans.Commit();
+				}
+				List<T> list = conn.GetList<T>().ToList();
+				list.Sort((x, y) => x.CompareTo(y));
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					RecordCount<T>(conn, trans, list);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					GetList(conn, trans, list);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					InsertGet(conn, trans, constructor);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					Delete(conn, trans, list);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					GetKeys(conn, trans, list);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					DeleteList(conn, trans, list);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					GetLimit(conn, trans, list);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					DeleteAll<T>(conn, trans);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					Update<T>(conn, trans, list, randomize);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					Update_Obj<T>(conn, trans, list);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					Upsert<T>(conn, trans);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					GetDistinct(conn, trans, list);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					GetDistinctLimit(conn, trans, list);
+				}
+				//
+				// Bulk
+				//
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					BulkGet(conn, trans, list);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					BulkInsert(conn, trans, list);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					BulkUpdate(conn, trans, list, (t) => randomize(t));
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					BulkDelete<T>(conn, trans);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					BulkUpsert<T>(conn, trans);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					InsertIfNotExists<T>(conn, trans);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					BulkInsertIfNotExists<T>(conn, trans, list);
+				}
+				//
+				// Filters
+				//
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					GetFilter(conn, trans, list, filter);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					GetFilterLimit(conn, trans, list, filter);
+				}
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					GetFilterDistinctLimit(conn, trans, list, filter);
+				}
+			}
+		}
+
+		public static void DoTests<T, KeyType>(SqlConnection conn) where T : class, IDtoKey<T, KeyType>
+		{
+			List<T> list = conn.GetList<T>().AsList();
+			list.Sort((x, y) => x.CompareTo(y));
+			using (SqlTransaction trans = conn.BeginTransaction()) {
+				Get_Key<T, KeyType>(conn, trans, list);
+			}
+			using (SqlTransaction trans = conn.BeginTransaction()) {
+				GetKeys_Key<T, KeyType>(conn, trans, list);
+			}
+			using (SqlTransaction trans = conn.BeginTransaction()) {
+				Delete_Key<T, KeyType>(conn, trans, list);
+			}
+			using (SqlTransaction trans = conn.BeginTransaction()) {
+				BulkGet_Key<T, KeyType>(conn, trans, list);
+			}
+			using (SqlTransaction trans = conn.BeginTransaction()) {
+				BulkDelete_Key<T, KeyType>(conn, trans);
+			}
+		}
+
+		#endregion Main Tests
+
+		#region Tested Sync
+
+		private static void Insert<T>(SqlConnection conn, SqlTransaction trans, int count, Func<T> constructor) where T : class, IDto<T>
+		{
+			if (count <= 0)
+				count = 1;
+			List<T> list = CreateList<T>(count, constructor);
+			for (int i = 0; i < list.Count; i++) {
+				conn.Insert<T>(list[i], trans);
+			}
+		}
+
+		public static void RecordCount<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
+		{
+			int count = conn.RecordCount<T>(trans);
+			if (list.Count != count)
+				throw new InvalidOperationException();
+		}
+
+		public static void WhereConditionGen<T>(SqlConnection conn, SqlTransaction trans, List<T> list, Expression<Func<T, bool>> predicateExpr) where T : class, IDto<T>
+		{
+			string condition = WhereConditionGenerator.Create<T>(predicateExpr, out IDictionary<string, object> param);
+			Func<T, bool> predicate = predicateExpr.Compile();
+			List<T> filtered = list.Where(d => predicate(d)).ToList();
+			int count = conn.RecordCount<T>("WHERE " + condition, param, trans);
+			if (filtered.Count != count)
+				throw new InvalidOperationException();
+		}
+
+		public static void InsertGet<T>(SqlConnection conn, SqlTransaction trans, Func<T> constructor) where T : class, IDto<T>
+		{
+			T constructed = constructor();
+			T get = conn.Get(constructed, trans);
+			if (get != null)
+				throw new InvalidOperationException();
+			conn.Insert(constructed, trans);
+			get = conn.Get(constructed, trans);
+			if (get == null)
+				throw new InvalidOperationException();
+			if (!get.Equals(constructed))
+				throw new InvalidOperationException();
+		}
+
+		public static void GetList<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
+		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			Dictionary<T, T> map = CreateMap<T>(list);
+			list = conn.GetList<T>(trans).AsList();
+			if (map.Count != list.Count)
+				throw new InvalidOperationException();
+			foreach (T item in list) {
+				if (!map.Remove(item)) {
+					throw new InvalidOperationException();
+				}
+			}
+		}
+
+		public static void GetFilter<T>(SqlConnection conn, SqlTransaction trans, List<T> list, IFilter<T> filter) where T : class, IDto<T>
+		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			list = conn.GetList<T>(filter.GetType(), "", null, trans).AsList();
+			foreach (T item in list) {
+				if (!filter.IsFiltered(item))
+					throw new InvalidOperationException();
+			}
+		}
+
+		public static void Get_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
+		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			list = CloneList(list);
+			foreach (T item in list) {
+				T get = conn.Get<T>(item.GetKey(), trans);
+				if (!item.IsIdentical(get))
+					throw new InvalidOperationException();
+			}
+		}
+
+		public static void Delete<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
+		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			for (int i = 0; i < list.Count; i++) {
+				T t = conn.Get(list[i], trans);
+				if (t == null)
+					throw new InvalidOperationException();
+				if (!conn.Delete(list[i], trans))
+					throw new InvalidOperationException();
+				int count1 = conn.RecordCount<T>(trans);
+				if (count1 != (list.Count - i - 1))
+					throw new InvalidOperationException();
+				t = conn.Get(list[i], trans);
+				if (t != null)
+					throw new InvalidOperationException();
+			}
+		}
+
+		public static void GetKeys<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
+		{
+			Dictionary<T, T> map = CreateMap<T>(list);
+			IEnumerable<T> keys = conn.GetKeys<T>(trans);
+			foreach (T key in keys) {
+				if (!map.Remove(key)) {
+					throw new InvalidOperationException();
+				}
+			}
+		}
+
+		public static void GetKeys_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
+		{
+			Dictionary<KeyType, T> map;
+			if (typeof(KeyType) == typeof(byte[])) {
+				map = new Dictionary<KeyType, T>((IEqualityComparer<KeyType>) (object) ArrayEqualityComparer<byte>.Default);
+				foreach (var item in list) {
+					map.Add(item.GetKey(), item);
+				}
+			}
+			else
+				map = CreateMap<T, KeyType>(list);
+			IEnumerable<KeyType> keys = conn.GetKeys<T, KeyType>(trans);
+			foreach (KeyType key in keys) {
+				if (!map.Remove(key))
+					throw new InvalidOperationException();
+			}
+		}
+
+		public static void DeleteList<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
+		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			int count = conn.DeleteList<T>(trans);
+			if (count != list.Count)
+				throw new InvalidOperationException();
+		}
+
+		public static void Delete_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
+		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			//bool Delete<KeyType>(KeyType key, int commandTimeout = 30);
+			for (int i = 0; i < list.Count; i++) {
+				var key = list[i].GetKey();
+				T t = conn.Get<T>(key, trans);
+				if (t == null)
+					throw new InvalidOperationException();
+				if (!conn.Delete<T>(key, trans))
+					throw new InvalidOperationException();
+				int count1 = conn.RecordCount<T>(trans);
+				if (count1 != (list.Count - i - 1))
+					throw new InvalidOperationException();
+				t = conn.Get<T>(key, trans);
+				if (t != null)
+					throw new InvalidOperationException();
+			}
+		}
+
+		public static void GetLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
+		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			list = CloneList(list);
+			int max = Math.Min(list.Count, 20);
+			for (int i = 0; i < max; i++) {
+				List<T> items = conn.GetLimit<T>(i, trans).AsList();
+				if (items.Count != i)
+					throw new InvalidOperationException();
+			}
+		}
+
+		public static void GetFilterLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list, IFilter<T> filter) where T : class, IDto<T>
+		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			int max = Math.Min(list.Count, 20);
+			for (int i = 0; i < max; i++) {
+				List<T> items = conn.GetLimit<T>(i, filter.GetType(), "", null, trans).AsList();
+				if (items.Count != i)
+					throw new InvalidOperationException();
+			}
+		}
+
+		public static void DeleteAll<T>(SqlConnection conn, SqlTransaction trans) where T : class, IDto<T>
+		{
+			int count = conn.RecordCount<T>(trans);
+			if (count == 0)
+				throw new InvalidOperationException();
+			conn.Truncate<T>(trans);
+			count = conn.RecordCount<T>(trans);
+			if (count != 0)
+				throw new InvalidOperationException();
+		}
+
+		public static void Update<T>(SqlConnection conn, SqlTransaction trans, List<T> list, Func<T, T> randomize) where T : class, IDto<T>
+		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			list = CloneList(list);
+			//bool Update(T obj, int commandTimeout = 30);
+			List<T> failures = new List<T>();
+			foreach (T item in list) {
+				T get = conn.Get<T>(item, trans);
+				if (get == null)
+					throw new InvalidOperationException();
+				T updated = randomize(get);
+				if (!conn.Update<T>(updated, trans)) {
+					if (!updated.IsIdentical(get)) {
+						failures.Add(get);
+						continue;
+					}
+				}
+				get = conn.Get<T>(updated, trans);
+				if (!updated.IsUpdated(get)) {
+					throw new InvalidOperationException();
+				}
+			}
+			if (failures.Count > 0) {
+				throw new InvalidOperationException();
+			}
+		}
+
+		public static void Upsert<T>(SqlConnection conn, SqlTransaction trans) where T : class, IDto<T>
+		{
+			List<T> list = conn.GetList<T>(trans).AsList();
+			for (int i = 0; i < list.Count; i++) {
+				bool doDelete = i % 2 == 1;
+				if (doDelete) {
+					if (!conn.Delete(list[i], trans))
+						throw new InvalidOperationException();
+					if (!conn.Upsert<T>(list[i], trans))
+						throw new InvalidOperationException();
+					T get = conn.Get<T>(list[i], trans);
+					if (get == null)
+						throw new InvalidOperationException();
+					if (!list[i].IsInserted(get))
+						throw new InvalidOperationException();
+				}
+				else {
+					T get = conn.Get<T>(list[i], trans);
+					if (get == null)
+						throw new InvalidOperationException();
+					if (conn.Upsert<T>(list[i], trans))
+						throw new InvalidOperationException();
+				}
+			}
+		}
+
+		public static void GetDistinct<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
+		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			//requires IgnoreSelect to be useful
+			Dictionary<T, T> map = CreateMap<T>(list);
+			List<T> list2 = conn.GetDistinct<T>(typeof(T), trans).AsList();
+			if (map.Count != list2.Count)
+				throw new InvalidOperationException();
+			foreach (T item in list2) {
+				if (!map.Remove(item)) {
+					throw new InvalidOperationException();
+				}
+			}
+		}
+
+		public static void GetDistinctLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
+		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			list = CloneList(list);
+			int max = Math.Min(list.Count, 10);
+			for (int i = 2; i < max; i++) {
+				Dictionary<T, T> map = CreateMap<T>(list);
+				List<T> list2 = conn.GetDistinctLimit<T>(i, typeof(T), trans).AsList();
+				if (list2.Count != i)
+					throw new InvalidOperationException();
+				foreach (T item in list2) {
+					if (!map.Remove(item)) {
+						throw new InvalidOperationException();
+					}
+				}
+			}
+		}
+
+		public static void GetFilterDistinctLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list, IFilter<T> filter) where T : class, IDto<T>
+		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			list = CloneList(list);
+			int max = Math.Min(list.Count, 10);
+			for (int i = 2; i < max; i++) {
+				Dictionary<T, T> map = CreateMap<T>(list);
+				List<T> list2 = conn.GetDistinctLimit<T>(i, filter.GetType(), trans).AsList();
+				if (list2.Count == 0)
+					throw new InvalidOperationException();
+			}
+		}
+
+		public static void BulkUpsert<T>(SqlConnection conn, SqlTransaction trans) where T : class, IDto<T>
+		{
+			//int BulkUpsert(IEnumerable<T> objs, int commandTimeout = 30);
+			List<T> list = conn.GetList<T>(trans).AsList();
+			List<T> updates = new List<T>();
+			List<T> inserts = new List<T>();
+			for (int i = 0; i < list.Count; i += 2) {
+				updates.Add(list[i]);
+			}
+			for (int i = 1; i < list.Count; i += 2) {
+				inserts.Add(list[i]);
+				if (!conn.Delete(list[i], trans))
+					throw new InvalidOperationException();
+			}
+			int count = conn.BulkUpsert<T>(list, trans);
+			if (count != inserts.Count)
+				throw new InvalidOperationException();
+		}
+
+		public static void BulkInsertIfNotExists<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
+		{
+			List<T> insert = list.Take(list.Count / 2).ToList();
+			List<T> fails = list.Skip(list.Count / 2).ToList();
+			int count = conn.RecordCount<T>(trans);
+			foreach (T item in insert) {
+				if (!conn.Delete(item, trans))
+					throw new InvalidOperationException();
+			}
+			if (0 != conn.BulkInsertIfNotExists(fails, trans))
+				throw new InvalidOperationException();
+			int insertedCount = conn.BulkInsertIfNotExists(insert, trans);
+			if (insertedCount != insert.Count)
+				throw new InvalidOperationException();
+			int count2 = conn.RecordCount<T>(trans);
+			if (count2 != count)
+				throw new InvalidOperationException();
+		}
+
+		public static void InsertIfNotExists<T>(SqlConnection conn, SqlTransaction trans) where T : class, IDto<T>
+		{
+			List<T> list = conn.GetList<T>(trans).AsList();
+			for (int i = 0; i < list.Count; i++) {
+				T item = list[i];
+				if (conn.InsertIfNotExists(item, trans))
+					throw new InvalidOperationException();
+				if (!conn.Delete(item, trans))
+					throw new InvalidOperationException();
+				if (!conn.InsertIfNotExists(item, trans))
+					throw new InvalidOperationException();
+			}
+			int count = conn.RecordCount<T>(trans);
+			if (count != conn.RecordCount<T>(trans))
+				throw new InvalidOperationException();
+		}
+
+		#endregion Tested Sync
+
+		#region Tested Bulk
+		public static void BulkGet<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
+		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			list = CloneList(list);
+			//List<T> BulkGet(IEnumerable<T> keys, int commandTimeout = 30);
+			int max = Math.Min(list.Count, 10);
+			for (int i = 2; i < max; i++) {
+				List<T> limited = list.Take(i).ToList();
+				List<T> bulk = conn.BulkGet<T>(limited, trans).AsList();
+				for (int j = 0; j < i; j++) {
+					if (!limited[j].IsIdentical(bulk[j]))
+						throw new InvalidOperationException();
+				}
+			}
+		}
+
+		public static void BulkGet_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
+		{
+			if (conn.RecordCount<T>(trans) != list.Count) {
+				throw new InvalidOperationException();
+			}
+			list = CloneList(list);
+			int max = Math.Min(list.Count, 10);
+			for (int i = 2; i < max; i++) {
+				List<T> limited = list.Take(i).OrderBy(x => x).ToList();
+				List<T> bulk = conn.BulkGet<T>(limited.Select(c => (object) c.GetKey()), trans).OrderBy(x => x).AsList();
+				for (int j = 0; j < i; j++) {
+					if (!limited[j].IsIdentical(bulk[j]))
+						throw new InvalidOperationException();
+				}
+			}
+		}
+
+		public static void BulkInsert<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
+		{
+			conn.Truncate<T>(trans);
+			if (conn.RecordCount<T>(trans) != 0)
+				throw new InvalidOperationException();
+			conn.BulkInsert<T>(list, trans);
+			conn.GetList<T>(trans);
+			if (conn.RecordCount<T>(trans) != list.Count)
+				throw new InvalidOperationException();
+		}
+
+		public static void BulkUpdate<T>(SqlConnection conn, SqlTransaction trans, List<T> list, Func<T, T> randomize) where T : class, IDto<T>
+		{
+			List<T> updateList = list.Select(i => randomize(i)).ToList();
+			int count = conn.BulkUpdate<T>(updateList, trans);
+			if (count != updateList.Count) {
+				for (int i = 0; i < updateList.Count; i++) {
+					T get = conn.Get<T>(updateList[i], trans);
+					if (!get.IsIdentical(updateList[i]))
+						throw new InvalidOperationException();
+				}
+			}
+		}
+
+		public static void BulkDelete<T>(SqlConnection conn, SqlTransaction trans) where T : class, IDto<T>
+		{
+			List<T> list = conn.GetList<T>(trans).AsList();
+			int count = conn.BulkDelete(list, trans);
+			if (count != list.Count)
+				throw new InvalidOperationException();
+			count = conn.RecordCount<T>(trans);
+			if (count != 0)
+				throw new InvalidOperationException();
+		}
+
+		public static void BulkDelete_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans) where T : class, IDtoKey<T, KeyType>
+		{
+			if (conn.RecordCount<T>(trans) == 0) {
+				throw new InvalidOperationException();
+			}
+			//int BulkDelete<KeyType>(IEnumerable<KeyType> keys, int commandTimeout = 30);
+			List<KeyType> keys = conn.GetList<T>(trans).Select(t => t.GetKey()).AsList();
+			int count = conn.BulkDelete<T>(keys.Select(k => (object) k), trans);
+			if (count != keys.Count)
+				throw new InvalidOperationException();
+			count = conn.RecordCount<T>(trans);
+			if (count != 0)
+				throw new InvalidOperationException();
+		}
+		#endregion Tested Bulk
+
+		#region Tested Cache
 
 		public static void CacheInsert<T>(DbCacheTable<T, CacheItem<T>> table, List<T> list) where T : class, IDto<T>, new()
 		{
@@ -665,615 +1307,107 @@ namespace ConsoleTests
 			}
 		}
 
-		public static void DoTests<T>(Func<T> constructor, Func<T, T> randomize, IFilter<T> filter) where T : class, IDto<T>, new()
+		#endregion Tested Cache
+
+		#region Tested Cache Async
+
+		public static void DoCacheAsyncTests<T>(Func<T> constructor) where T : class, IDto<T>, new()
+		{
+			DbCache cache = new DbCache(ConnString);
+			DbCacheTable<T, CacheItem<T>> table = cache.CreateTable<T>();
+			Random random = new Random(512851);
+			List<T> list = CreateList<T>(TestAmount + (int) ((random.Next() % TestAmount) * 0.1), () => constructor());
+			CacheInsertDeleteAsync<T>(table, list).Wait();
+		}
+
+		private static async Task CacheInsertDeleteAsync<T>(DbCacheTable<T, CacheItem<T>> table, List<T> list) where T : class, IDto<T>, new()
+		{
+			list = CloneList(list).Take(TestAmount).ToList();
+			List<Task<Lazy<CacheItem<T>>>> inserts = new List<Task<Lazy<CacheItem<T>>>>();
+			List<Task<bool>> deletes = new List<Task<bool>>();
+			for (int i = 0; i < list.Count; i++) {
+				if (i % 4 <= 1) {
+					inserts.Add(table.InsertAsync(list[i]));
+					deletes.Add(table.Access.DeleteAsync(list[i]));
+				}
+				else {
+					deletes.Add(table.Access.DeleteAsync(list[i]));
+					inserts.Add(table.InsertAsync(list[i]));
+				}
+			}
+			for (int i = 0; i < list.Count; i++) {
+				await inserts[i];
+				await deletes[i];
+			}
+			int count = await table.RecordCountAsync();
+			for (int i = 0; i < inserts.Count; i++) {
+				var result = inserts[i].Result.Value.CacheValue;
+				bool deleted = deletes[i].Result;
+				if (deleted) {
+					table.Remove(result);
+				}
+			}
+			if (count != table.Items.Count)
+				throw new InvalidOperationException("2: " + count + " != " + table.Items.Count);
+			List<T> allItems = (await table.Access.GetListAsync()).AsList();
+			if (allItems.Count != table.Items.Count)
+				throw new InvalidOperationException("3: " + allItems.Count + " != " + table.Items.Count);
+			foreach (var item in allItems) {
+				if (!table.Items.Contains(item))
+					throw new InvalidOperationException("4: " + item.ToString());
+			}
+			int count2 = (await table.DeleteListAsync()).Value;
+			if (count != count2)
+				throw new InvalidOperationException("5: " + count + " != " + count2);
+			if (table.Items.Count != 0)
+				throw new InvalidOperationException("6");
+		}
+
+		#endregion Tested Cache Async
+
+		#region Tested Async
+
+		private static void DoAsyncTests<T>(Func<T> constructor) where T : class, IDto<T>, new()
 		{
 			Random random = new Random(512851);
 			using (SqlConnection conn = new SqlConnection(ConnString)) {
 				conn.Open();
 				using (SqlTransaction trans = conn.BeginTransaction()) {
 					Recreate<T>(conn, trans);
-					Insert<T>(conn, trans, TestAmount + (int)((random.Next() % TestAmount) * 0.1), constructor);
 					trans.Commit();
 				}
-				List<T> list = conn.GetList<T>().ToList();
-				list.Sort((x, y) => x.CompareTo(y));
 				using (SqlTransaction trans = conn.BeginTransaction()) {
-					RecordCount<T>(conn, trans, list);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					GetList(conn, trans, list);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					InsertGet(conn, trans, constructor);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					Delete(conn, trans, list);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					GetKeys(conn, trans, list);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					DeleteList(conn, trans, list);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					GetLimit(conn, trans, list);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					DeleteAll<T>(conn, trans);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					Update<T>(conn, trans, list, randomize);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					Update_Obj<T>(conn, trans, list);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					Upsert<T>(conn, trans);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					GetDistinct(conn, trans, list);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					GetDistinctLimit(conn, trans, list);
-				}
-				//
-				// Bulk
-				//
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					BulkGet(conn, trans, list);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					BulkInsert(conn, trans, list);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					BulkUpdate(conn, trans, list, (t) => randomize(t));
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					BulkDelete<T>(conn, trans);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					BulkUpsert<T>(conn, trans);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					InsertIfNotExists<T>(conn, trans);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					BulkInsertIfNotExists<T>(conn, trans, list);
-				}
-				//
-				// Filters
-				//
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					GetFilter(conn, trans, list, filter);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					GetFilterLimit(conn, trans, list, filter);
-				}
-				using (SqlTransaction trans = conn.BeginTransaction()) {
-					GetFilterDistinctLimit(conn, trans, list, filter);
+					List<T> list = CreateList<T>(TestAmount + (int) ((random.Next() % TestAmount) * 0.1), () => constructor());
+					InsertDeleteAsync<T>(conn, trans, list).Wait();
 				}
 			}
 		}
 
-		public static void DoTests<T, KeyType>(SqlConnection conn) where T : class, IDtoKey<T, KeyType>
+		private static async Task InsertDeleteAsync<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
-			List<T> list = conn.GetList<T>().AsList();
-			list.Sort((x, y) => x.CompareTo(y));
-			using (SqlTransaction trans = conn.BeginTransaction()) {
-				Get_Key<T, KeyType>(conn, trans, list);
-			}
-			using (SqlTransaction trans = conn.BeginTransaction()) {
-				GetKeys_Key<T, KeyType>(conn, trans, list);
-			}
-			using (SqlTransaction trans = conn.BeginTransaction()) {
-				Delete_Key<T, KeyType>(conn, trans, list);
-			}
-			using (SqlTransaction trans = conn.BeginTransaction()) {
-				BulkGet_Key<T, KeyType>(conn, trans, list);
-			}
-			using (SqlTransaction trans = conn.BeginTransaction()) {
-				BulkDelete_Key<T, KeyType>(conn, trans);
-			}
-		}
-
-		private static Dictionary<T, T> CreateMap<T>(List<T> list) where T : class, IDto<T>
-		{
-			Dictionary<T, T> map = new Dictionary<T, T>(ExtraCrud.EqualityComparer<T>());
-			foreach (T item in list) {
-				map.Add(item, item);
-			}
-			return map;
-		}
-
-		private static Dictionary<KeyType, T> CreateMap<T, KeyType>(List<T> list) where T : class, IDtoKey<T, KeyType>
-		{
-			Dictionary<KeyType, T> map = new Dictionary<KeyType, T>();
-			foreach (T item in list) {
-				map.Add(item.GetKey(), item);
-			}
-			return map;
-		}
-
-		private static void DropTable<T>(SqlConnection conn, SqlTransaction trans = null) where T : class
-		{
-			string tableName = ExtraCrud.TypeInfo<T>().TableName;
-			string str = $@"
-IF EXISTS (
-	SELECT * from INFORMATION_SCHEMA.TABLES 
-WHERE TABLE_NAME = '{tableName}' 
-	AND TABLE_SCHEMA = 'dbo'
-) 
-DROP TABLE dbo.{tableName};";
-			conn.Execute(str, null, trans);
-		}
-
-		private static void CreateTable<T>(SqlConnection conn, SqlTransaction trans = null) where T : class, IDto<T>, new()
-		{
-			conn.Execute(new T().CreateTable(), null, trans);
-		}
-
-		private static void Recreate<T>(SqlConnection conn, SqlTransaction trans) where T : class, IDto<T>, new()
-		{
-			DropTable<T>(conn, trans);
-			CreateTable<T>(conn, trans);
-		}
-
-		#region Tested
-		private static void Insert<T>(SqlConnection conn, SqlTransaction trans, int count, Func<T> constructor) where T : class, IDto<T>
-		{
-			if (count <= 0)
-				count = 1;
-			List<T> list = CreateList<T>(count, constructor);
-			for (int i = 0; i < list.Count; i++) {
-				conn.Insert<T>(list[i], trans);
-			}
-		}
-
-		public static void RecordCount<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
-		{
-			int count = conn.RecordCount<T>(trans);
-			if (list.Count != count)
-				throw new InvalidOperationException();
-		}
-
-		public static void WhereConditionGen<T>(SqlConnection conn, SqlTransaction trans, List<T> list, Expression<Func<T, bool>> predicateExpr) where T : class, IDto<T>
-		{
-			string condition = WhereConditionGenerator.Create<T>(predicateExpr, out IDictionary<string, object> param);
-			Func<T, bool> predicate = predicateExpr.Compile();
-			List<T> filtered = list.Where(d => predicate(d)).ToList();
-			int count = conn.RecordCount<T>("WHERE " + condition, param, trans);
-			if (filtered.Count != count)
-				throw new InvalidOperationException();
-		}
-
-		public static void InsertGet<T>(SqlConnection conn, SqlTransaction trans, Func<T> constructor) where T : class, IDto<T>
-		{
-			T constructed = constructor();
-			T get = conn.Get(constructed, trans);
-			if (get != null)
-				throw new InvalidOperationException();
-			conn.Insert(constructed, trans);
-			get = conn.Get(constructed, trans);
-			if (get == null)
-				throw new InvalidOperationException();
-			if (!get.Equals(constructed))
-				throw new InvalidOperationException();
-		}
-
-		public static void GetList<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
-		{
-			if (conn.RecordCount<T>(trans) != list.Count) {
-				throw new InvalidOperationException();
-			}
-			Dictionary<T, T> map = CreateMap<T>(list);
-			list = conn.GetList<T>(trans).AsList();
-			if (map.Count != list.Count)
-				throw new InvalidOperationException();
-			foreach (T item in list) {
-				if (!map.Remove(item)) {
-					throw new InvalidOperationException();
-				}
-			}
-		}
-
-		public static void GetFilter<T>(SqlConnection conn, SqlTransaction trans, List<T> list, IFilter<T> filter) where T : class, IDto<T>
-		{
-			if (conn.RecordCount<T>(trans) != list.Count) {
-				throw new InvalidOperationException();
-			}
-			list = conn.GetList<T>(filter.GetType(), "", null, trans).AsList();
-			foreach (T item in list) {
-				if (!filter.IsFiltered(item))
-					throw new InvalidOperationException();
-			}
-		}
-
-		public static void Get_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
-		{
-			if (conn.RecordCount<T>(trans) != list.Count) {
-				throw new InvalidOperationException();
-			}
 			list = CloneList(list);
-			foreach (T item in list) {
-				T get = conn.Get<T>(item.GetKey(), trans);
-				if (!item.IsIdentical(get))
-					throw new InvalidOperationException();
+			List<Task> inserts = new List<Task>();
+			List<Task<bool>> deletes = new List<Task<bool>>();
+			for (int i = 0; i < list.Count; i++) {
+				inserts.Add(conn.InsertAsync(list[i], trans));
 			}
-		}
-
-		public static void Delete<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
-		{
-			if (conn.RecordCount<T>(trans) != list.Count) {
-				throw new InvalidOperationException();
+			for (int i = 0; i < inserts.Count; i++) {
+				await inserts[i];
 			}
 			for (int i = 0; i < list.Count; i++) {
-				T t = conn.Get(list[i], trans);
-				if (t == null)
-					throw new InvalidOperationException();
-				if (!conn.Delete(list[i], trans))
-					throw new InvalidOperationException();
-				int count1 = conn.RecordCount<T>(trans);
-				if (count1 != (list.Count - i - 1))
-					throw new InvalidOperationException();
-				t = conn.Get(list[i], trans);
-				if (t != null)
-					throw new InvalidOperationException();
+				deletes.Add(conn.DeleteAsync(list[i], trans));
+			}
+			for (int i = 0; i < inserts.Count; i++) {
+				await deletes[i];
 			}
 		}
 
-		public static void GetKeys<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
-		{
-			Dictionary<T, T> map = CreateMap<T>(list);
-			IEnumerable<T> keys = conn.GetKeys<T>(trans);
-			foreach (T key in keys) {
-				if (!map.Remove(key)) {
-					throw new InvalidOperationException();
-				}
-			}
-		}
+		#endregion Tested Async
 
-		public static void GetKeys_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
-		{
-			Dictionary<KeyType, T> map;
-			if (typeof(KeyType) == typeof(byte[])) {
-				map = new Dictionary<KeyType, T>((IEqualityComparer<KeyType>)(object)ArrayEqualityComparer<byte>.Default);
-				foreach (var item in list) {
-					map.Add(item.GetKey(), item);
-				}
-			}
-			else
-				map = CreateMap<T, KeyType>(list);
-			IEnumerable<KeyType> keys = conn.GetKeys<T, KeyType>(trans);
-			foreach (KeyType key in keys) {
-				if (!map.Remove(key))
-					throw new InvalidOperationException();
-			}
-		}
-
-		public static void DeleteList<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
-		{
-			if (conn.RecordCount<T>(trans) != list.Count) {
-				throw new InvalidOperationException();
-			}
-			int count = conn.DeleteList<T>(trans);
-			if (count != list.Count)
-				throw new InvalidOperationException();
-		}
-
-		public static void Delete_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
-		{
-			if (conn.RecordCount<T>(trans) != list.Count) {
-				throw new InvalidOperationException();
-			}
-			//bool Delete<KeyType>(KeyType key, int commandTimeout = 30);
-			for (int i = 0; i < list.Count; i++) {
-				var key = list[i].GetKey();
-				T t = conn.Get<T>(key, trans);
-				if (t == null)
-					throw new InvalidOperationException();
-				if (!conn.Delete<T>(key, trans))
-					throw new InvalidOperationException();
-				int count1 = conn.RecordCount<T>(trans);
-				if (count1 != (list.Count - i - 1))
-					throw new InvalidOperationException();
-				t = conn.Get<T>(key, trans);
-				if (t != null)
-					throw new InvalidOperationException();
-			}
-		}
-
-		public static void GetLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
-		{
-			if (conn.RecordCount<T>(trans) != list.Count) {
-				throw new InvalidOperationException();
-			}
-			list = CloneList(list);
-			int max = Math.Min(list.Count, 20);
-			for (int i = 0; i < max; i++) {
-				List<T> items = conn.GetLimit<T>(i, trans).AsList();
-				if (items.Count != i)
-					throw new InvalidOperationException();
-			}
-		}
-
-		public static void GetFilterLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list, IFilter<T> filter) where T : class, IDto<T>
-		{
-			if (conn.RecordCount<T>(trans) != list.Count) {
-				throw new InvalidOperationException();
-			}
-			int max = Math.Min(list.Count, 20);
-			for (int i = 0; i < max; i++) {
-				List<T> items = conn.GetLimit<T>(i, filter.GetType(), "", null, trans).AsList();
-				if (items.Count != i)
-					throw new InvalidOperationException();
-			}
-		}
-
-		public static void DeleteAll<T>(SqlConnection conn, SqlTransaction trans) where T : class, IDto<T>
-		{
-			int count = conn.RecordCount<T>(trans);
-			if (count == 0)
-				throw new InvalidOperationException();
-			conn.Truncate<T>(trans);
-			count = conn.RecordCount<T>(trans);
-			if (count != 0)
-				throw new InvalidOperationException();
-		}
-
-		public static void Update<T>(SqlConnection conn, SqlTransaction trans, List<T> list, Func<T, T> randomize) where T : class, IDto<T>
-		{
-			if (conn.RecordCount<T>(trans) != list.Count) {
-				throw new InvalidOperationException();
-			}
-			list = CloneList(list);
-			//bool Update(T obj, int commandTimeout = 30);
-			List<T> failures = new List<T>();
-			foreach (T item in list) {
-				T get = conn.Get<T>(item, trans);
-				if (get == null)
-					throw new InvalidOperationException();
-				T updated = randomize(get);
-				if (!conn.Update<T>(updated, trans)) {
-					if (!updated.IsIdentical(get)) {
-						failures.Add(get);
-						continue;
-					}
-				}
-				get = conn.Get<T>(updated, trans);
-				if (!updated.IsUpdated(get)) {
-					throw new InvalidOperationException();
-				}
-			}
-			if (failures.Count > 0) {
-				throw new InvalidOperationException();
-			}
-		}
-
-		public static void Upsert<T>(SqlConnection conn, SqlTransaction trans) where T : class, IDto<T>
-		{
-			List<T> list = conn.GetList<T>(trans).AsList();
-			for (int i = 0; i < list.Count; i++) {
-				bool doDelete = i % 2 == 1;
-				if (doDelete) {
-					if (!conn.Delete(list[i], trans))
-						throw new InvalidOperationException();
-					if (!conn.Upsert<T>(list[i], trans))
-						throw new InvalidOperationException();
-					T get = conn.Get<T>(list[i], trans);
-					if (get == null)
-						throw new InvalidOperationException();
-					if (!list[i].IsInserted(get))
-						throw new InvalidOperationException();
-				}
-				else {
-					T get = conn.Get<T>(list[i], trans);
-					if (get == null)
-						throw new InvalidOperationException();
-					if (conn.Upsert<T>(list[i], trans))
-						throw new InvalidOperationException();
-				}
-			}
-		}
-
-		public static void GetDistinct<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
-		{
-			if (conn.RecordCount<T>(trans) != list.Count) {
-				throw new InvalidOperationException();
-			}
-			//requires IgnoreSelect to be useful
-			Dictionary<T, T> map = CreateMap<T>(list);
-			List<T> list2 = conn.GetDistinct<T>(typeof(T), trans).AsList();
-			if (map.Count != list2.Count)
-				throw new InvalidOperationException();
-			foreach (T item in list2) {
-				if (!map.Remove(item)) {
-					throw new InvalidOperationException();
-				}
-			}
-		}
-
-		public static void GetDistinctLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
-		{
-			if (conn.RecordCount<T>(trans) != list.Count) {
-				throw new InvalidOperationException();
-			}
-			list = CloneList(list);
-			int max = Math.Min(list.Count, 10);
-			for (int i = 2; i < max; i++) {
-				Dictionary<T, T> map = CreateMap<T>(list);
-				List<T> list2 = conn.GetDistinctLimit<T>(i, typeof(T), trans).AsList();
-				if (list2.Count != i)
-					throw new InvalidOperationException();
-				foreach (T item in list2) {
-					if (!map.Remove(item)) {
-						throw new InvalidOperationException();
-					}
-				}
-			}
-		}
-
-		public static void GetFilterDistinctLimit<T>(SqlConnection conn, SqlTransaction trans, List<T> list, IFilter<T> filter) where T : class, IDto<T>
-		{
-			if (conn.RecordCount<T>(trans) != list.Count) {
-				throw new InvalidOperationException();
-			}
-			list = CloneList(list);
-			int max = Math.Min(list.Count, 10);
-			for (int i = 2; i < max; i++) {
-				Dictionary<T, T> map = CreateMap<T>(list);
-				List<T> list2 = conn.GetDistinctLimit<T>(i, filter.GetType(), trans).AsList();
-				if (list2.Count == 0)
-					throw new InvalidOperationException();
-			}
-		}
-		#endregion Tested
-
-		#region Tested Bulk
-		public static void BulkGet<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
-		{
-			if (conn.RecordCount<T>(trans) != list.Count) {
-				throw new InvalidOperationException();
-			}
-			list = CloneList(list);
-			//List<T> BulkGet(IEnumerable<T> keys, int commandTimeout = 30);
-			int max = Math.Min(list.Count, 10);
-			for (int i = 2; i < max; i++) {
-				List<T> limited = list.Take(i).ToList();
-				List<T> bulk = conn.BulkGet<T>(limited, trans).AsList();
-				for (int j = 0; j < i; j++) {
-					if (!limited[j].IsIdentical(bulk[j]))
-						throw new InvalidOperationException();
-				}
-			}
-		}
-
-		public static void BulkGet_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDtoKey<T, KeyType>
-		{
-			if (conn.RecordCount<T>(trans) != list.Count) {
-				throw new InvalidOperationException();
-			}
-			list = CloneList(list);
-			int max = Math.Min(list.Count, 10);
-			for (int i = 2; i < max; i++) {
-				List<T> limited = list.Take(i).OrderBy(x => x).ToList();
-				List<T> bulk = conn.BulkGet<T>(limited.Select(c => (object)c.GetKey()), trans).OrderBy(x => x).AsList();
-				for (int j = 0; j < i; j++) {
-					if (!limited[j].IsIdentical(bulk[j]))
-						throw new InvalidOperationException();
-				}
-			}
-		}
-
-		public static void BulkInsert<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
-		{
-			conn.Truncate<T>(trans);
-			if (conn.RecordCount<T>(trans) != 0)
-				throw new InvalidOperationException();
-			conn.BulkInsert<T>(list, trans);
-			conn.GetList<T>(trans);
-			if (conn.RecordCount<T>(trans) != list.Count)
-				throw new InvalidOperationException();
-		}
-
-		public static void BulkUpdate<T>(SqlConnection conn, SqlTransaction trans, List<T> list, Func<T, T> randomize) where T : class, IDto<T>
-		{
-			List<T> updateList = list.Select(i => randomize(i)).ToList();
-			int count = conn.BulkUpdate<T>(updateList, trans);
-			if (count != updateList.Count) {
-				for (int i = 0; i < updateList.Count; i++) {
-					T get = conn.Get<T>(updateList[i], trans);
-					if (!get.IsIdentical(updateList[i]))
-						throw new InvalidOperationException();
-				}
-			}
-		}
-
-		public static void BulkDelete<T>(SqlConnection conn, SqlTransaction trans) where T : class, IDto<T>
-		{
-			List<T> list = conn.GetList<T>(trans).AsList();
-			int count = conn.BulkDelete(list, trans);
-			if (count != list.Count)
-				throw new InvalidOperationException();
-			count = conn.RecordCount<T>(trans);
-			if (count != 0)
-				throw new InvalidOperationException();
-		}
-
-		public static void BulkDelete_Key<T, KeyType>(SqlConnection conn, SqlTransaction trans) where T : class, IDtoKey<T, KeyType>
-		{
-			if (conn.RecordCount<T>(trans) == 0) {
-				throw new InvalidOperationException();
-			}
-			//int BulkDelete<KeyType>(IEnumerable<KeyType> keys, int commandTimeout = 30);
-			List<KeyType> keys = conn.GetList<T>(trans).Select(t => t.GetKey()).AsList();
-			int count = conn.BulkDelete<T>(keys.Select(k => (object)k), trans);
-			if (count != keys.Count)
-				throw new InvalidOperationException();
-			count = conn.RecordCount<T>(trans);
-			if (count != 0)
-				throw new InvalidOperationException();
-		}
-		#endregion Tested Bulk
-
-		public static void Update_Obj<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
+		private static void Update_Obj<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
 		{
 			var updateObj = Dapper.Extra.ExtraCrud.Builder<T>().Queries.UpdateObj;
 			//bool Update(object obj, int commandTimeout = 30);
-		}
-
-		public static void BulkUpsert<T>(SqlConnection conn, SqlTransaction trans) where T : class, IDto<T>
-		{
-			//int BulkUpsert(IEnumerable<T> objs, int commandTimeout = 30);
-			List<T> list = conn.GetList<T>(trans).AsList();
-			List<T> updates = new List<T>();
-			List<T> inserts = new List<T>();
-			for (int i = 0; i < list.Count; i += 2) {
-				updates.Add(list[i]);
-			}
-			for (int i = 1; i < list.Count; i += 2) {
-				inserts.Add(list[i]);
-				if (!conn.Delete(list[i], trans))
-					throw new InvalidOperationException();
-			}
-			int count = conn.BulkUpsert<T>(list, trans);
-			if (count != inserts.Count)
-				throw new InvalidOperationException();
-		}
-
-		public static void BulkInsertIfNotExists<T>(SqlConnection conn, SqlTransaction trans, List<T> list) where T : class, IDto<T>
-		{
-			List<T> insert = list.Take(list.Count / 2).ToList();
-			List<T> fails = list.Skip(list.Count / 2).ToList();
-			int count = conn.RecordCount<T>(trans);
-			foreach (T item in insert) {
-				if (!conn.Delete(item, trans))
-					throw new InvalidOperationException();
-			}
-			if (0 != conn.BulkInsertIfNotExists(fails, trans))
-				throw new InvalidOperationException();
-			int insertedCount = conn.BulkInsertIfNotExists(insert, trans);
-			if (insertedCount != insert.Count)
-				throw new InvalidOperationException();
-			int count2 = conn.RecordCount<T>(trans);
-			if (count2 != count)
-				throw new InvalidOperationException();
-		}
-
-		public static void InsertIfNotExists<T>(SqlConnection conn, SqlTransaction trans) where T : class, IDto<T>
-		{
-			List<T> list = conn.GetList<T>(trans).AsList();
-			for (int i = 0; i < list.Count; i++) {
-				T item = list[i];
-				if (conn.InsertIfNotExists(item, trans))
-					throw new InvalidOperationException();
-				if (!conn.Delete(item, trans))
-					throw new InvalidOperationException();
-				if (!conn.InsertIfNotExists(item, trans))
-					throw new InvalidOperationException();
-			}
-			int count = conn.RecordCount<T>(trans);
-			if (count != conn.RecordCount<T>(trans))
-				throw new InvalidOperationException();
 		}
 	}
 }

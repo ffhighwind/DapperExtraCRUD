@@ -388,7 +388,7 @@ namespace Dapper.Extra.Cache
 		/// <param name="key">The key of the row to delete.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>True if the row was deleted; false otherwise.</returns>
-		Task<bool> DeleteAsync(object key, int commandTimeout = 30);
+		Task<Lazy<bool>> DeleteAsync(object key, int commandTimeout = 30);
 
 		/// <summary>
 		/// Deletes the given row asynchronously.
@@ -396,7 +396,7 @@ namespace Dapper.Extra.Cache
 		/// <param name="obj">The object to delete.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>True if the row was deleted; false otherwise.</returns>
-		Task<bool> DeleteAsync(T obj, int commandTimeout = 30);
+		Task<Lazy<bool>> DeleteAsync(T obj, int commandTimeout = 30);
 
 		/// <summary>
 		/// Deletes the rows that match the given condition asynchronously.
@@ -405,7 +405,7 @@ namespace Dapper.Extra.Cache
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The number of deleted rows.</returns>
-		Task<int> DeleteListAsync(string whereCondition = "", object param = null, int commandTimeout = 30);
+		Task<Lazy<int>> DeleteListAsync(string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the row with the given key asynchronously.
@@ -413,7 +413,7 @@ namespace Dapper.Extra.Cache
 		/// <param name="key">The key of the row to select.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The row with the given key.</returns>
-		Task<R> GetAsync(object key, int commandTimeout = 30);
+		Task<Lazy<R>> GetAsync(object key, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects a row asynchronously.
@@ -421,7 +421,7 @@ namespace Dapper.Extra.Cache
 		/// <param name="obj">The object to select.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The selected row if it exists; otherwise null.</returns>
-		Task<R> GetAsync(T obj, int commandTimeout = 30);
+		Task<Lazy<R>> GetAsync(T obj, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows that match the given condition asynchronously.
@@ -471,7 +471,7 @@ namespace Dapper.Extra.Cache
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The limited number of rows that match the given condition.</returns>
-		Task<IEnumerable<R>> GetLimitAsync(int limit, string whereCondition = "", object param = null, int commandTimeout = 30);
+		Task<Lazy<IEnumerable<R>>> GetLimitAsync(int limit, string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects a limited number of rows that match the given condition asynchronously.
@@ -491,7 +491,7 @@ namespace Dapper.Extra.Cache
 		/// <param name="param">The parameters to use for this query.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given condition.</returns>
-		Task<IEnumerable<R>> GetListAsync(string whereCondition = "", object param = null, int commandTimeout = 30);
+		Task<Lazy<IEnumerable<R>>> GetListAsync(string whereCondition = "", object param = null, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows that match the given condition asynchronously.
@@ -508,7 +508,7 @@ namespace Dapper.Extra.Cache
 		/// </summary>
 		/// <param name="obj">The object to insert.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
-		Task<R> InsertAsync(T obj, int commandTimeout = 30);
+		Task<Lazy<R>> InsertAsync(T obj, int commandTimeout = 30);
 
 		/// <summary>
 		/// Inserts a row if it does not exist asynchronously.
@@ -516,7 +516,7 @@ namespace Dapper.Extra.Cache
 		/// <param name="obj">The object to insert.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>True if the the row was inserted; false otherwise.</returns>
-		Task<R> InsertIfNotExistsAsync(T obj, int commandTimeout = 30);
+		Task<Lazy<R>> InsertIfNotExistsAsync(T obj, int commandTimeout = 30);
 
 		/// <summary>
 		/// Counts the number of rows that match the given condition asynchronously.
@@ -533,7 +533,7 @@ namespace Dapper.Extra.Cache
 		/// <param name="obj">The object to update.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>True if the row was updated; false otherwise.</returns>
-		Task<bool> UpdateAsync(object obj, int commandTimeout = 30);
+		Task<Lazy<bool>> UpdateAsync(object obj, int commandTimeout = 30);
 
 		/// <summary>
 		/// Updates a row asynchronously.
@@ -541,7 +541,7 @@ namespace Dapper.Extra.Cache
 		/// <param name="obj">The object to update.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>True if the row was updated; false otherwise.</returns>
-		Task<bool> UpdateAsync(T obj, int commandTimeout = 30);
+		Task<Lazy<bool>> UpdateAsync(T obj, int commandTimeout = 30);
 
 		/// <summary>
 		/// Upserts a row asynchronously.
@@ -549,7 +549,7 @@ namespace Dapper.Extra.Cache
 		/// <param name="obj">The object to upsert.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>True if the object was upserted; false otherwise.</returns>
-		Task<bool> UpsertAsync(T obj, int commandTimeout = 30);
+		Task<Lazy<bool>> UpsertAsync(T obj, int commandTimeout = 30);
 
 		#endregion Async
 	}
