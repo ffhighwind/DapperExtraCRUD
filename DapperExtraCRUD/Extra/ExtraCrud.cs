@@ -132,8 +132,10 @@ namespace Dapper.Extra
 		{
 			if (type == typeof(object))
 				return false;
-			//type = Nullable.GetUnderlyingType(type) ?? type;
-			if (ExtraUtil.DbTypeMap.ContainsKey(type) || type.IsEnum)
+			if (ExtraUtil.DbTypeMap.ContainsKey(type))
+				return true;
+			type = Nullable.GetUnderlyingType(type) ?? type;
+			if (type.IsEnum)
 				return true;
 			if (type.IsGenericType && typeof(IEnumerable<>).IsAssignableFrom(type)) {
 				Type genericArgType = type.GetGenericArguments()[0];

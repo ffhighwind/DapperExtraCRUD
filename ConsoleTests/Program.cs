@@ -35,6 +35,7 @@ using Dapper.Extra.Utilities;
 using Dapper.Extra.Cache;
 using DapperExtraCRUD.Example;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace ConsoleTests
 {
@@ -53,6 +54,15 @@ namespace ConsoleTests
 
 				_ = ExtraCrud.Builder<Dto10>();
 
+				Type ty = typeof(Test7Type?);
+				PropertyInfo pr = typeof(Test7).GetProperty(nameof(Test7.Value));
+				if (ty != pr.PropertyType)
+					throw new InvalidOperationException();
+				if (!ExtraCrud.IsValidType(ty))
+					throw new InvalidOperationException();
+				if (!ExtraCrud.IsValidProperty(pr))
+					throw new InvalidOperationException();
+
 				Recreate<TestDTO>(conn, null);
 				Recreate<TestDTO2>(conn, null);
 				Recreate<Test3>(conn, null);
@@ -62,7 +72,6 @@ namespace ConsoleTests
 				Recreate<Test7>(conn, null);
 				Recreate<Test8>(conn, null);
 				Recreate<Test9>(conn, null);
-				/*
 
 				TestEnums(conn);
 				DoWhereConditionGenTest();
@@ -111,8 +120,9 @@ namespace ConsoleTests
 				DoMultiCacheTest<Test7, TestDTO2>(() => new Test7(random), () => new TestDTO2(random));
 				DoMultiCacheTest<Test8, TestDTO6>(() => new Test8(random), () => new TestDTO6(random));
 				DoMultiCacheTest<Test9, TestDTO4>(() => new Test9(random), () => new TestDTO4(random));
-				*/
 
+
+				/*
 				DoAsyncTests<TestDTO>(() => new TestDTO(random));
 				DoAsyncTests<TestDTO2>(() => new TestDTO2(random));
 				DoAsyncTests<Test3>(() => new Test3(random));
@@ -132,6 +142,7 @@ namespace ConsoleTests
 				DoCacheAsyncTests<Test7>(() => new Test7(random));
 				DoCacheAsyncTests<Test8>(() => new Test8(random));
 				DoCacheAsyncTests<Test9>(() => new Test9(random));
+				*/
 
 				DropTable<TestDTO>(conn);
 				DropTable<TestDTO2>(conn);

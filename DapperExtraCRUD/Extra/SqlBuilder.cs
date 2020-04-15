@@ -986,7 +986,7 @@ namespace Dapper.Extra
 		/// </summary>
 		public override string ToString()
 		{
-			return "(SqlBuilder " + Info.Type.FullName + ")";
+			return "SqlBuilder " + Info.Type.FullName;
 		}
 
 		#endregion

@@ -8,7 +8,7 @@ namespace ConsoleTests
 
 		public bool IsFiltered(Test7 obj)
 		{
-			return true;
+			return obj.Value == null;
 		}
 	}
 }

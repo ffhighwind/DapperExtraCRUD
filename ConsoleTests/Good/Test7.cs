@@ -37,10 +37,13 @@ namespace ConsoleTests
 		public Test7(Random random) 
 		{
 			ID = (Test7Type)random.Next();
+			Value = (random.Next() % 100) > 35 ? (Test7Type?) (random.Next() % (int) Test7Type.ID19) : null;
 		}
 
 		[Key(false)]
 		public Test7Type ID { get; set; }
+
+		public Test7Type? Value { get; set; }
 
 		public Test7 Clone()
 		{
@@ -57,6 +60,7 @@ namespace ConsoleTests
 			return @"
 CREATE TABLE [dbo].[Test7](
 	[ID] [int] NOT NULL,
+	[Value] [int] NULL,
  CONSTRAINT [PK_Test7] PRIMARY KEY CLUSTERED 
 (
 	[ID] ASC
