@@ -212,6 +212,7 @@ to change the case sensitivity for primary key comparisons.
 * Bulk operations for other RDBMS.
 * Multi-Mapping/Joins
 * Paged results
+* Better async support and tests. This is done in a very lazy way instead of using Dapper's async calls, so it will not perform quite as well.
 
 # License
 
