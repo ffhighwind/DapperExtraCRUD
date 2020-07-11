@@ -443,7 +443,7 @@ namespace Dapper.Extra
 
 		private DbListInt<T> CreateBulkDelete()
 		{
-			if (Info.DeleteKeyColumns.Count == 0) // NoDeltesAttribute
+			if (Info.DeleteKeyColumns.Count == 0) // NoDeletesAttribute
 				return DoNothing;
 			string dropBulkTableCmd = DropBulkTableCmd();
 			string selectEqualityIntoStagingCmd = SelectIntoStagingTable(EqualityColumns);
@@ -468,7 +468,7 @@ namespace Dapper.Extra
 		private DbKeysInt<T> CreateBulkDeleteKeys<KeyType>()
 		{
 			if (Info.DeleteKeyColumns.Count == 0) {
-				//	NoDeltesAttribute
+				//	NoDeletesAttribute
 				return (connection, keys, transaction, commandTimeout) => {
 					return 0;
 				};
@@ -631,7 +631,7 @@ namespace Dapper.Extra
 
 		private DbTBool<T> CreateDelete()
 		{
-			if (Info.DeleteKeyColumns.Count == 0) // NoDeltesAttribute
+			if (Info.DeleteKeyColumns.Count == 0) // NoDeletesAttribute
 				return DoNothing;
 			string deleteCmd = DeleteCmd();
 			string deleteEquals = WhereEquals(Info.DeleteKeyColumns);
@@ -645,7 +645,7 @@ namespace Dapper.Extra
 		private DbKeyBool CreateDeleteKey()
 		{
 			if (Info.DeleteKeyColumns.Count == 0) {
-				//	NoDeltesAttribute
+				//	NoDeletesAttribute
 				return (connection, obj, transaction, commandTimeout) => {
 					return false;
 				};
@@ -903,7 +903,7 @@ namespace Dapper.Extra
 
 		private DbVoid CreateTruncate()
 		{
-			if (Info.DeleteKeyColumns.Count == 0) // NoDeltesAttribute
+			if (Info.DeleteKeyColumns.Count == 0) // NoDeletesAttribute
 				return DoNothing;
 			string truncateCmd = Store(Info.Adapter.TruncateTable(TableName));
 			return (connection, transaction, commandTimeout) => {
