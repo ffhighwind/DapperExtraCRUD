@@ -42,10 +42,11 @@ namespace Dapper.Extra
 		/// <param name="property">The property<see cref="PropertyInfo"/></param>
 		/// <param name="columnName">The columnName<see langword="string"/></param>
 		/// <param name="ordinal">The ordinal<see langword="int"/></param>
-		internal SqlColumn(PropertyInfo property, string columnName, int ordinal)
+		internal SqlColumn(PropertyInfo property, string columnName, string propertyName, int ordinal)
 		{
 			Property = property;
 			ColumnName = columnName;
+			PropertyName = propertyName;
 			Ordinal = ordinal;
 			if (property.CanWrite && !property.SetMethod.IsStatic)
 				Setter = Reflect.PropertySetter(Property);
@@ -59,9 +60,14 @@ namespace Dapper.Extra
 		public SqlColumnAttributes Attributes { get; internal set; }
 
 		/// <summary>
-		/// The name of the column. This is quoted using the <see cref="SqlAdapter"/> if necessary.
+		/// The quoted name of the column.
 		/// </summary>
 		public string ColumnName { get; private set; }
+
+		/// <summary>
+		/// The quoted name of the property.
+		/// </summary>
+		public string PropertyName { get; private set; }
 
 		/// <summary>
 		/// Gets the value of the property for an object.

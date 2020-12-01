@@ -90,7 +90,7 @@ namespace Dapper.Extra
 		string DropTempTableIfExists(string tableName);
 
 		/// <summary>
-		/// Quotes an identifier. You can use <see cref="ExtraUtil.IsSqlIdentifier(string)"/> to determine if an identifier needs to be quoted.
+		/// Quotes an identifier if it needs to be quoted.
 		/// <code>[{0}]</code>
 		/// <code>`{0}`</code>
 		/// </summary>

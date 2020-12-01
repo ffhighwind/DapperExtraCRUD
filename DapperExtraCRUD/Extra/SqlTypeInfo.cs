@@ -133,7 +133,8 @@ namespace Dapper.Extra
 						columnName = columnAttr2.Name;
 					}
 				}
-				SqlColumn column = new SqlColumn(prop, string.IsNullOrWhiteSpace(columnName) ? prop.Name : Adapter.QuoteIdentifier(columnName), i);
+				string propName = Adapter.QuoteIdentifier(prop.Name);
+				SqlColumn column = new SqlColumn(prop, string.IsNullOrWhiteSpace(columnName) ? propName : Adapter.QuoteIdentifier(columnName), propName, i);
 				KeyAttribute keyAttr = prop.GetCustomAttribute<KeyAttribute>(inherit);
 				if (keyAttr != null) {
 					if (keyAttr.AutoIncrement)

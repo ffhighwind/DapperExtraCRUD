@@ -75,8 +75,8 @@ namespace Dapper.Extra.Internal
 			StringBuilder sb = new StringBuilder();
 			foreach (SqlColumn column in columns) {
 				sb.Append(column.ColumnName);
-				if (column.Property.Name != column.ColumnName) {
-					sb.Append(" as ").Append(column.Property.Name);
+				if (column.PropertyName != column.ColumnName) {
+					sb.Append(" as ").Append(column.PropertyName);
 				}
 				sb.Append(',');
 			}
@@ -97,8 +97,8 @@ namespace Dapper.Extra.Internal
 				sb.Append(tableName);
 				sb.Append('.');
 				sb.Append(column.ColumnName);
-				if (column.Property.Name != column.ColumnName) {
-					sb.Append(" as ").Append(column.Property.Name);
+				if (column.PropertyName != column.ColumnName) {
+					sb.Append(" as ").Append(column.PropertyName);
 				}
 				sb.Append(',');
 			}

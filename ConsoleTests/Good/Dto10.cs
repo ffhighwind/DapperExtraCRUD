@@ -10,5 +10,6 @@ namespace ConsoleTests
 	{
 		private int id;
 		private int ID { set => id = value; }
+		private int Default { set => id = value; }
 	}
 }

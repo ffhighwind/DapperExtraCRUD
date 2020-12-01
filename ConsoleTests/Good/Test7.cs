@@ -45,6 +45,8 @@ namespace ConsoleTests
 
 		public Test7Type? Value { get; set; }
 
+		public bool? Default { get; set; }
+
 		public Test7 Clone()
 		{
 			return (Test7) MemberwiseClone();
@@ -61,6 +63,7 @@ namespace ConsoleTests
 CREATE TABLE [dbo].[Test7](
 	[ID] [int] NOT NULL,
 	[Value] [int] NULL,
+	[Default] [bit] NULL,
  CONSTRAINT [PK_Test7] PRIMARY KEY CLUSTERED 
 (
 	[ID] ASC

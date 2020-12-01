@@ -151,15 +151,13 @@ namespace Dapper.Extra.Internal.Adapters
 		}
 
 		/// <summary>
-		/// Quotes an identifier if necessary. This uses <see cref="Dapper.Extra.ExtraUtil.IsSqlIdentifier(string)"/> to determine if it needs to be quoted.
+		/// Quotes an identifier.
 		/// </summary>
 		/// <param name="identifier">The identifier.</param>
-		/// <returns>The original identifier if it does not need to be quoted, otherwise a quoted identifier.</returns>
+		/// <returns>A quoted identifier.</returns>
 		public string QuoteIdentifier(string identifier)
 		{
-			return ExtraUtil.IsSqlIdentifier(identifier)
-				? identifier
-				: QuoteLeft + identifier.Replace(QuoteRight, EscapeQuote) + QuoteRight;
+			return QuoteLeft + identifier.Replace(QuoteRight, EscapeQuote) + QuoteRight;
 		}
 
 		/// <summary>
