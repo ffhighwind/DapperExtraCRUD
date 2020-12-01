@@ -278,7 +278,13 @@ namespace Dapper.Extra
 			string[] names = columns.Select(c => c.Property.Name).ToArray();
 			return (connection, obj, transaction, commandTimeout) => {
 				string cmd = $"SELECT {paramsSelect}\nFROM {TableName}\nWHERE \t{whereEquals}";
-				IDictionary<string, object> value = connection.QueryFirstOrDefault(cmd, obj, transaction, commandTimeout);
+				IDictionary<string, object> value;
+				try {
+					value = connection.QueryFirstOrDefault(cmd, obj, transaction, commandTimeout);
+				}
+				catch(Exception ex) {
+					throw new InvalidOperationException(ex.Message + "\n" + cmd);
+				}
 				if (value != null) {
 					for (int i = 0; i < setters.Length; i++) {
 						setters[i](obj, value[names[i]]);
@@ -1224,7 +1230,7 @@ namespace Dapper.Extra
 				Type type = obj.GetType();
 				if (UpdateSetMap.TryGetValue(type, out string updateSet)) {
 					IEnumerable<SqlColumn> columns = GetSharedColumns(type, Info.UpdateColumns);
-					HashSet<string> keyColumnNames = new HashSet<string>(Info.UpdateKeyColumns.Select(c => c.Property.Name));
+					//HashSet<string> keyColumnNames = new HashSet<string>(Info.UpdateKeyColumns.Select(c => c.Property.Name));
 					updateSet = UpdateSet(columns);
 					UpdateSetMap.GetOrAdd(type, updateSet);
 				}
