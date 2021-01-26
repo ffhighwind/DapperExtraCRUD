@@ -136,20 +136,20 @@ namespace Dapper.Extra
 				SqlColumn column = new SqlColumn(prop, columnName, i, Adapter);
 				KeyAttribute keyAttr = prop.GetCustomAttribute<KeyAttribute>(inherit);
 				if (keyAttr != null) {
-					if (keyAttr.AutoIncrement)
+					if (keyAttr.AutoIncrement) {
 						autoKeyCount++;
+						column.Attributes = SqlColumnAttributes.AutoKey;
+					}
+					else {
+						column.Attributes = SqlColumnAttributes.Key;
+					}
 					column.Attributes = keyAttr.AutoIncrement ? SqlColumnAttributes.AutoKey : SqlColumnAttributes.Key;
 				}
 				else {
-					var requiredAttr = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.RequiredAttribute>(inherit);
-					if (requiredAttr != null)
-						column.Attributes |= SqlColumnAttributes.Key;
-					else {
-						var keyAttrCm = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.KeyAttribute>(inherit);
-						if (keyAttrCm != null) {
-							column.Attributes |= SqlColumnAttributes.AutoKey;
-							autoKeyCount++;
-						}
+					var keyAttrCm = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.KeyAttribute>(inherit);
+					if (keyAttrCm != null) {
+						column.Attributes |= SqlColumnAttributes.AutoKey;
+						autoKeyCount++;
 					}
 				}
 				if (column.IsKey) {
