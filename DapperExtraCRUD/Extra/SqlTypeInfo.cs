@@ -133,8 +133,7 @@ namespace Dapper.Extra
 						columnName = columnAttr2.Name;
 					}
 				}
-				string propName = Adapter.QuoteIdentifier(prop.Name);
-				SqlColumn column = new SqlColumn(prop, string.IsNullOrWhiteSpace(columnName) ? propName : Adapter.QuoteIdentifier(columnName), propName, i);
+				SqlColumn column = new SqlColumn(prop, columnName, i, Adapter);
 				KeyAttribute keyAttr = prop.GetCustomAttribute<KeyAttribute>(inherit);
 				if (keyAttr != null) {
 					if (keyAttr.AutoIncrement)
@@ -162,10 +161,10 @@ namespace Dapper.Extra
 				columns.Add(column);
 			}
 			if (keys.Count == 0) {
-				SqlColumn key = columns.FirstOrDefault(c => string.Equals(c.ColumnName, "ID", StringComparison.OrdinalIgnoreCase));
+				SqlColumn key = columns.FirstOrDefault(c => string.Equals(c.ColumnNameOriginal, "ID", StringComparison.OrdinalIgnoreCase));
 				if (key == null) {
 					int len = type.Name.Length + 2;
-					key = columns.FirstOrDefault(c => c.ColumnName.Length == len && c.ColumnName.StartsWith(type.Name) && c.ColumnName.EndsWith("ID", StringComparison.OrdinalIgnoreCase));
+					key = columns.FirstOrDefault(c => c.ColumnNameOriginal.Length == len && c.ColumnNameOriginal.StartsWith(type.Name) && c.ColumnNameOriginal.EndsWith("ID", StringComparison.OrdinalIgnoreCase));
 				}
 				if (key != null) {
 					key.Attributes |= SqlColumnAttributes.AutoKey;

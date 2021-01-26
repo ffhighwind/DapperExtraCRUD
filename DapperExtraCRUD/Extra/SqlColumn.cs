@@ -42,11 +42,13 @@ namespace Dapper.Extra
 		/// <param name="property">The property<see cref="PropertyInfo"/></param>
 		/// <param name="columnName">The columnName<see langword="string"/></param>
 		/// <param name="ordinal">The ordinal<see langword="int"/></param>
-		internal SqlColumn(PropertyInfo property, string columnName, string propertyName, int ordinal)
+		/// <param name="adapter">The SQL adapter<see cref="ISqlAdapter"/></param>
+		internal SqlColumn(PropertyInfo property, string columnName, int ordinal, ISqlAdapter adapter)
 		{
 			Property = property;
-			ColumnName = columnName;
-			PropertyName = propertyName;
+			PropertyName = adapter.QuoteIdentifier(property.Name);
+			ColumnNameOriginal = string.IsNullOrWhiteSpace(columnName) ? property.Name : columnName;
+			ColumnName = adapter.QuoteIdentifier(ColumnNameOriginal);
 			Ordinal = ordinal;
 			if (property.CanWrite && !property.SetMethod.IsStatic)
 				Setter = Reflect.PropertySetter(Property);
@@ -63,6 +65,11 @@ namespace Dapper.Extra
 		/// The quoted name of the column.
 		/// </summary>
 		public string ColumnName { get; private set; }
+
+		/// <summary>
+		/// The original (not quoted) name of the column.
+		/// </summary>
+		public string ColumnNameOriginal { get; private set; }
 
 		/// <summary>
 		/// The quoted name of the property.
