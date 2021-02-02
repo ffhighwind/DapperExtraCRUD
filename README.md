@@ -64,7 +64,7 @@ Some annotations from System.ComponentModel are supported as replacements for Da
 | System.ComponentModel | Dapper.Extra.Annotations |
 | --- | --- |
 | \[Table] | \[Table] |
-| \[Required] | \[Key(false)] |
+| \[Key][Required] | \[Key(false)] |
 | \[Key] | \[Key(true)] |
 | \[Column] | \[Column]
 | \[Editable(false)] | \[IgnoreInsert][IgnoreUpdate] |
