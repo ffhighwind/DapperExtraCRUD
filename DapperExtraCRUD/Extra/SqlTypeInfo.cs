@@ -62,6 +62,8 @@ namespace Dapper.Extra
 			Adapter = adapter ?? SqlAdapter.SQLServer;
 			TableAttribute tableAttr = type.GetCustomAttribute<TableAttribute>(false);
 			BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty | BindingFlags.NonPublic;
+
+			// Determine the TableName, Adapter, and BindingFlags
 			bool inherit = false;
 			if (tableAttr == null) {
 				var tableAttr2 = type.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.TableAttribute>(false);
@@ -79,8 +81,13 @@ namespace Dapper.Extra
 					Attributes |= SqlTableAttributes.InheritAttributes;
 				}
 			}
+
+			// Filter properties and iterate them for primary keys
 			PropertyInfo[] properties = type.GetProperties(flags);
-			PropertyInfo[] validProperties = properties.Where(ExtraCrud.IsValidProperty).ToArray();
+			PropertyInfo[] validProperties = properties.Where(ExtraCrud.IsValidProperty).Where(prop => {
+				return prop.GetCustomAttribute<NotMappedAttribute>(inherit) == null
+					&& prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute>(inherit) == null;
+			}).ToArray();
 			if (!validProperties.Any())
 				throw new InvalidOperationException(type.FullName + " does not have any valid properties.");
 			ReadOnlyAttribute readOnlyAttr = type.GetCustomAttribute<ReadOnlyAttribute>(false);
@@ -114,14 +121,12 @@ namespace Dapper.Extra
 					Attributes |= SqlTableAttributes.IgnoreDelete;
 			}
 
+			// Determine primary key
 			List<SqlColumn> keys = new List<SqlColumn>();
 			List<SqlColumn> columns = new List<SqlColumn>();
 			int autoKeyCount = 0;
 			for (int i = 0; i < validProperties.Length; i++) {
-				// Check for unreadable keys before assigning columns
 				PropertyInfo prop = validProperties[i];
-				if (prop.GetCustomAttribute<NotMappedAttribute>(inherit) != null || prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute>(inherit) != null)
-					continue;
 				string columnName = null;
 				ColumnAttribute columnAttr = prop.GetCustomAttribute<ColumnAttribute>(inherit);
 				if (columnAttr != null) {
@@ -145,7 +150,7 @@ namespace Dapper.Extra
 					var keyAttrCm = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.KeyAttribute>(inherit);
 					if (keyAttrCm != null) {
 						var requiredAttr = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.RequiredAttribute>(inherit);
-						if (requiredAttr != null)
+						if (requiredAttr != null && ExtraCrud.IsValidAutoIncrementType(prop.PropertyType))
 							column.Attributes |= SqlColumnAttributes.Key;
 						else {
 							column.Attributes |= SqlColumnAttributes.AutoKey;
@@ -169,7 +174,11 @@ namespace Dapper.Extra
 					key = columns.Where(c => c.ColumnName.Equals(quotedId, StringComparison.OrdinalIgnoreCase)).OrderByDescending(c => c.ColumnName.Contains(type.Name)).FirstOrDefault();
 				}
 				if (key != null) {
-					key.Attributes |= SqlColumnAttributes.AutoKey;
+					var requiredAttr = key.Property.GetCustomAttribute<System.ComponentModel.DataAnnotations.RequiredAttribute>(inherit);
+					if (requiredAttr == null)
+						key.Attributes |= SqlColumnAttributes.AutoKey;
+					else
+						key.Attributes |= SqlColumnAttributes.Key;
 					keys.Add(key);
 				}
 				else
@@ -271,8 +280,9 @@ namespace Dapper.Extra
 					}
 				}
 			}
-
-			Columns = columns.Where(c => !c.NotMapped).ToArray();
+			if (columns.Count == 0)
+				throw new InvalidOperationException(type.FullName + " does not have any valid properties."); // double check
+			Columns = columns.ToArray();
 			EqualityColumns = KeyColumns.Count == 0 || KeyColumns.Count == Columns.Count ? Columns : KeyColumns;
 			UpdateKeyColumns = Columns == EqualityColumns ? Constants.SqlColumnsEmpty : Columns.Where(c => c.IsKey || c.MatchUpdate).ToArray();
 			DeleteKeyColumns = Columns == EqualityColumns ? Columns : Columns.Where(c => c.IsKey || c.MatchDelete).ToArray();
