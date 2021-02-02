@@ -40,7 +40,8 @@ namespace Dapper.Extra
 		/// Initializes a new instance of the <see cref="SqlColumn"/> class.
 		/// </summary>
 		/// <param name="property">The property<see cref="PropertyInfo"/></param>
-		/// <param name="columnName">The columnName<see langword="string"/></param>
+		/// <param name="columnName">The quoted column name</param>
+		/// <param name="propertyName">The quoted property name</param>
 		/// <param name="ordinal">The ordinal<see langword="int"/></param>
 		internal SqlColumn(PropertyInfo property, string columnName, string propertyName, int ordinal)
 		{

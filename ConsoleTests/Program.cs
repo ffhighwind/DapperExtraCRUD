@@ -53,6 +53,27 @@ namespace ConsoleTests
 				conn.Open();
 
 				_ = ExtraCrud.Builder<Dto10>();
+				{
+					PropertyInfo prop1 = ExtraCrud.TypeInfo<Dto10>().AutoKeyColumn.Property;
+					PropertyInfo prop2 = typeof(Dto10).GetProperty("ID", BindingFlags.NonPublic | BindingFlags.Instance);
+					if (prop1 != prop2)
+						throw new InvalidOperationException();
+
+					prop1 = ExtraCrud.TypeInfo<Dto11>().AutoKeyColumn.Property;
+					prop2 = typeof(Dto11).GetProperty("Dto11ID", BindingFlags.NonPublic | BindingFlags.Instance);
+					if (prop1 != prop2)
+						throw new InvalidOperationException();
+
+					prop1 = ExtraCrud.TypeInfo<Dto12>().AutoKeyColumn.Property;
+					prop2 = typeof(Dto12).GetProperty("Id", BindingFlags.Public | BindingFlags.Instance);
+					if (prop1 != prop2)
+						throw new InvalidOperationException();
+
+					prop1 = ExtraCrud.TypeInfo<Dto13>().AutoKeyColumn.Property;
+					prop2 = typeof(Dto13).GetProperty("MyId", BindingFlags.Public | BindingFlags.Instance);
+					if (prop1 != prop2)
+						throw new InvalidOperationException();
+				}
 
 				Type ty = typeof(Test7Type?);
 				PropertyInfo pr = typeof(Test7).GetProperty(nameof(Test7.Value));

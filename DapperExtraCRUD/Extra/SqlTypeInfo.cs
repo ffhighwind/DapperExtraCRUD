@@ -162,10 +162,11 @@ namespace Dapper.Extra
 				columns.Add(column);
 			}
 			if (keys.Count == 0) {
-				SqlColumn key = columns.FirstOrDefault(c => string.Equals(c.ColumnName, "ID", StringComparison.OrdinalIgnoreCase));
+				string quotedId = Adapter.QuoteIdentifier("ID");
+				SqlColumn key = columns.FirstOrDefault(c => string.Equals(c.ColumnName, quotedId, StringComparison.OrdinalIgnoreCase));
 				if (key == null) {
-					int len = type.Name.Length + 2;
-					key = columns.FirstOrDefault(c => c.ColumnName.Length == len && c.ColumnName.StartsWith(type.Name) && c.ColumnName.EndsWith("ID", StringComparison.OrdinalIgnoreCase));
+					quotedId = Adapter.QuoteIdentifier(type.Name + "ID");
+					key = columns.Where(c => c.ColumnName.Equals(quotedId, StringComparison.OrdinalIgnoreCase)).OrderByDescending(c => c.ColumnName.Contains(type.Name)).FirstOrDefault();
 				}
 				if (key != null) {
 					key.Attributes |= SqlColumnAttributes.AutoKey;
