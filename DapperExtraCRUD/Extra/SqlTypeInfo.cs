@@ -142,12 +142,12 @@ namespace Dapper.Extra
 					column.Attributes = keyAttr.AutoIncrement ? SqlColumnAttributes.AutoKey : SqlColumnAttributes.Key;
 				}
 				else {
-					var requiredAttr = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.RequiredAttribute>(inherit);
-					if (requiredAttr != null)
-						column.Attributes |= SqlColumnAttributes.Key;
-					else {
-						var keyAttrCm = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.KeyAttribute>(inherit);
-						if (keyAttrCm != null) {
+					var keyAttrCm = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.KeyAttribute>(inherit);
+					if (keyAttrCm != null) {
+						var requiredAttr = prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.RequiredAttribute>(inherit);
+						if (requiredAttr != null)
+							column.Attributes |= SqlColumnAttributes.Key;
+						else {
 							column.Attributes |= SqlColumnAttributes.AutoKey;
 							autoKeyCount++;
 						}

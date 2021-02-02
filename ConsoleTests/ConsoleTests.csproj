@@ -196,6 +196,7 @@
     <Compile Include="Bad\Bad3.cs" />
     <Compile Include="Bad\Bad4.cs" />
     <Compile Include="Bad\Bad5.cs" />
+    <Compile Include="Good\Dto15.cs" />
     <Compile Include="Good\Dto10.cs" />
     <Compile Include="Good\Dto11.cs" />
     <Compile Include="Good\Dto12.cs" />
@@ -203,6 +204,7 @@
     <Compile Include="Good\IDto.cs" />
     <Compile Include="Good\IDtoKey.cs" />
     <Compile Include="Good\IFilter.cs" />
+    <Compile Include="Good\Dto14.cs" />
     <Compile Include="Good\Test3.cs" />
     <Compile Include="Good\Test3filter.cs" />
     <Compile Include="Good\Test7.cs" />

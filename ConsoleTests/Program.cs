@@ -73,6 +73,17 @@ namespace ConsoleTests
 					prop2 = typeof(Dto13).GetProperty("MyId", BindingFlags.Public | BindingFlags.Instance);
 					if (prop1 != prop2)
 						throw new InvalidOperationException();
+
+					prop1 = ExtraCrud.TypeInfo<Dto14>().AutoKeyColumn?.Property;
+					if(prop1 != null)
+						throw new InvalidOperationException();
+					prop1 = ExtraCrud.TypeInfo<Dto14>().KeyColumns.Single().Property;
+					prop2 = typeof(Dto14).GetProperty(nameof(Dto14.MyID), BindingFlags.Public | BindingFlags.Instance);
+					if (prop1 != prop2)
+						throw new InvalidOperationException();
+
+					if (ExtraCrud.TypeInfo<Dto15>().KeyColumns.Any())
+						throw new InvalidOperationException();
 				}
 
 				Type ty = typeof(Test7Type?);
