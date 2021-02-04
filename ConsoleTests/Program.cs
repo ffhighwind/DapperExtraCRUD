@@ -53,38 +53,7 @@ namespace ConsoleTests
 				conn.Open();
 
 				_ = ExtraCrud.Builder<Dto10>();
-				{
-					PropertyInfo prop1 = ExtraCrud.TypeInfo<Dto10>().AutoKeyColumn.Property;
-					PropertyInfo prop2 = typeof(Dto10).GetProperty("ID", BindingFlags.NonPublic | BindingFlags.Instance);
-					if (prop1 != prop2)
-						throw new InvalidOperationException();
-
-					prop1 = ExtraCrud.TypeInfo<Dto11>().AutoKeyColumn.Property;
-					prop2 = typeof(Dto11).GetProperty("Dto11ID", BindingFlags.NonPublic | BindingFlags.Instance);
-					if (prop1 != prop2)
-						throw new InvalidOperationException();
-
-					prop1 = ExtraCrud.TypeInfo<Dto12>().AutoKeyColumn.Property;
-					prop2 = typeof(Dto12).GetProperty("Id", BindingFlags.Public | BindingFlags.Instance);
-					if (prop1 != prop2)
-						throw new InvalidOperationException();
-
-					prop1 = ExtraCrud.TypeInfo<Dto13>().AutoKeyColumn.Property;
-					prop2 = typeof(Dto13).GetProperty("MyId", BindingFlags.Public | BindingFlags.Instance);
-					if (prop1 != prop2)
-						throw new InvalidOperationException();
-
-					prop1 = ExtraCrud.TypeInfo<Dto14>().AutoKeyColumn?.Property;
-					if(prop1 != null)
-						throw new InvalidOperationException();
-					prop1 = ExtraCrud.TypeInfo<Dto14>().KeyColumns.Single().Property;
-					prop2 = typeof(Dto14).GetProperty(nameof(Dto14.MyID), BindingFlags.Public | BindingFlags.Instance);
-					if (prop1 != prop2)
-						throw new InvalidOperationException();
-
-					if (ExtraCrud.TypeInfo<Dto15>().KeyColumns.Any())
-						throw new InvalidOperationException();
-				}
+				DoAutoKeyTests();
 
 				Type ty = typeof(Test7Type?);
 				PropertyInfo pr = typeof(Test7).GetProperty(nameof(Test7.Value));
@@ -106,6 +75,7 @@ namespace ConsoleTests
 				Recreate<Test9>(conn, null);
 
 				TestEnums(conn);
+				DoWhereConditionTests();
 				DoWhereConditionGenTest();
 
 				DoCacheTests<TestDTO>(() => new TestDTO(random));
@@ -117,7 +87,7 @@ namespace ConsoleTests
 
 				DoCacheTests<Test3>(() => new Test3(random));
 				DoTests<Test3>(() => new Test3(random), (t) => t.UpdateRandomize(random), new Test3filter());
-	
+
 				DoCacheTests<TestDTO4>(() => new TestDTO4(random));
 				DoTests<TestDTO4>(() => new TestDTO4(random), (t) => t.UpdateRandomize(random), new TestDTO4filter());
 				DoTests<TestDTO4, int>(conn);
@@ -277,9 +247,114 @@ DROP TABLE dbo.{tableName};";
 
 		#region Main Tests
 
+		public static void DoAutoKeyTests()
+		{
+			PropertyInfo prop1 = ExtraCrud.TypeInfo<Dto10>().AutoKeyColumn.Property;
+			PropertyInfo prop2 = typeof(Dto10).GetProperty("ID", BindingFlags.NonPublic | BindingFlags.Instance);
+			if (prop1 != prop2)
+				throw new InvalidOperationException();
+
+			prop1 = ExtraCrud.TypeInfo<Dto11>().AutoKeyColumn.Property;
+			prop2 = typeof(Dto11).GetProperty("Dto11ID", BindingFlags.NonPublic | BindingFlags.Instance);
+			if (prop1 != prop2)
+				throw new InvalidOperationException();
+
+			prop1 = ExtraCrud.TypeInfo<Dto12>().AutoKeyColumn.Property;
+			prop2 = typeof(Dto12).GetProperty("Id", BindingFlags.Public | BindingFlags.Instance);
+			if (prop1 != prop2)
+				throw new InvalidOperationException();
+
+			prop1 = ExtraCrud.TypeInfo<Dto13>().AutoKeyColumn.Property;
+			prop2 = typeof(Dto13).GetProperty("MyId", BindingFlags.Public | BindingFlags.Instance);
+			if (prop1 != prop2)
+				throw new InvalidOperationException();
+
+			prop1 = ExtraCrud.TypeInfo<Dto14>().AutoKeyColumn?.Property;
+			if (prop1 != null)
+				throw new InvalidOperationException();
+			prop1 = ExtraCrud.TypeInfo<Dto14>().KeyColumns.Single().Property;
+			prop2 = typeof(Dto14).GetProperty(nameof(Dto14.MyID), BindingFlags.Public | BindingFlags.Instance);
+			if (prop1 != prop2)
+				throw new InvalidOperationException();
+
+			if (ExtraCrud.TypeInfo<Dto15>().KeyColumns.Any())
+				throw new InvalidOperationException();
+		}
+
+		public static void DoWhereConditionTests()
+		{
+			Random random = new Random(512851);
+			DbCache cache = new DbCache(ConnString);
+			List<Test3> list = new List<Test3>() {
+				new Test3() { Col1 = 1, Col2 = "1", Col3 = 1, Col4 = 1 }, // 0
+				new Test3() { Col1 = 2, Col2 = "2", Col3 = 2, Col4 = 2 }, // 1
+				new Test3() { Col1 = 3, Col2 = "3", Col3 = 3, Col4 = 3 }, // 2
+				new Test3() { Col1 = 4, Col2 = "4", Col3 = 4, Col4 = 4 }, // 3
+
+				new Test3() { Col1 = 1, Col2 = "1", Col3 = 2.2f, Col4 = 10 }, // 4
+				new Test3() { Col1 = 1, Col2 = "1", Col3 = 3.3f, Col4 = null }, // 5
+				new Test3() { Col1 = 2, Col2 = "2", Col3 = 3.4f, Col4 = null }, // 6
+			};
+			using (SqlConnection conn = new SqlConnection(ConnString)) {
+				conn.Open();
+				using (SqlTransaction trans = conn.BeginTransaction()) {
+					for (int i = 0; i < list.Count; i++) {
+						Test3 item = list[i];
+						conn.Insert(item, trans);
+					}
+					List<Test3> result = conn.GetList<Test3>((x) => x.Col1 == 1, trans).AsList();
+					if (result.Count != 3)
+						throw new InvalidOperationException();
+					if (!result.Any(x => x.IsIdentical(list[0])))
+						throw new InvalidOperationException();
+					if (!result.Any(x => x.IsIdentical(list[4])))
+						throw new InvalidOperationException();
+					if (!result.Any(x => x.IsIdentical(list[5])))
+						throw new InvalidOperationException();
+
+					result = conn.GetList<Test3>((x) => x.Col1 == 1 && x.Col4 == null, trans).AsList();
+					if (result.Count != 1)
+						throw new InvalidOperationException();
+					if (!result[0].IsIdentical(list[5]))
+						throw new InvalidOperationException();
+
+					result = conn.GetList<Test3>((x) => new[] { "2", "4" }.Contains(x.Col2), trans).AsList();
+					if (result.Count != 3)
+						throw new InvalidOperationException();
+					if (!result.Any(x => x.IsIdentical(list[1])))
+						throw new InvalidOperationException();
+					if (!result.Any(x => x.IsIdentical(list[3])))
+						throw new InvalidOperationException();
+					if (!result.Any(x => x.IsIdentical(list[6])))
+						throw new InvalidOperationException();
+
+					result = conn.GetList<Test3>((x) => x.Col1 > 4, trans).AsList();
+					if (result.Count != 0)
+						throw new InvalidOperationException();
+
+					result = conn.GetList<Test3>((x) => x.Col4 > 4, trans).AsList();
+					if (result.Count != 1)
+						throw new InvalidOperationException();
+					if (!result[0].IsIdentical(list[4]))
+						throw new InvalidOperationException();
+
+					result = conn.GetList<Test3>((x) => x.Col4 != null, trans).ToList();
+					if (result.Count != 5 || result.Any(x => x.Col4 == null))
+						throw new InvalidOperationException();
+
+					Expression<Func<Test3, bool>> expr = (x) => x.Col4 == null;
+					Expression<Func<Test3, bool>> expr2 = (x) => x.Col4 == null;
+					Tuple<string, IDictionary<string, object>> condition = ExtraCrud.Builder<Test3>().CreateCachedWhereCondition(expr);
+					Tuple<string, IDictionary<string, object>> condition2 = ExtraCrud.Builder<Test3>().CreateCachedWhereCondition(expr);
+					if (condition != condition2)
+						throw new InvalidOperationException();
+				}
+			}
+		}
+
 		public static void DoMultiCacheTest<T1, T2>(Func<T1> constructor1, Func<T2> constructor2)
-			where T1 : class, IDto<T1>
-			where T2 : class, IDto<T2>
+				where T1 : class, IDto<T1>
+				where T2 : class, IDto<T2>
 		{
 			Random random = new Random(512851);
 			DbCache cache = new DbCache(ConnString);

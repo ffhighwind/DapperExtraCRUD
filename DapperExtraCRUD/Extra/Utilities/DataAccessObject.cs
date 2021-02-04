@@ -34,7 +34,7 @@ namespace Dapper.Extra.Utilities
 {
 	/// <summary>
 	/// An object that interacts with an <see cref="ISqlQueries{T}"/>. This is not thread-safe
-	/// because the <see cref="SqlConnection"/> and <see cref="SqlTransaction"/> on every method.
+	/// because the <see cref="SqlConnection"/> and <see cref="SqlTransaction"/> are reused on every method.
 	/// </summary>
 	/// <typeparam name="T">The table type.</typeparam>
 	public class DataAccessObject<T> : IAccessObject<T>, IDataAccessObject

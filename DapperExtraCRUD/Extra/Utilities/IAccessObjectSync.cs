@@ -30,7 +30,7 @@ using System.Collections.Generic;
 namespace Dapper.Extra.Utilities
 {
 	/// <summary>
-	/// Interface for an object that interacts with an <see cref="Dapper.Extra.ISqlQueries{T}"/>.
+	/// Interface for an object that interacts with an <see cref="ISqlQueries{T}"/>.
 	/// </summary>
 	/// <typeparam name="T">The table type.</typeparam>
 	public interface IAccessObjectSync<T> where T : class

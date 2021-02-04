@@ -36,6 +36,7 @@ using System.Reflection;
 using System.Threading;
 using Fasterflect;
 using Dapper.Extra.Internal;
+using System.Linq.Expressions;
 
 namespace Dapper.Extra
 {
@@ -53,6 +54,19 @@ namespace Dapper.Extra
 		/// </summary>
 		/// <remarks> String.Intern could be used to cache these strings, but this would prevent clearing the caches.</remarks>
 		private readonly ConcurrentDictionary<string, string> StringCache = new ConcurrentDictionary<string, string>();
+
+		private Tuple<Expression<Func<T, bool>>, Tuple<string, IDictionary<string, object>>> CachedWhereCondition;
+		public Tuple<string, IDictionary<string, object>> CreateCachedWhereCondition(Expression<Func<T, bool>> whereExpr)
+		{
+			var temp = CachedWhereCondition;
+			if (temp == null || temp.Item1 != whereExpr) {
+				string whereCondition = "WHERE " + Utilities.WhereConditionGenerator.Create(whereExpr, out IDictionary<string, object> param);
+				temp = Tuple.Create(whereExpr, Tuple.Create(whereCondition, param));
+				CachedWhereCondition = temp;
+			}
+			return temp.Item2;
+		}
+
 
 		#region Constructors
 
@@ -282,7 +296,7 @@ namespace Dapper.Extra
 				try {
 					value = connection.QueryFirstOrDefault(cmd, obj, transaction, commandTimeout);
 				}
-				catch(Exception ex) {
+				catch (Exception ex) {
 					throw new InvalidOperationException(ex.Message + "\n" + cmd);
 				}
 				if (value != null) {
@@ -622,25 +636,25 @@ namespace Dapper.Extra
 				}
 				catch (Exception ex) {
 					throw new InvalidOperationException(ex.Message + "\n" + dropBulkTableCmd);
-				}				
+				}
 				// Create Staging Table
 				try {
 					connection.Execute(selectInsertIntoStagingCmd, null, transaction, commandTimeout);
 				}
 				catch (Exception ex) {
-					throw new InvalidOperationException(ex.Message + "\n" + dropBulkTableCmd);
+					throw new InvalidOperationException(ex.Message + "\n" + selectInsertIntoStagingCmd);
 				}
 				// Copy to Staging Table
 				Adapter.BulkInsert(connection, objs, transaction, BulkStagingTable, DataReaderFactory, Info.BulkInsertIfNotExistsColumns, commandTimeout,
 					SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls | SqlBulkCopyOptions.TableLock);
 				// Bulk InsertIfNotExists
-				string bulkInsertIfNotExistsCmd = $"{insertIntoCmd}\nSELECT {insertColumns}\nFROM {BulkStagingTable}\nWHERE NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{equalsTables})";				
+				string bulkInsertIfNotExistsCmd = $"{insertIntoCmd}\nSELECT {insertColumns}\nFROM {BulkStagingTable}\nWHERE NOT EXISTS (\nSELECT * FROM {TableName}\nWHERE \t{equalsTables})";
 				int count;
 				try {
 					count = connection.Execute(bulkInsertIfNotExistsCmd, null, transaction, commandTimeout);
 				}
 				catch (Exception ex) {
-					throw new InvalidOperationException(ex.Message + "\n" + dropBulkTableCmd);
+					throw new InvalidOperationException(ex.Message + "\n" + bulkInsertIfNotExistsCmd);
 				}
 				// Drop Staging Table
 				try {
@@ -729,7 +743,7 @@ namespace Dapper.Extra
 			string selectUpsertIntoStagingCmd = SelectIntoStagingTable(Info.UpsertColumns);
 			string equalsTables = WhereEqualsTables(EqualityColumns);
 			string insertIntoCmd = InsertIntoCmd();
-			string insertColumns = ColumnNames(Info.InsertColumns);			
+			string insertColumns = ColumnNames(Info.InsertColumns);
 			return (connection, objs, transaction, commandTimeout) => {
 				bool wasClosed = connection.State != ConnectionState.Open;
 				if (wasClosed)
