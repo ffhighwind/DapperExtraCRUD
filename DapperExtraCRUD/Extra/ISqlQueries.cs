@@ -24,6 +24,10 @@
 // SOFTWARE.
 #endregion
 
+using System;
+using System.Linq.Expressions;
+using Dapper.Extra.Utilities;
+
 namespace Dapper.Extra
 {
 	/// <summary>
@@ -32,6 +36,14 @@ namespace Dapper.Extra
 	/// <typeparam name="T">The table type.</typeparam>
 	public interface ISqlQueries<T> where T : class
 	{
+		/// <summary>
+		/// Compiles an expression using <see cref="WhereConditionGenerator"/> and stores the result.
+		/// This may use a cache to prevent compilation.
+		/// </summary>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <returns>The compiled result from passing the expression to <see cref="WhereConditionGenerator"/>.</returns>
+		QueryData<T> Compile(Expression<Func<T, bool>> whereExpr);
+
 		/// <summary>
 		/// Bulk delete command for any key type.
 		/// </summary>

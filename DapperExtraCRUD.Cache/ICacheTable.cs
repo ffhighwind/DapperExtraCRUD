@@ -26,6 +26,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace Dapper.Extra.Cache
@@ -378,6 +379,94 @@ namespace Dapper.Extra.Cache
 		/// <returns>True if the object was upserted; false otherwise.</returns>
 		bool Upsert(T obj, int commandTimeout = 30);
 
+		/// <summary>
+		/// Deletes the rows that match the given condition.
+		/// </summary>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		int DeleteList(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		IEnumerable<T> GetDistinct(Type columnFilter, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		IEnumerable<T> GetDistinctLimit(int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		IEnumerable<KeyType> GetKeys<KeyType>(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the keys that match the given condition.
+		/// </summary>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		IEnumerable<T> GetKeys(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition.
+		/// </summary>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The limited number of rows that match the given condition.</returns>
+		IEnumerable<R> GetLimit(int limit, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition.
+		/// </summary>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>A limited number of rows that match the given condition.</returns>
+		IEnumerable<T> GetLimit(int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		IEnumerable<R> GetList(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		IEnumerable<T> GetList(Type columnFilter, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Counts the number of rows that match the given condition.
+		/// </summary>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of rows that match the given condition.</returns>
+		int RecordCount(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
 		#endregion Sync
 
 		#region Async
@@ -550,6 +639,94 @@ namespace Dapper.Extra.Cache
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>True if the object was upserted; false otherwise.</returns>
 		Task<Lazy<bool>> UpsertAsync(T obj, int commandTimeout = 30);
+
+		/// <summary>
+		/// Deletes the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		Task<Lazy<int>> DeleteListAsync(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		Task<IEnumerable<T>> GetDistinctAsync(Type columnFilter, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		Task<IEnumerable<T>> GetDistinctLimitAsync(int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows with the given keys asynchronously.
+		/// </summary>
+		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		Task<IEnumerable<KeyType>> GetKeysAsync<KeyType>(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the keys that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		Task<IEnumerable<T>> GetKeysAsync(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The limited number of rows that match the given condition.</returns>
+		Task<Lazy<IEnumerable<R>>> GetLimitAsync(int limit, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>A limited number of rows that match the given condition.</returns>
+		Task<IEnumerable<T>> GetLimitAsync(int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		Task<Lazy<IEnumerable<R>>> GetListAsync(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		Task<IEnumerable<T>> GetListAsync(Type columnFilter, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Counts the number of rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of rows that match the given condition.</returns>
+		Task<int> RecordCountAsync(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
 
 		#endregion Async
 	}

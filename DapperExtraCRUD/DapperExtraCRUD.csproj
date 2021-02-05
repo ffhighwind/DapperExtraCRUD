@@ -2,11 +2,11 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netcoreapp2.0;net461</TargetFrameworks>
     <AssemblyName>Dapper.ExtraCRUD</AssemblyName>
-    <Version>1.4.0.0</Version>
+    <Version>1.4.1.0</Version>
     <Authors>Wesley Hamilton</Authors>
     <Description>A Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more.</Description>
     <NeutralLanguage>en-us</NeutralLanguage>
-    <PackageReleaseNotes>Fixed keywords as property names (e.g. Default). Improved exception messages.</PackageReleaseNotes>
+    <PackageReleaseNotes>Removed support for [Required] by itself. Now it must be [Key][Required]. Added WhereCondition expressions support. Fixed ID columns priority. Fixed keywords as property names (e.g. Default). Improved exception messages.</PackageReleaseNotes>
     <PackageTags>dapper orm micro-orm sql</PackageTags>
     <PackageLicense>Apache-2.0</PackageLicense>
     <PackageProjectUrl>https://github.com/ffhighwind/DapperExtraCRUD</PackageProjectUrl>

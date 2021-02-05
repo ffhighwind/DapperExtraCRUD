@@ -2,11 +2,11 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netcoreapp2.0;net461</TargetFrameworks>
     <AssemblyName>Dapper.ExtraCRUD.Cache</AssemblyName>
-    <Version>1.3.6</Version>
+    <Version>1.4.1.0</Version>
     <Authors>Wesley Hamilton</Authors>
     <Description>A Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more.</Description>
     <NeutralLanguage>en-us</NeutralLanguage>
-    <PackageReleaseNotes>Added better async support. Fixed InsertAutoSync.</PackageReleaseNotes>
+    <PackageReleaseNotes>Added WhereCondition expressions support. Fixed ID columns priority.</PackageReleaseNotes>
     <PackageTags>dapper orm micro-orm sql</PackageTags>
     <PackageLicense>Apache-2.0</PackageLicense>
     <PackageProjectUrl>https://github.com/ffhighwind/DapperExtraCRUD</PackageProjectUrl>
@@ -17,8 +17,8 @@
     <DelaySign>false</DelaySign>
     <RootNamespace>Dapper.Extra.Cache</RootNamespace>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <AssemblyVersion>1.3.6.0</AssemblyVersion>
-    <FileVersion>1.3.6.0</FileVersion>
+    <AssemblyVersion>1.4.1.0</AssemblyVersion>
+    <FileVersion>1.4.1.0</FileVersion>
     <ProjectGuid>{3059BA7E-5590-4BBC-A38E-1AEDC7D8A8A1}</ProjectGuid>
     <PackageIcon>DapperExtraCRUD-200x200.png</PackageIcon>
     <PackageIconUrl />

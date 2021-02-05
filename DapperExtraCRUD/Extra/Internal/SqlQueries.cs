@@ -25,11 +25,34 @@
 #endregion
 
 using System;
+using System.Linq.Expressions;
 
 namespace Dapper.Extra
 {
 	internal class SqlQueries<T> : ISqlQueries<T> where T : class
 	{
+		public int index = 0;
+		private const int CACHE_SIZE = 3;
+		public QueryData<T>[] WhereConditionCache { get; set; } = new QueryData<T>[CACHE_SIZE];
+		public QueryData<T> Compile(Expression<Func<T, bool>> whereExpr)
+		{
+			QueryData<T> data;
+			int prevIndex = index; // store value in case multi-threading
+			int i = index;
+			do {
+				data = WhereConditionCache[i];
+				if (data == null)
+					break;
+				if (data.Predicate == whereExpr)
+					return data;
+				i = (i + 1) % CACHE_SIZE;
+			} while (i != prevIndex);
+			data = new QueryData<T>(whereExpr);
+			WhereConditionCache[index] = data;
+			index = (prevIndex + CACHE_SIZE - 1) % CACHE_SIZE; // iterate forward, insert backwards
+			return data;
+		}
+
 		public DbListInt<T> BulkDelete => LazyBulkDelete.Value;
 
 		public DbKeysInt<T> BulkDeleteKeys => LazyBulkDeleteKeys.Value;

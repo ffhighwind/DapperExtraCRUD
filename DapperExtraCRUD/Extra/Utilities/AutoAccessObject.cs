@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace Dapper.Extra.Utilities
@@ -48,7 +49,7 @@ namespace Dapper.Extra.Utilities
 		public AutoAccessObject(string connectionString = null)
 		{
 			ConnectionString = connectionString;
-			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
+			var builder = ExtraCrud.Builder<T>();
 			Queries = builder.Queries;
 		}
 
@@ -689,11 +690,11 @@ namespace Dapper.Extra.Utilities
 				if (keys.Any()) {
 					Type type = keys.First().GetType();
 					if (type == typeof(int)) {
-						keys = keys.Select(k => (object)(long)(int)k);
+						keys = keys.Select(k => (object) (long) (int) k);
 					}
 				}
 			}
-			IEnumerable<KeyType> castedKeys = keys.Select(k => (KeyType)k);
+			IEnumerable<KeyType> castedKeys = keys.Select(k => (KeyType) k);
 			return castedKeys;
 		}
 
@@ -725,7 +726,7 @@ namespace Dapper.Extra.Utilities
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
 				IEnumerable<object> keys = Queries.GetKeysKeys(conn, whereCondition, param, null, true, commandTimeout);
-				List<KeyType> castedKeys = keys.Select(k => (KeyType)k).AsList();
+				List<KeyType> castedKeys = keys.Select(k => (KeyType) k).AsList();
 				return castedKeys;
 			}
 		}
@@ -1231,5 +1232,447 @@ namespace Dapper.Extra.Utilities
 		}
 
 		#endregion Other Methods
+
+		#region WhereCondition
+
+		/// <summary>
+		/// Deletes the rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		public int DeleteList(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			int count = DeleteList(transaction, data.WhereCondition, data.Param, commandTimeout);
+			return count;
+		}
+
+		/// <summary>
+		/// Deletes the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		public async Task<int> DeleteListAsync(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
+		{
+			return await Task.Run(() => DeleteList(transaction, whereExpr, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public IEnumerable<T> GetDistinct(IDbTransaction transaction, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<T> list = GetDistinct(transaction, columnFilter, data.WhereCondition, data.Param, buffered, commandTimeout);
+			return list;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public async Task<IEnumerable<T>> GetDistinctAsync(IDbTransaction transaction, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetDistinct(transaction, columnFilter, whereExpr, buffered, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public IEnumerable<T> GetDistinctLimit(IDbTransaction transaction, int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<T> list = GetDistinctLimit(transaction, limit, columnFilter, data.WhereCondition, data.Param, buffered, commandTimeout);
+			return list;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public async Task<IEnumerable<T>> GetDistinctLimitAsync(IDbTransaction transaction, int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetDistinctLimit(transaction, limit, columnFilter, whereExpr, buffered, commandTimeout)).ConfigureAwait(false);
+		}
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		public IEnumerable<KeyType> GetKeys<KeyType>(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<KeyType> keys = GetKeys<KeyType>(transaction, data.WhereCondition, data.Param, buffered, commandTimeout);
+			return keys;
+		}
+
+		/// <summary>
+		/// Selects the keys that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		public IEnumerable<T> GetKeys(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<T> keys = GetKeys(transaction, data.WhereCondition, data.Param, buffered, commandTimeout);
+			return keys;
+		}
+
+		/// <summary>
+		/// Selects the rows with the given keys asynchronously.
+		/// </summary>
+		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		public async Task<IEnumerable<KeyType>> GetKeysAsync<KeyType>(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetKeys<KeyType>(transaction, whereExpr, buffered, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects the keys that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		public async Task<IEnumerable<T>> GetKeysAsync(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetKeys<T>(transaction, whereExpr, buffered, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The limited number of rows that match the given condition.</returns>
+		public IEnumerable<T> GetLimit(IDbTransaction transaction, int limit, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<T> list = GetLimit(transaction, limit, data.WhereCondition, data.Param, buffered, commandTimeout);
+			return list;
+		}
+
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>A limited number of rows that match the given condition.</returns>
+		public IEnumerable<T> GetLimit(IDbTransaction transaction, int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<T> list = GetLimit(transaction, limit, columnFilter, data.WhereCondition, data.Param, buffered, commandTimeout);
+			return list;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public async Task<IEnumerable<T>> GetLimitAsync(IDbTransaction transaction, int limit, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetLimit(transaction, limit, whereExpr, buffered, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public async Task<IEnumerable<T>> GetLimitAsync(IDbTransaction transaction, int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetLimit(transaction, limit, columnFilter, whereExpr, buffered, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public IEnumerable<T> GetList(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<T> list = GetList(transaction, data.WhereCondition, data.Param, buffered, commandTimeout);
+			return list;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public override IEnumerable<T> GetList(Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<T> list = GetList(data.WhereCondition, data.Param, buffered, commandTimeout);
+			return list;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public IEnumerable<T> GetList(IDbTransaction transaction, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<T> list = GetList(transaction, columnFilter, data.WhereCondition, data.Param, buffered, commandTimeout);
+			return list;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public override IEnumerable<T> GetList(Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<T> list = GetList(columnFilter, data.WhereCondition, data.Param, buffered, commandTimeout);
+			return list;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public async Task<IEnumerable<T>> GetListAsync(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetList(transaction, whereExpr, buffered, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public async Task<IEnumerable<T>> GetListAsync(IDbTransaction transaction, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			return await Task.Run(() => GetList(transaction, columnFilter, whereExpr, buffered, commandTimeout)).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Counts the number of rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of rows that match the given condition.</returns>
+		public int RecordCount(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			int count = RecordCount(transaction, data.WhereCondition, data.Param, commandTimeout);
+			return count;
+		}
+
+		/// <summary>
+		/// Counts the number of rows that match the given condition asynchronously.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of rows that match the given condition.</returns>
+		public async Task<int> RecordCountAsync(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
+		{
+			return await Task.Run(() => RecordCount(transaction, whereExpr, commandTimeout)).ConfigureAwait(false);
+		}
+
+
+		/// <summary>
+		/// Deletes the rows that match the given condition.
+		/// </summary>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		public override int DeleteList(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			int count = DeleteList(data.WhereCondition, data.Param, commandTimeout);
+			return count;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public override IEnumerable<T> GetDistinct(Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<T> list = GetDistinct(columnFilter, data.WhereCondition, data.Param, buffered, commandTimeout);
+			return list;
+		}
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		public override IEnumerable<T> GetDistinctLimit(int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<T> list = GetDistinctLimit(limit, columnFilter, data.WhereCondition, data.Param, buffered, commandTimeout);
+			return list;
+		}
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		public override IEnumerable<KeyType> GetKeys<KeyType>(Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<KeyType> keys = GetKeys<KeyType>(data.WhereCondition, data.Param, buffered, commandTimeout);
+			return keys;
+		}
+
+		/// <summary>
+		/// Selects the keys that match the given condition.
+		/// </summary>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		public override IEnumerable<T> GetKeys(Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<T> keys = GetKeys<T>(data.WhereCondition, data.Param, buffered, commandTimeout);
+			return keys;
+		}
+
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition.
+		/// </summary>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The limited number of rows that match the given condition.</returns>
+		public override IEnumerable<T> GetLimit(int limit, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<T> keys = GetLimit(limit, data.WhereCondition, data.Param, buffered, commandTimeout);
+			return keys;
+		}
+
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition.
+		/// </summary>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>A limited number of rows that match the given condition.</returns>
+		public override IEnumerable<T> GetLimit(int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			IEnumerable<T> keys = GetLimit(limit, data.WhereCondition, data.Param, buffered, commandTimeout);
+			return keys;
+		}
+
+		/// <summary>
+		/// Counts the number of rows that match the given condition.
+		/// </summary>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of rows that match the given condition.</returns>
+		public override int RecordCount(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
+		{
+			QueryData<T> data = Queries.Compile(whereExpr);
+			int count = RecordCount(data.WhereCondition, data.Param, commandTimeout);
+			return count;
+		}
+
+		#endregion WhereCondition
 	}
 }

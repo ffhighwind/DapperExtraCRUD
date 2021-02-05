@@ -55,19 +55,6 @@ namespace Dapper.Extra
 		/// <remarks> String.Intern could be used to cache these strings, but this would prevent clearing the caches.</remarks>
 		private readonly ConcurrentDictionary<string, string> StringCache = new ConcurrentDictionary<string, string>();
 
-		private Tuple<Expression<Func<T, bool>>, Tuple<string, IDictionary<string, object>>> CachedWhereCondition;
-		public Tuple<string, IDictionary<string, object>> CreateCachedWhereCondition(Expression<Func<T, bool>> whereExpr)
-		{
-			var temp = CachedWhereCondition;
-			if (temp == null || temp.Item1 != whereExpr) {
-				string whereCondition = "WHERE " + Utilities.WhereConditionGenerator.Create(whereExpr, out IDictionary<string, object> param);
-				temp = Tuple.Create(whereExpr, Tuple.Create(whereCondition, param));
-				CachedWhereCondition = temp;
-			}
-			return temp.Item2;
-		}
-
-
 		#region Constructors
 
 		/// <summary>

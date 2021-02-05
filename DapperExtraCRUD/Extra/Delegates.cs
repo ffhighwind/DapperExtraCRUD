@@ -27,6 +27,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq.Expressions;
 
 namespace Dapper.Extra
 {
@@ -249,5 +250,18 @@ namespace Dapper.Extra
 	/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 	/// <returns>The rows that match the given condition.</returns>
 	public delegate IEnumerable<T> DbWhereList<T>(IDbConnection connection, string whereCondition = "", object param = null, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
+		where T : class;
+
+
+	/// <summary>
+	/// Delegate for <see cref="ISqlQueries{T}.DeleteListExpr"/> and <see cref="ISqlQueries{T}.RecordCountExpr"/>.
+	/// </summary>
+	/// <typeparam name="T">The table type.</typeparam>
+	/// <param name="connection">The connection to query on.</param>
+	/// <param name="whereExpr">The where condition to use for this query.</param>
+	/// <param name="transaction">The transaction to use for this query.</param>
+	/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+	/// <returns>The number of deleted rows.</returns>
+	public delegate int DbWhereIntExpr<T>(IDbConnection connection, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, int commandTimeout = 30)
 		where T : class;
 }

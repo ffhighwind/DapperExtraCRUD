@@ -92,9 +92,9 @@ namespace ConsoleTests
 				DoTests<TestDTO4>(() => new TestDTO4(random), (t) => t.UpdateRandomize(random), new TestDTO4filter());
 				DoTests<TestDTO4, int>(conn);
 
-				//DoCacheTests<TestDTO5>(() => new TestDTO5(random));
-				//DoTests<TestDTO5>(() => new TestDTO5(random), (t) => t.UpdateRandomize(random), new TestDTO5filter());
-				//DoTests<TestDTO5, int>(conn);
+				DoCacheTests<TestDTO5>(() => new TestDTO5(random));
+				DoTests<TestDTO5>(() => new TestDTO5(random), (t) => t.UpdateRandomize(random), new TestDTO5filter());
+				DoTests<TestDTO5, int>(conn);
 
 				DoCacheTests<TestDTO6>(() => new TestDTO6(random));
 				DoTests<TestDTO6>(() => new TestDTO6(random), (t) => t.UpdateRandomize(random), new TestDTO6filter());
@@ -115,8 +115,8 @@ namespace ConsoleTests
 				DoMultiCacheTest<TestDTO, TestDTO2>(() => new TestDTO(random), () => new TestDTO2(random));
 				DoMultiCacheTest<TestDTO, Test3>(() => new TestDTO(random), () => new Test3(random));
 				DoMultiCacheTest<TestDTO, TestDTO4>(() => new TestDTO(random), () => new TestDTO4(random));
-				//DoMultiCacheTest<TestDTO, TestDTO5>(() => new TestDTO(random), () => new TestDTO5(random));
-				//DoMultiCacheTest<TestDTO2, TestDTO5>(() => new TestDTO2(random), () => new TestDTO5(random));
+				DoMultiCacheTest<TestDTO, TestDTO5>(() => new TestDTO(random), () => new TestDTO5(random));
+				DoMultiCacheTest<TestDTO2, TestDTO5>(() => new TestDTO2(random), () => new TestDTO5(random));
 				DoMultiCacheTest<Test3, TestDTO4>(() => new Test3(random), () => new TestDTO4(random));
 				DoMultiCacheTest<TestDTO6, Test3>(() => new TestDTO6(random), () => new Test3(random));
 				DoMultiCacheTest<Test7, TestDTO2>(() => new Test7(random), () => new TestDTO2(random));
@@ -343,10 +343,16 @@ DROP TABLE dbo.{tableName};";
 						throw new InvalidOperationException();
 
 					Expression<Func<Test3, bool>> expr = (x) => x.Col4 == null;
-					Expression<Func<Test3, bool>> expr2 = (x) => x.Col4 == null;
-					Tuple<string, IDictionary<string, object>> condition = ExtraCrud.Builder<Test3>().CreateCachedWhereCondition(expr);
-					Tuple<string, IDictionary<string, object>> condition2 = ExtraCrud.Builder<Test3>().CreateCachedWhereCondition(expr);
-					if (condition != condition2)
+					Expression<Func<Test3, bool>> expr2 = (x) => x.Col4 == 1;
+					var condition1_1 = ExtraCrud.Builder<Test3>().Queries.Compile(expr);
+					var condition2_1 = ExtraCrud.Builder<Test3>().Queries.Compile(expr2);
+					var condition1_2 = ExtraCrud.Builder<Test3>().Queries.Compile(expr);
+					var condition2_2 = ExtraCrud.Builder<Test3>().Queries.Compile(expr2);
+					
+					// These will fail if multiple caching is turned off
+					if (condition1_1 != condition1_2)
+						throw new InvalidOperationException();
+					if (condition2_1 != condition2_2)
 						throw new InvalidOperationException();
 				}
 			}

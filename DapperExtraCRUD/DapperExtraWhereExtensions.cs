@@ -52,9 +52,9 @@ namespace Dapper
 		public static int DeleteList<T>(this IDbConnection connection, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
-			Tuple<string, IDictionary<string, object>> whereCondition = builder.CreateCachedWhereCondition(whereExpr);
-			int count = builder.Queries.DeleteList(connection, whereCondition.Item1, whereCondition.Item2, transaction, commandTimeout);
+			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
+			QueryData<T> data = queries.Compile(whereExpr);
+			int count = queries.DeleteList(connection, data.WhereCondition, data.Param, transaction, commandTimeout);
 			return count;
 		}
 
@@ -71,7 +71,7 @@ namespace Dapper
 		public static async Task<int> DeleteListAsync<T>(this IDbConnection connection, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => DeleteList<T>(connection, whereExpr, transaction, commandTimeout)).ConfigureAwait(false);
+			return await Task.Run(() => DeleteList(connection, whereExpr, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -88,9 +88,9 @@ namespace Dapper
 		public static IEnumerable<T> GetDistinct<T>(this IDbConnection connection, Type columnFilter, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
-			Tuple<string, IDictionary<string, object>> whereCondition = builder.CreateCachedWhereCondition(whereExpr);
-			IEnumerable<T> list = ExtraCrud.Queries<T>().GetDistinct(connection, columnFilter, whereCondition.Item1, whereCondition.Item2, transaction, buffered, commandTimeout);
+			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
+			QueryData<T> data = queries.Compile(whereExpr);
+			IEnumerable<T> list = queries.GetDistinct(connection, columnFilter, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			return list;
 		}
 
@@ -109,7 +109,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetDistinctAsync<T>(this IDbConnection connection, Type columnFilter, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetDistinct<T>(connection, columnFilter, whereExpr, transaction, buffered, commandTimeout)).ConfigureAwait(false);
+			return await Task.Run(() => GetDistinct(connection, columnFilter, whereExpr, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -127,9 +127,9 @@ namespace Dapper
 		public static IEnumerable<T> GetDistinctLimit<T>(this IDbConnection connection, int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
-			Tuple<string, IDictionary<string, object>> whereCondition = builder.CreateCachedWhereCondition(whereExpr);
-			IEnumerable<T> list = ExtraCrud.Queries<T>().GetDistinctLimit(connection, limit, columnFilter, whereCondition.Item1, whereCondition.Item2, transaction, buffered, commandTimeout);
+			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
+			QueryData<T> data = queries.Compile(whereExpr);
+			IEnumerable<T> list = queries.GetDistinctLimit(connection, limit, columnFilter, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			return list;
 		}
 
@@ -148,7 +148,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetDistinctLimitAsync<T>(this IDbConnection connection, int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetDistinctLimit<T>(connection, limit, columnFilter, whereExpr, transaction, buffered, commandTimeout)).ConfigureAwait(false);
+			return await Task.Run(() => GetDistinctLimit(connection, limit, columnFilter, whereExpr, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -165,18 +165,18 @@ namespace Dapper
 		public static IEnumerable<KeyType> GetKeys<T, KeyType>(this IDbConnection connection, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
-			Tuple<string, IDictionary<string, object>> whereCondition = builder.CreateCachedWhereCondition(whereExpr);
-			IEnumerable<object> keys = ExtraCrud.Queries<T>().GetKeysKeys(connection, whereCondition.Item1, whereCondition.Item2, transaction, buffered, commandTimeout);
+			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
+			QueryData<T> data = queries.Compile(whereExpr);
+			IEnumerable<object> keys = queries.GetKeysKeys(connection, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			if (typeof(KeyType) == typeof(long)) {
 				if (keys.Any()) {
 					Type type = keys.First().GetType();
 					if (type == typeof(int)) {
-						keys = keys.Select(k => (object)(long)(int)k);
+						keys = keys.Select(k => (object) (long) (int) k);
 					}
 				}
 			}
-			IEnumerable<KeyType> castedKeys = keys.Select(k => (KeyType)k);
+			IEnumerable<KeyType> castedKeys = keys.Select(k => (KeyType) k);
 			return castedKeys;
 		}
 
@@ -193,9 +193,9 @@ namespace Dapper
 		public static IEnumerable<T> GetKeys<T>(this IDbConnection connection, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
-			Tuple<string, IDictionary<string, object>> whereCondition = builder.CreateCachedWhereCondition(whereExpr);
-			IEnumerable<T> keys = ExtraCrud.Queries<T>().GetKeys(connection, whereCondition.Item1, whereCondition.Item2, transaction, buffered, commandTimeout);
+			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
+			QueryData<T> data = queries.Compile(whereExpr);
+			IEnumerable<T> keys = queries.GetKeys(connection, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			return keys;
 		}
 
@@ -229,7 +229,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetKeysAsync<T>(this IDbConnection connection, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetKeys<T>(connection, whereExpr, transaction, buffered, commandTimeout)).ConfigureAwait(false);
+			return await Task.Run(() => GetKeys(connection, whereExpr, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -246,9 +246,9 @@ namespace Dapper
 		public static IEnumerable<T> GetLimit<T>(this IDbConnection connection, int limit, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
-			Tuple<string, IDictionary<string, object>> whereCondition = builder.CreateCachedWhereCondition(whereExpr);
-			IEnumerable<T> list = ExtraCrud.Queries<T>().GetLimit(connection, limit, whereCondition.Item1, whereCondition.Item2, transaction, buffered, commandTimeout);
+			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
+			QueryData<T> data = queries.Compile(whereExpr);
+			IEnumerable<T> list = queries.GetLimit(connection, limit, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			return list;
 		}
 
@@ -267,9 +267,9 @@ namespace Dapper
 		public static IEnumerable<T> GetLimit<T>(this IDbConnection connection, int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
-			Tuple<string, IDictionary<string, object>> whereCondition = builder.CreateCachedWhereCondition(whereExpr);
-			IEnumerable<T> list = ExtraCrud.Queries<T>().GetFilterLimit(connection, limit, columnFilter, whereCondition.Item1, whereCondition.Item2, transaction, buffered, commandTimeout);
+			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
+			QueryData<T> data = queries.Compile(whereExpr);
+			IEnumerable<T> list = queries.GetFilterLimit(connection, limit, columnFilter, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			return list;
 		}
 
@@ -287,7 +287,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetLimitAsync<T>(this IDbConnection connection, int limit, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetLimit<T>(connection, limit, whereExpr, transaction, buffered, commandTimeout)).ConfigureAwait(false);
+			return await Task.Run(() => GetLimit(connection, limit, whereExpr, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -305,7 +305,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetLimitAsync<T>(this IDbConnection connection, int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetLimit<T>(connection, limit, columnFilter, whereExpr, transaction, buffered, commandTimeout)).ConfigureAwait(false);
+			return await Task.Run(() => GetLimit(connection, limit, columnFilter, whereExpr, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -321,9 +321,9 @@ namespace Dapper
 		public static IEnumerable<T> GetList<T>(this IDbConnection connection, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
-			Tuple<string, IDictionary<string, object>> whereCondition = builder.CreateCachedWhereCondition(whereExpr);
-			IEnumerable<T> list = ExtraCrud.Queries<T>().GetList(connection, whereCondition.Item1, whereCondition.Item2, transaction, buffered, commandTimeout);
+			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
+			QueryData<T> data = queries.Compile(whereExpr);
+			IEnumerable<T> list = queries.GetList(connection, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			return list;
 		}
 
@@ -341,9 +341,9 @@ namespace Dapper
 		public static IEnumerable<T> GetList<T>(this IDbConnection connection, Type columnFilter, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
-			Tuple<string, IDictionary<string, object>> whereCondition = builder.CreateCachedWhereCondition(whereExpr);
-			IEnumerable<T> list = ExtraCrud.Queries<T>().GetFilter(connection, columnFilter, whereCondition.Item1, whereCondition.Item2, transaction, buffered, commandTimeout);
+			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
+			QueryData<T> data = queries.Compile(whereExpr);
+			IEnumerable<T> list = queries.GetFilter(connection, columnFilter, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			return list;
 		}
 
@@ -360,7 +360,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetListAsync<T>(this IDbConnection connection, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetList<T>(connection, whereExpr, transaction, buffered, commandTimeout)).ConfigureAwait(false);
+			return await Task.Run(() => GetList(connection, whereExpr, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -377,7 +377,7 @@ namespace Dapper
 		public static async Task<IEnumerable<T>> GetListAsync<T>(this IDbConnection connection, Type columnFilter, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, bool buffered = true, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => GetList<T>(connection, columnFilter, whereExpr, transaction, buffered, commandTimeout)).ConfigureAwait(false);
+			return await Task.Run(() => GetList(connection, columnFilter, whereExpr, transaction, buffered, commandTimeout)).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -392,9 +392,9 @@ namespace Dapper
 		public static int RecordCount<T>(this IDbConnection connection, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
-			Tuple<string, IDictionary<string, object>> whereCondition = builder.CreateCachedWhereCondition(whereExpr);
-			int count = ExtraCrud.Queries<T>().RecordCount(connection, whereCondition.Item1, whereCondition.Item2, transaction, commandTimeout);
+			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
+			QueryData<T> data = queries.Compile(whereExpr);
+			int count = queries.RecordCount(connection, data.WhereCondition, data.Param, transaction, commandTimeout);
 			return count;
 		}
 
@@ -410,7 +410,7 @@ namespace Dapper
 		public static async Task<int> RecordCountAsync<T>(this IDbConnection connection, Expression<Func<T, bool>> whereExpr, IDbTransaction transaction = null, int commandTimeout = 30)
 			where T : class
 		{
-			return await Task.Run(() => RecordCount<T>(connection, whereExpr, transaction, commandTimeout)).ConfigureAwait(false);
+			return await Task.Run(() => RecordCount(connection, whereExpr, transaction, commandTimeout)).ConfigureAwait(false);
 		}
 	}
 }

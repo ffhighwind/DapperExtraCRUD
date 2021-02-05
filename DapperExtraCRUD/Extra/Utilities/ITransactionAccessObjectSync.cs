@@ -27,6 +27,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq.Expressions;
 
 namespace Dapper.Extra.Utilities
 {
@@ -315,5 +316,115 @@ namespace Dapper.Extra.Utilities
 		bool Upsert(IDbTransaction transaction, T obj, int commandTimeout = 30);
 
 		#endregion Other Methods
+
+		#region WhereCondition
+
+		/// <summary>
+		/// Deletes the rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		int DeleteList(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		IEnumerable<T> GetDistinct(IDbTransaction transaction, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		IEnumerable<T> GetDistinctLimit(IDbTransaction transaction, int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <typeparam name="KeyType">The key type.</typeparam>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		IEnumerable<KeyType> GetKeys<KeyType>(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the keys that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The keys that match the given condition.</returns>
+		IEnumerable<T> GetKeys(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The limited number of rows that match the given condition.</returns>
+		IEnumerable<T> GetLimit(IDbTransaction transaction, int limit, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects a limited number of rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="limit">The maximum number of rows.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>A limited number of rows that match the given condition.</returns>
+		IEnumerable<T> GetLimit(IDbTransaction transaction, int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		IEnumerable<T> GetList(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="columnFilter">The type whose properties will filter the result.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="buffered">Whether to buffer the results in memory.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows that match the given condition.</returns>
+		IEnumerable<T> GetList(IDbTransaction transaction, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30);
+
+		/// <summary>
+		/// Counts the number of rows that match the given condition.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of rows that match the given condition.</returns>
+		int RecordCount(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30);
+
+		#endregion WhereCondition
 	}
 }

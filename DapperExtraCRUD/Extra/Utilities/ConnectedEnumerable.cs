@@ -32,8 +32,7 @@ namespace Dapper.Extra.Utilities
 {
 	/// <summary>
 	/// Allows an <see cref="IDbConnection"/> to stay open until the enumeration is completely traversed or it is disposed.
-	/// This allows unbuffered queries th be returned without being wrapped in a using statement.
-	/// However, it should be wrapped in a using statement or try catch block before it is traversed.
+	/// This allows unbuffered queries to be returned.
 	/// </summary>
 	/// <typeparam name="T">The type returned by the query.</typeparam>
 	public class ConnectedEnumerable<T> : IEnumerable<T>
