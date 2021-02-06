@@ -53,11 +53,10 @@ namespace Dapper
 			where T : class
 		{
 			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
-			QueryData<T> data = queries.Compile(whereExpr);
+			WhereConditionData<T> data = queries.Compile(whereExpr);
 			int count = queries.DeleteList(connection, data.WhereCondition, data.Param, transaction, commandTimeout);
 			return count;
 		}
-
 
 		/// <summary>
 		/// Deletes the rows that match the given condition asynchronously.
@@ -89,7 +88,7 @@ namespace Dapper
 			where T : class
 		{
 			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
-			QueryData<T> data = queries.Compile(whereExpr);
+			WhereConditionData<T> data = queries.Compile(whereExpr);
 			IEnumerable<T> list = queries.GetDistinct(connection, columnFilter, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			return list;
 		}
@@ -100,8 +99,7 @@ namespace Dapper
 		/// <typeparam name="T">The table type.</typeparam>
 		/// <param name="connection">The connection to query on.</param>
 		/// <param name="columnFilter">The type whose properties will filter the result.</param>
-		/// <param name="whereCondition">The where condition to use for this query.</param>
-		/// <param name="param">The parameters to use for this query.</param>
+		/// <param name="whereExpr">The where condition to use for this query.</param>
 		/// <param name="transaction">The transaction to use for this query.</param>
 		/// <param name="buffered">Whether to buffer the results in memory.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
@@ -128,7 +126,7 @@ namespace Dapper
 			where T : class
 		{
 			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
-			QueryData<T> data = queries.Compile(whereExpr);
+			WhereConditionData<T> data = queries.Compile(whereExpr);
 			IEnumerable<T> list = queries.GetDistinctLimit(connection, limit, columnFilter, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			return list;
 		}
@@ -166,7 +164,7 @@ namespace Dapper
 			where T : class
 		{
 			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
-			QueryData<T> data = queries.Compile(whereExpr);
+			WhereConditionData<T> data = queries.Compile(whereExpr);
 			IEnumerable<object> keys = queries.GetKeysKeys(connection, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			if (typeof(KeyType) == typeof(long)) {
 				if (keys.Any()) {
@@ -194,7 +192,7 @@ namespace Dapper
 			where T : class
 		{
 			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
-			QueryData<T> data = queries.Compile(whereExpr);
+			WhereConditionData<T> data = queries.Compile(whereExpr);
 			IEnumerable<T> keys = queries.GetKeys(connection, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			return keys;
 		}
@@ -247,7 +245,7 @@ namespace Dapper
 			where T : class
 		{
 			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
-			QueryData<T> data = queries.Compile(whereExpr);
+			WhereConditionData<T> data = queries.Compile(whereExpr);
 			IEnumerable<T> list = queries.GetLimit(connection, limit, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			return list;
 		}
@@ -268,7 +266,7 @@ namespace Dapper
 			where T : class
 		{
 			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
-			QueryData<T> data = queries.Compile(whereExpr);
+			WhereConditionData<T> data = queries.Compile(whereExpr);
 			IEnumerable<T> list = queries.GetFilterLimit(connection, limit, columnFilter, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			return list;
 		}
@@ -322,7 +320,7 @@ namespace Dapper
 			where T : class
 		{
 			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
-			QueryData<T> data = queries.Compile(whereExpr);
+			WhereConditionData<T> data = queries.Compile(whereExpr);
 			IEnumerable<T> list = queries.GetList(connection, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			return list;
 		}
@@ -342,7 +340,7 @@ namespace Dapper
 			where T : class
 		{
 			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
-			QueryData<T> data = queries.Compile(whereExpr);
+			WhereConditionData<T> data = queries.Compile(whereExpr);
 			IEnumerable<T> list = queries.GetFilter(connection, columnFilter, data.WhereCondition, data.Param, transaction, buffered, commandTimeout);
 			return list;
 		}
@@ -393,7 +391,7 @@ namespace Dapper
 			where T : class
 		{
 			ISqlQueries<T> queries = ExtraCrud.Queries<T>();
-			QueryData<T> data = queries.Compile(whereExpr);
+			WhereConditionData<T> data = queries.Compile(whereExpr);
 			int count = queries.RecordCount(connection, data.WhereCondition, data.Param, transaction, commandTimeout);
 			return count;
 		}

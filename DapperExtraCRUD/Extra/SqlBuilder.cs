@@ -237,7 +237,6 @@ namespace Dapper.Extra
 
 		#region Methods
 
-
 		/// <summary>
 		/// Gets the subset of columns that match the property names of <paramref name="type"/>.
 		/// </summary>

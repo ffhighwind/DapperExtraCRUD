@@ -33,21 +33,21 @@ namespace Dapper.Extra
 	{
 		public int index = 0;
 		private const int CACHE_SIZE = 3;
-		public QueryData<T>[] WhereConditionCache { get; set; } = new QueryData<T>[CACHE_SIZE];
-		public QueryData<T> Compile(Expression<Func<T, bool>> whereExpr)
+		public WhereConditionData<T>[] WhereConditionCache { get; set; } = new WhereConditionData<T>[CACHE_SIZE];
+		public WhereConditionData<T> Compile(Expression<Func<T, bool>> predicate)
 		{
-			QueryData<T> data;
+			WhereConditionData<T> data;
 			int prevIndex = index; // store value in case multi-threading
 			int i = index;
 			do {
 				data = WhereConditionCache[i];
 				if (data == null)
 					break;
-				if (data.Predicate == whereExpr)
+				if (data.Predicate == predicate)
 					return data;
 				i = (i + 1) % CACHE_SIZE;
 			} while (i != prevIndex);
-			data = new QueryData<T>(whereExpr);
+			data = new WhereConditionData<T>(predicate);
 			WhereConditionCache[index] = data;
 			index = (prevIndex + CACHE_SIZE - 1) % CACHE_SIZE; // iterate forward, insert backwards
 			return data;

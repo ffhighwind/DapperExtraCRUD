@@ -53,7 +53,7 @@ namespace ConsoleTests
 				conn.Open();
 
 				_ = ExtraCrud.Builder<Dto10>();
-				DoAutoKeyTests();
+				DoRequiredAutoKeyTests();
 
 				Type ty = typeof(Test7Type?);
 				PropertyInfo pr = typeof(Test7).GetProperty(nameof(Test7.Value));
@@ -123,7 +123,6 @@ namespace ConsoleTests
 				DoMultiCacheTest<Test8, TestDTO6>(() => new Test8(random), () => new TestDTO6(random));
 				DoMultiCacheTest<Test9, TestDTO4>(() => new Test9(random), () => new TestDTO4(random));
 
-
 				/*
 				DoAsyncTests<TestDTO>(() => new TestDTO(random));
 				DoAsyncTests<TestDTO2>(() => new TestDTO2(random));
@@ -158,7 +157,7 @@ namespace ConsoleTests
 			}
 		}
 
-		#region Utilities
+		#region Testing Utilities
 
 		public static List<T> CreateList<T>(int count, Func<T> create) where T : class, IDto<T>
 		{
@@ -243,11 +242,11 @@ DROP TABLE dbo.{tableName};";
 			CreateTable<T>(conn, trans);
 		}
 
-		#endregion Utilities
+		#endregion Testing Utilities
 
 		#region Main Tests
 
-		public static void DoAutoKeyTests()
+		public static void DoRequiredAutoKeyTests()
 		{
 			PropertyInfo prop1 = ExtraCrud.TypeInfo<Dto10>().AutoKeyColumn.Property;
 			PropertyInfo prop2 = typeof(Dto10).GetProperty("ID", BindingFlags.NonPublic | BindingFlags.Instance);

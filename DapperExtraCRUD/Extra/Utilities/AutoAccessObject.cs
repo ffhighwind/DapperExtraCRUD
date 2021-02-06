@@ -49,7 +49,7 @@ namespace Dapper.Extra.Utilities
 		public AutoAccessObject(string connectionString = null)
 		{
 			ConnectionString = connectionString;
-			var builder = ExtraCrud.Builder<T>();
+			SqlBuilder<T> builder = ExtraCrud.Builder<T>();
 			Queries = builder.Queries;
 		}
 
@@ -1244,7 +1244,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The number of deleted rows.</returns>
 		public int DeleteList(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			int count = DeleteList(transaction, data.WhereCondition, data.Param, commandTimeout);
 			return count;
 		}
@@ -1272,7 +1272,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The rows that match the given condition.</returns>
 		public IEnumerable<T> GetDistinct(IDbTransaction transaction, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<T> list = GetDistinct(transaction, columnFilter, data.WhereCondition, data.Param, buffered, commandTimeout);
 			return list;
 		}
@@ -1303,7 +1303,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The rows that match the given condition.</returns>
 		public IEnumerable<T> GetDistinctLimit(IDbTransaction transaction, int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<T> list = GetDistinctLimit(transaction, limit, columnFilter, data.WhereCondition, data.Param, buffered, commandTimeout);
 			return list;
 		}
@@ -1322,6 +1322,7 @@ namespace Dapper.Extra.Utilities
 		{
 			return await Task.Run(() => GetDistinctLimit(transaction, limit, columnFilter, whereExpr, buffered, commandTimeout)).ConfigureAwait(false);
 		}
+
 		/// <summary>
 		/// Selects the rows with the given keys.
 		/// </summary>
@@ -1333,7 +1334,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The keys that match the given condition.</returns>
 		public IEnumerable<KeyType> GetKeys<KeyType>(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<KeyType> keys = GetKeys<KeyType>(transaction, data.WhereCondition, data.Param, buffered, commandTimeout);
 			return keys;
 		}
@@ -1348,7 +1349,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The keys that match the given condition.</returns>
 		public IEnumerable<T> GetKeys(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<T> keys = GetKeys(transaction, data.WhereCondition, data.Param, buffered, commandTimeout);
 			return keys;
 		}
@@ -1391,7 +1392,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The limited number of rows that match the given condition.</returns>
 		public IEnumerable<T> GetLimit(IDbTransaction transaction, int limit, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<T> list = GetLimit(transaction, limit, data.WhereCondition, data.Param, buffered, commandTimeout);
 			return list;
 		}
@@ -1408,7 +1409,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>A limited number of rows that match the given condition.</returns>
 		public IEnumerable<T> GetLimit(IDbTransaction transaction, int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<T> list = GetLimit(transaction, limit, columnFilter, data.WhereCondition, data.Param, buffered, commandTimeout);
 			return list;
 		}
@@ -1452,7 +1453,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The rows that match the given condition.</returns>
 		public IEnumerable<T> GetList(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<T> list = GetList(transaction, data.WhereCondition, data.Param, buffered, commandTimeout);
 			return list;
 		}
@@ -1466,7 +1467,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The rows that match the given condition.</returns>
 		public override IEnumerable<T> GetList(Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<T> list = GetList(data.WhereCondition, data.Param, buffered, commandTimeout);
 			return list;
 		}
@@ -1482,7 +1483,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The rows that match the given condition.</returns>
 		public IEnumerable<T> GetList(IDbTransaction transaction, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<T> list = GetList(transaction, columnFilter, data.WhereCondition, data.Param, buffered, commandTimeout);
 			return list;
 		}
@@ -1497,7 +1498,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The rows that match the given condition.</returns>
 		public override IEnumerable<T> GetList(Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<T> list = GetList(columnFilter, data.WhereCondition, data.Param, buffered, commandTimeout);
 			return list;
 		}
@@ -1538,7 +1539,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The number of rows that match the given condition.</returns>
 		public int RecordCount(IDbTransaction transaction, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			int count = RecordCount(transaction, data.WhereCondition, data.Param, commandTimeout);
 			return count;
 		}
@@ -1555,7 +1556,6 @@ namespace Dapper.Extra.Utilities
 			return await Task.Run(() => RecordCount(transaction, whereExpr, commandTimeout)).ConfigureAwait(false);
 		}
 
-
 		/// <summary>
 		/// Deletes the rows that match the given condition.
 		/// </summary>
@@ -1564,7 +1564,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The number of deleted rows.</returns>
 		public override int DeleteList(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			int count = DeleteList(data.WhereCondition, data.Param, commandTimeout);
 			return count;
 		}
@@ -1579,7 +1579,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The rows that match the given condition.</returns>
 		public override IEnumerable<T> GetDistinct(Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<T> list = GetDistinct(columnFilter, data.WhereCondition, data.Param, buffered, commandTimeout);
 			return list;
 		}
@@ -1595,7 +1595,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The rows that match the given condition.</returns>
 		public override IEnumerable<T> GetDistinctLimit(int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<T> list = GetDistinctLimit(limit, columnFilter, data.WhereCondition, data.Param, buffered, commandTimeout);
 			return list;
 		}
@@ -1610,7 +1610,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The keys that match the given condition.</returns>
 		public override IEnumerable<KeyType> GetKeys<KeyType>(Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<KeyType> keys = GetKeys<KeyType>(data.WhereCondition, data.Param, buffered, commandTimeout);
 			return keys;
 		}
@@ -1624,7 +1624,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The keys that match the given condition.</returns>
 		public override IEnumerable<T> GetKeys(Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<T> keys = GetKeys<T>(data.WhereCondition, data.Param, buffered, commandTimeout);
 			return keys;
 		}
@@ -1639,7 +1639,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The limited number of rows that match the given condition.</returns>
 		public override IEnumerable<T> GetLimit(int limit, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<T> keys = GetLimit(limit, data.WhereCondition, data.Param, buffered, commandTimeout);
 			return keys;
 		}
@@ -1655,7 +1655,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>A limited number of rows that match the given condition.</returns>
 		public override IEnumerable<T> GetLimit(int limit, Type columnFilter, Expression<Func<T, bool>> whereExpr, bool buffered = true, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			IEnumerable<T> keys = GetLimit(limit, data.WhereCondition, data.Param, buffered, commandTimeout);
 			return keys;
 		}
@@ -1668,7 +1668,7 @@ namespace Dapper.Extra.Utilities
 		/// <returns>The number of rows that match the given condition.</returns>
 		public override int RecordCount(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
 		{
-			QueryData<T> data = Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Queries.Compile(whereExpr);
 			int count = RecordCount(data.WhereCondition, data.Param, commandTimeout);
 			return count;
 		}

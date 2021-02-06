@@ -773,7 +773,7 @@ namespace Dapper.Extra.Cache
 		/// <returns>The number of deleted rows.</returns>
 		public int DeleteList(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
 		{
-			QueryData<T> data = Builder.Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Builder.Queries.Compile(whereExpr);
 			int count = DeleteList(data.WhereCondition, data.Param, commandTimeout);
 			return count;
 		}
@@ -839,7 +839,7 @@ namespace Dapper.Extra.Cache
 		/// <returns>The limited number of rows that match the given condition.</returns>
 		public IEnumerable<R> GetLimit(int limit, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
 		{
-			QueryData<T> data = Builder.Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Builder.Queries.Compile(whereExpr);
 			IEnumerable<R> keys = GetLimit(limit, data.WhereCondition, data.Param, commandTimeout);
 			return keys;
 		}
@@ -866,7 +866,7 @@ namespace Dapper.Extra.Cache
 		/// <returns>The rows that match the given condition.</returns>
 		public IEnumerable<R> GetList(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
 		{
-			QueryData<T> data = Builder.Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Builder.Queries.Compile(whereExpr);
 			IEnumerable<R> items = GetList(data.WhereCondition, data.Param, commandTimeout);
 			return items;
 		}
@@ -1187,7 +1187,7 @@ namespace Dapper.Extra.Cache
 		/// <returns>The number of deleted rows.</returns>
 		public async Task<Lazy<int>> DeleteListAsync(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
 		{
-			QueryData<T> data = Builder.Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Builder.Queries.Compile(whereExpr);
 			return await DeleteListAsync(data.WhereCondition, data.Param, commandTimeout);
 		}
 
@@ -1248,7 +1248,7 @@ namespace Dapper.Extra.Cache
 		/// <returns>The limited number of rows that match the given condition.</returns>
 		public async Task<Lazy<IEnumerable<R>>> GetLimitAsync(int limit, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
 		{
-			QueryData<T> data = Builder.Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Builder.Queries.Compile(whereExpr);
 			return await GetLimitAsync(limit, data.WhereCondition, data.Param, commandTimeout);
 		}
 
@@ -1273,7 +1273,7 @@ namespace Dapper.Extra.Cache
 		/// <returns>The rows that match the given condition.</returns>
 		public async Task<Lazy<IEnumerable<R>>> GetListAsync(Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
 		{
-			QueryData<T> data = Builder.Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Builder.Queries.Compile(whereExpr);
 			return await GetListAsync(data.WhereCondition, data.Param, commandTimeout);
 		}
 
@@ -1286,7 +1286,7 @@ namespace Dapper.Extra.Cache
 		/// <returns>The rows that match the given condition.</returns>
 		public async Task<IEnumerable<T>> GetListAsync(Type columnFilter, Expression<Func<T, bool>> whereExpr, int commandTimeout = 30)
 		{
-			QueryData<T> data = Builder.Queries.Compile(whereExpr);
+			WhereConditionData<T> data = Builder.Queries.Compile(whereExpr);
 			return await GetListAsync(columnFilter, data.WhereCondition, data.Param, commandTimeout);
 		}
 

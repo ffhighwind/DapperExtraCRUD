@@ -5,36 +5,36 @@
 
 A thread-safe Dapper extension that was inspired by Dapper.SimpleCRUD, Dapper-Plus, and more. Unique additions include Bulk operations, AutoSync, MatchUpdate, MatchDelete, Distinct, Top/Limit, Upsert, and Insert If Not Exists. It also automatically sets auto-increment keys on insert, supports Enum/string/byte[] based primary keys, and exposes most of the underlying metadata to allow customization and improved performance.
 
-## Extensions
+## Extension Methods
 
-Bulk operations are only supported for Microsoft SQL Server. Update and distinct extensions support custom objects in order to filter the properties.
+Bulk operations are only supported for Microsoft SQL Server and do not work for keys with null values.
 
 | Extension | SQL Command |
 | --- | --- |
-| RecordCount | Select count(*) from [TABLE] where ... |
-| Truncate | Truncate table [TABLE] |
-| Update | Update [TABLE] set ...  |
-| Insert | Insert into [TABLE] ... |
-| InsertIfNotExists | If not exists (select * from [TABLE] where ...) insert into [TABLE] ... |
-| Upsert | If not exists (select * from [TABLE] where ...) insert into TABLE ... else update [TABLE] set ... |
-| Delete | Delete from [TABLE] where ... |
-| DeleteList | Delete from [TABLE] where ... |
-| Get | Select ... from [TABLE] where ... |
-| GetList | Select ... from [TABLE] where ... |
-| GetLimit | Select top(N) from [TABLE] where ... |
-| GetKeys | Select ... from [TABLE] where ... |
-| GetDistinct | Select distinct ... from [TABLE] where ... |
-| GetDistinctLimit | Select distinct top(N) from [TABLE] where ... |
-| BulkUpdate| Update [TABLE] set ... |
-| BulkInsert |Insert into [TABLE] ... |
-| BulkInsertIfNotExists | If not exists (select * from [TABLE] where ...) insert into [TABLE] ... |
-| BulkUpsert | If not exists (select * from [TABLE] where ...) insert into TABLE ... else update [TABLE] set ... |
-| BulkDelete | Delete from [TABLE] where ... |
-| BulkGet | Select from [TABLE] where ... |
+| RecordCount | Returns the number of rows that match a condition. |
+| Truncate | Truncates a table. |
+| Update | Updates a row or a subset of columns. |
+| Insert | Inserts a row. |
+| InsertIfNotExists | Inserts a row if it doesn't exist. |
+| Upsert | Updates a row if it exists, otherwise it inserts the row. |
+| Delete | Deletes a row. |
+| DeleteList | Deletes rows that match a condition. |
+| Get | Returns a row if it exists. |
+| GetList | Returns the rows that match a condition. |
+| GetLimit | Returns a limited number of rows that match a condition with an optional column filter. |
+| GetKeys | Returns the primary keys that match a condition. |
+| GetDistinct | Returns the unique rows that match a condition with an optional column filter. |
+| GetDistinctLimit | Returns a limited number of unique rows that match a condition with an optional column filter. |
+| BulkUpdate | Updates a list of rows using a bulk method and a temporary table. |
+| BulkInsert | Inserts a list of rows using a bulk method. |
+| BulkInsertIfNotExists | Inserts rows that don't exist using a bulk method and a temporary table. |
+| BulkUpsert | Upserts rows using a bulk method and a temporary table. |
+| BulkDelete | Deletes rows if they don't exist using a bulk method and a temporary table. |
+| BulkGet | Returns rows using a bulk method and a temporary table. |
 
-## Annotations
+## Mapping Objects
 
-Annotations map classes to a database tables and properties to table columns.
+Annotations can be used to map classes to a table and properties to columns.
 
 | Annotation | Description |
 | --- | --- |
@@ -75,8 +75,7 @@ Some annotations from System.ComponentModel are supported as replacements for Da
 
 ## Example
 
-This example shows how to define a "Users" table and perform some operations on it. You may note that
-the syntax is similar to other Dapper extensions.
+This example shows how to define a "Users" table and perform some operations on it. The syntax is similar to other Dapper extensions.
 
 ```csharp
 [IgnoreDelete]
@@ -112,7 +111,9 @@ public static class Program {
 	{
 		using (SqlConnection conn = new SqlConnection(ConnString)) {
 			DateTime minHireDate = DateTime.Today.AddDays(-30);
+
 			IEnumerable<User> users = conn.GetList<User>("where HireDate >= @minHireDate ", new { minHireDate });
+
 			User user = new User() {
 				FirstName = "Jason",
 				LastName = "Borne",
@@ -124,6 +125,33 @@ public static class Program {
 	}
 }
 ```
+
+## Where Expressions
+
+Expressions are supported as type-safe alternative to raw SQL where conditions. This acts similarly to [LINQ to SQL](https://docs.microsoft.com/en-us/dotnet/framework/data/adonet/sql/linq/)
+and is implemented using a custom expression parser [WhereConditionGenerator](https://github.com/ffhighwind/DapperExtraCRUD/blob/master/DapperExtraCRUD/Extra/Utilities/WhereConditionGenerator.cs).
+Compiling these expressions can be slow, so a small expression cache is used for each type.
+
+```csharp
+// Input:
+string lastName = "Borne";
+IEnumerable<User> result = conn.GetList((u) => u.FirstName == "Jason" || u.LastName == lastName);
+
+// Output:
+string whereCondition = "(Table.[FirstName] = 'jason' || Table.[LastName] = @P0)";
+IDictionary<string, object> param = new { "P0" => lastName };
+```
+
+Not all expressions are supported. Please post an issue if you need something added.
+```csharp
+// Supported
+(x) => new []{ "Jason", "Steven" }.Contains(x.FirstName) // Table.[FirstName] in @P0
+(x) => x.LastName.Equals("Borne") // Table.[LastName] = 'Borne'
+
+// Not supported, but could be added
+string methods: StartsWith, EndsWith, CompareTo, Contains, IndexOf, Trim, TrimStart, TrimEnd
+```
+
 ## Utilities
 
 #### AutoAccessObject<T> / DataAccessObject<T>
@@ -134,20 +162,8 @@ They also perform a slightly better than the extension methods because they stor
 #### WhereConditionGenerator
 
 This generates SQL WHERE conditions from a Linq.Expression<Predicate<T>>. It can be somewhat expensive to generate, so I recommend caching the results when possible.
-
-```csharp
-string condition = WhereConditionGenerator.Create<User>((u) => 
-	u.UserName == "jborne"
-	&& (u.FirstName != null || u.Permissions == UserPermissions.Basic) 
-	&& new string[] { "Jason", "Chris", "Zack" }.Contains(u.FirstName),
-	out IDictionary<string, object> param);
-/*	(((Users.[Account Name] = 'jborne') 
-	AND ((Users.FirstName is not NULL) OR (Users.Permissions = 1))) 
-	AND Users.FirstName in @P0)"
- param = { "P0" => List<object>() { "Jason", "Chris", "Zack" } }
-*/
-IEnumerable<User> result = conn.Query<User>("SELECT * FROM Test WHERE " + condition, param);
-```
+See [SqlQueries](https://github.com/ffhighwind/DapperExtraCRUD/blob/master/DapperExtraCRUD/Extra/Internal/SqlQueries.cs) for an example on how caching is done internally
+using a circular buffer.
 
 #### ExtraUtil
 
@@ -183,11 +199,11 @@ public static void Main(string[] args)
 
 ## Tips
 
-* MatchUpdate and MatchDelete on DateTime only work on datetime2 for up to 2 decimal places (e.g. datetime2(2)). This is because of differences 
-in precision for datetime2 vs C# DateTime.
-* Dapper supports all setters including protected, private, and internal. However, it only supports public getters.
-* You can use joins in the where condition.
+* MatchUpdate and MatchDelete do not always work on DateTime columns. This is due to a difference in precision for databases and C# DateTime.
+You need to limit precision of the datetime in the table such as using datetime2(2) in MS SQL Server. If you cannot do this
+then you must to use another type as a versioning key.
 * Fields are not supported due to the fact that Dapper only supports them for select queries.
+* All property setters are supported including private and internal. However, only public getters are supported.
 
 ## Performance
 
@@ -209,9 +225,6 @@ to change the case sensitivity for primary key comparisons.
 
 * ITypeHandler tests
 * Other RDBMS tests
-* Bulk operations for other RDBMS.
-* Multi-Mapping/Joins
-* Paged results
 * Better async support and tests. This is done in a very lazy way instead of using Dapper's async calls, so it will not perform quite as well.
 
 # License

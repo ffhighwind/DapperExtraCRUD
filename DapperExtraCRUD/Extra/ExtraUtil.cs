@@ -269,8 +269,9 @@ namespace Dapper.Extra
 		/// <returns>Partitions of the list.</returns>
 		public static IEnumerable<List<T>> Partition<T>(IList<T> source, int size)
 		{
-			for (int i = 0; i < source.Count; i += size)
+			for (int i = 0; i < source.Count; i += size) {
 				yield return new List<T>(source.Skip(i).Take(size));
+			}
 		}
 	}
 }

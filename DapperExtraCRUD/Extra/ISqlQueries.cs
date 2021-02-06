@@ -40,9 +40,9 @@ namespace Dapper.Extra
 		/// Compiles an expression using <see cref="WhereConditionGenerator"/> and stores the result.
 		/// This may use a cache to prevent compilation.
 		/// </summary>
-		/// <param name="whereExpr">The where condition to use for this query.</param>
+		/// <param name="predicate">The predicate to use for the query.</param>
 		/// <returns>The compiled result from passing the expression to <see cref="WhereConditionGenerator"/>.</returns>
-		QueryData<T> Compile(Expression<Func<T, bool>> whereExpr);
+		WhereConditionData<T> Compile(Expression<Func<T, bool>> predicate);
 
 		/// <summary>
 		/// Bulk delete command for any key type.
