@@ -194,6 +194,13 @@ namespace Dapper.Extra.Cache.Internal
 			}
 		}
 
+		public void RemoveKeys(IEnumerable<int> keys)
+		{
+			foreach (int key in keys) {
+				_ = RemoveKey(key);
+			}
+		}
+
 		public bool Contains(T value)
 		{
 			bool success = Cache.ContainsKey(value);

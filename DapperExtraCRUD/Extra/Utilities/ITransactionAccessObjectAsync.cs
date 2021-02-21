@@ -50,6 +50,15 @@ namespace Dapper.Extra.Utilities
 		Task<int> BulkDeleteAsync(IDbTransaction transaction, IEnumerable<object> keys, int commandTimeout = 30);
 
 		/// <summary>
+		/// Deletes the rows with the given keys.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="keys">The keys for the rows to delete.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		Task<int> BulkDeleteAsync(IDbTransaction transaction, IEnumerable<int> keys, int commandTimeout = 30);
+
+		/// <summary>
 		/// Deletes the given rows.
 		/// </summary>
 		/// <param name="transaction">The transaction to use for this query.</param>
@@ -66,6 +75,15 @@ namespace Dapper.Extra.Utilities
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows with the given keys.</returns>
 		Task<IEnumerable<T>> BulkGetAsync(IDbTransaction transaction, IEnumerable<object> keys, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="keys">The keys of the rows to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows with the given keys.</returns>
+		Task<IEnumerable<T>> BulkGetAsync(IDbTransaction transaction, IEnumerable<int> keys, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows with the given keys.

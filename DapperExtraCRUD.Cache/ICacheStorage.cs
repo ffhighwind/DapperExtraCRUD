@@ -69,7 +69,13 @@ namespace Dapper.Extra.Cache
 		/// </summary>
 		/// <param name="keys">The keys of the objects to remove.</param>
 		void RemoveKeys(IEnumerable<object> keys);
-		
+
+		/// <summary>
+		/// Removes the objects matching the specified keys from the storage.
+		/// </summary>
+		/// <param name="keys">The keys of the objects to remove.</param>
+		void RemoveKeys(IEnumerable<int> keys);
+
 		/// <summary>
 		/// Determines whether the storage contains the specified object.
 		/// </summary>

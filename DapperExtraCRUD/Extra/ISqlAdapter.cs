@@ -148,6 +148,21 @@ namespace Dapper.Extra
 		/// The SQL command that returns the current UTC date.
 		/// <code>convert(date, getutcdate())</code>
 		/// </summary>
-		string CurrentDateUtc {get; }
+		string CurrentDateUtc { get; }
+
+		/// <summary>
+		/// The SQL command
+		/// </summary>
+		//string Left { get; }
+		//string Right { get; }
+		//string Trim { get; }
+		//string TrimLeft { get; }
+		//string TrimRight { get; }
+		//string StartsWith { get; }
+		
+		/// <summary>
+		/// The SQL command that 
+		/// </summary>
+		//string EndsWith { get; }
 	}
 }

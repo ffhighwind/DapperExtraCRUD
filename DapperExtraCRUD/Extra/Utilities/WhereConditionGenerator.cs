@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 
 namespace Dapper.Extra.Utilities
@@ -590,7 +591,8 @@ namespace Dapper.Extra.Utilities
 		protected override Expression VisitMethodCall(MethodCallExpression node)
 		{
 			// a.b(c, d)
-			if (node.Method.Name == "Equals" && node.Arguments.Count == 1) {
+			MethodInfo mi = node.Method;
+			if (mi.Name == "Equals" && node.Arguments.Count == 1) {
 				Results.Append('(');
 				base.Visit(node.Object);
 				if (node.Arguments[0] is ConstantExpression ce && ce.Value == null)
@@ -605,21 +607,55 @@ namespace Dapper.Extra.Utilities
 				Results.Append(')');
 				return null;
 			}
-			else if (node.Method.Name == "Contains") {
-				if (node.Arguments.Count > 1) {
-					if (node.Arguments[0] is NewArrayExpression newExp) {
-						base.Visit(node.Arguments[1]);
-						Results.Append(" in ");
-						// new a[] { b, c, d }
-						CompileListExpression(newExp.Type.GetElementType(), newExp.Expressions);
-						return null;
+			else {
+				// TODO
+				/*
+				if (mi.DeclaringType == typeof(string)) {
+					SqlTypeInfo typeInfo = TypeInfos.Values.First();
+					if (mi.Name == "Contains") {
+						
+					}
+					else if (mi.Name == "IndexOf") {
+						
+					}
+					else if (mi.Name == "StartsWith") {
+
+					}
+					else if (mi.Name == "EndsWith") {
+
+					}
+					else if (mi.Name == "Trim") {
+
+					}
+					else if (mi.Name == "TrimStart") {
+
+					}
+					else if (mi.Name == "TrimEnd") {
+
+					}
+					else if (mi.Name == "CompareTo") {
+
 					}
 				}
-				else if (node.Arguments.Count == 1) {
-					base.Visit(node.Arguments[0]);
-					Results.Append(" in ");
-					CompileExpression(node.Object);
-					return null;
+				*/
+				if (mi.DeclaringType == typeof(Enumerable) || mi.DeclaringType.GetInterfaces().Any(x => x.GetGenericTypeDefinition() == typeof(IEnumerable<>))) {
+					if (mi.Name == "Contains") {
+						if (node.Arguments.Count > 1) {
+							if (node.Arguments[0] is NewArrayExpression newExp) {
+								base.Visit(node.Arguments[1]);
+								Results.Append(" in ");
+								// new a[] { b, c, d }
+								CompileListExpression(newExp.Type.GetElementType(), newExp.Expressions);
+								return null;
+							}
+						}
+						else if (node.Arguments.Count == 1) {
+							base.Visit(node.Arguments[0]);
+							Results.Append(" in ");
+							CompileExpression(node.Object);
+							return null;
+						}
+					}
 				}
 			}
 			InvalidExpression(node);
@@ -896,10 +932,10 @@ namespace Dapper.Extra.Utilities
 					value = obj.ToString();
 					break;
 				case TypeCode.Boolean:
-					value = ((bool)obj) ? "1" : "0";
+					value = ((bool) obj) ? "1" : "0";
 					break;
 				case TypeCode.Char:
-					char ch = (char)obj;
+					char ch = (char) obj;
 					value = ch == '\'' ? "''''" : "'" + ch + "'";
 					break;
 				case TypeCode.String:

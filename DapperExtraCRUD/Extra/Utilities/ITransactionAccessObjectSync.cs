@@ -38,6 +38,7 @@ namespace Dapper.Extra.Utilities
 	public interface ITransactionAccessObjectSync<T> where T : class
 	{
 		#region Bulk
+
 		/// <summary>
 		/// Deletes the rows with the given keys.
 		/// </summary>
@@ -46,6 +47,15 @@ namespace Dapper.Extra.Utilities
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The number of deleted rows.</returns>
 		int BulkDelete(IDbTransaction transaction, IEnumerable<object> keys, int commandTimeout = 30);
+
+		/// <summary>
+		/// Deletes the rows with the given keys.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="keys">The keys for the rows to delete.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		int BulkDelete(IDbTransaction transaction, IEnumerable<int> keys, int commandTimeout = 30);
 
 		/// <summary>
 		/// Deletes the given rows.
@@ -64,6 +74,15 @@ namespace Dapper.Extra.Utilities
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows with the given keys.</returns>
 		IEnumerable<T> BulkGet(IDbTransaction transaction, IEnumerable<object> keys, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="keys">The keys of the rows to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows with the given keys.</returns>
+		IEnumerable<T> BulkGet(IDbTransaction transaction, IEnumerable<int> keys, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows with the given keys.

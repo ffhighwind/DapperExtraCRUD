@@ -48,6 +48,14 @@ namespace Dapper.Extra.Utilities
 		Task<int> BulkDeleteAsync(IEnumerable<object> keys, int commandTimeout = 30);
 
 		/// <summary>
+		/// Deletes the rows with the given keys.
+		/// </summary>
+		/// <param name="keys">The keys for the rows to delete.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		Task<int> BulkDeleteAsync(IEnumerable<int> keys, int commandTimeout = 30);
+
+		/// <summary>
 		/// Deletes the given rows.
 		/// </summary>
 		/// <param name="objs">The objects to delete.</param>
@@ -62,6 +70,14 @@ namespace Dapper.Extra.Utilities
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows with the given keys.</returns>
 		Task<IEnumerable<T>> BulkGetAsync(IEnumerable<object> keys, int commandTimeout = 30);
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <param name="keys">The keys of the rows to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows with the given keys.</returns>
+		Task<IEnumerable<T>> BulkGetAsync(IEnumerable<int> keys, int commandTimeout = 30);
 
 		/// <summary>
 		/// Selects the rows with the given keys.

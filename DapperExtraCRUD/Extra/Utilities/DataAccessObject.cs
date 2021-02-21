@@ -97,6 +97,18 @@ namespace Dapper.Extra.Utilities
 		}
 
 		/// <summary>
+		/// Deletes the rows with the given keys.
+		/// </summary>
+		/// <param name="keys">The keys for the rows to delete.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		public override int BulkDelete(IEnumerable<int> keys, int commandTimeout = 30)
+		{
+			int count = Queries.BulkDeleteKeys(Connection, keys.Select(x => (object)x), Transaction, commandTimeout);
+			return count;
+		}
+
+		/// <summary>
 		/// Deletes the given rows.
 		/// </summary>
 		/// <param name="objs">The objects to delete.</param>
@@ -117,6 +129,18 @@ namespace Dapper.Extra.Utilities
 		public override IEnumerable<T> BulkGet(IEnumerable<object> keys, int commandTimeout = 30)
 		{
 			List<T> list = Queries.BulkGetKeys(Connection, keys, Transaction, commandTimeout).AsList();
+			return list;
+		}
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <param name="keys">The keys of the rows to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows with the given keys.</returns>
+		public override IEnumerable<T> BulkGet(IEnumerable<int> keys, int commandTimeout = 30)
+		{
+			List<T> list = Queries.BulkGetKeys(Connection, keys.Select(x => (object)x), Transaction, commandTimeout).AsList();
 			return list;
 		}
 

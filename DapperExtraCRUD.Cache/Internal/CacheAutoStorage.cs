@@ -109,6 +109,13 @@ namespace Dapper.Extra.Cache.Internal
 			}
 		}
 
+		public void RemoveKeys(IEnumerable<int> keys)
+		{
+			foreach (int key in keys) {
+				RemoveKey(key);
+			}
+		}
+
 		public void Clear()
 		{
 			Cache.Clear();

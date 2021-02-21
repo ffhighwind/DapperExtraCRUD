@@ -161,6 +161,15 @@ namespace Dapper.Extra.Cache
 		}
 
 		/// <summary>
+		/// Removes the objects matching the specified keys from the cache.
+		/// </summary>
+		/// <param name="keys">The keys of the objects to remove.</param>
+		public void RemoveKeys(IEnumerable<int> keys)
+		{
+			Items.RemoveKeys(keys.Select(x => (object)x));
+		}
+
+		/// <summary>
 		/// Removes the object from the cache.
 		/// </summary>
 		/// <param name="value">The object to remove.</param>
@@ -311,6 +320,19 @@ namespace Dapper.Extra.Cache
 		}
 
 		/// <summary>
+		/// Deletes the rows with the given keys.
+		/// </summary>
+		/// <param name="keys">The keys for the rows to delete.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		public int BulkDelete(IEnumerable<int> keys, int commandTimeout = 30)
+		{
+			int count = Access.BulkDelete(keys, commandTimeout);
+			Items.RemoveKeys(keys);
+			return count;
+		}
+
+		/// <summary>
 		/// Deletes the given rows.
 		/// </summary>
 		/// <param name="objs">The objects to delete.</param>
@@ -330,6 +352,19 @@ namespace Dapper.Extra.Cache
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows with the given keys.</returns>
 		public IEnumerable<R> BulkGet(IEnumerable<object> keys, int commandTimeout = 30)
+		{
+			IEnumerable<T> list = Access.BulkGet(keys, commandTimeout);
+			IEnumerable<R> result = Items.Add(list);
+			return result;
+		}
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <param name="keys">The keys of the rows to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows with the given keys.</returns>
+		public IEnumerable<R> BulkGet(IEnumerable<int> keys, int commandTimeout = 30)
 		{
 			IEnumerable<T> list = Access.BulkGet(keys, commandTimeout);
 			IEnumerable<R> result = Items.Add(list);

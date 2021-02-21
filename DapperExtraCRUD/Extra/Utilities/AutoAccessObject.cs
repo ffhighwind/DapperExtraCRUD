@@ -79,6 +79,19 @@ namespace Dapper.Extra.Utilities
 		}
 
 		/// <summary>
+		/// Deletes the rows with the given keys.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="keys">The keys for the rows to delete.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		public int BulkDelete(IDbTransaction transaction, IEnumerable<int> keys, int commandTimeout = 30)
+		{
+			int count = Queries.BulkDeleteKeys(transaction.Connection, keys.Select(x => (object)x), transaction, commandTimeout);
+			return count;
+		}
+
+		/// <summary>
 		/// Deletes the given rows.
 		/// </summary>
 		/// <param name="transaction">The transaction to use for this query.</param>
@@ -101,6 +114,20 @@ namespace Dapper.Extra.Utilities
 		{
 			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
 				int count = Queries.BulkDeleteKeys(conn, keys, null, commandTimeout);
+				return count;
+			}
+		}
+
+		/// <summary>
+		/// Deletes the rows with the given keys.
+		/// </summary>
+		/// <param name="keys">The keys for the rows to delete.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		public override int BulkDelete(IEnumerable<int> keys, int commandTimeout = 30)
+		{
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				int count = Queries.BulkDeleteKeys(conn, keys.Select(x => (object)x), null, commandTimeout);
 				return count;
 			}
 		}
@@ -131,6 +158,19 @@ namespace Dapper.Extra.Utilities
 			return await Task.Run(() => BulkDelete(transaction, keys, commandTimeout));
 		}
 
+
+		/// <summary>
+		/// Deletes the rows with the given keys.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="keys">The keys for the rows to delete.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The number of deleted rows.</returns>
+		public async Task<int> BulkDeleteAsync(IDbTransaction transaction, IEnumerable<int> keys, int commandTimeout = 30)
+		{
+			return await Task.Run(() => BulkDelete(transaction, keys.Select(x => (object)x), commandTimeout));
+		}
+
 		/// <summary>
 		/// Deletes the given rows.
 		/// </summary>
@@ -153,6 +193,19 @@ namespace Dapper.Extra.Utilities
 		public IEnumerable<T> BulkGet(IDbTransaction transaction, IEnumerable<object> keys, int commandTimeout = 30)
 		{
 			IEnumerable<T> list = Queries.BulkGetKeys(transaction.Connection, keys, transaction, commandTimeout);
+			return list;
+		}
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="keys">The keys of the rows to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows with the given keys.</returns>
+		public IEnumerable<T> BulkGet(IDbTransaction transaction, IEnumerable<int> keys, int commandTimeout = 30)
+		{
+			IEnumerable<T> list = Queries.BulkGetKeys(transaction.Connection, keys.Select(x => (object)x), transaction, commandTimeout);
 			return list;
 		}
 
@@ -186,6 +239,20 @@ namespace Dapper.Extra.Utilities
 		/// <summary>
 		/// Selects the rows with the given keys.
 		/// </summary>
+		/// <param name="keys">The keys of the rows to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows with the given keys.</returns>
+		public override IEnumerable<T> BulkGet(IEnumerable<int> keys, int commandTimeout = 30)
+		{
+			using (SqlConnection conn = new SqlConnection(ConnectionString)) {
+				List<T> list = Queries.BulkGetKeys(conn, keys.Select(x => (object)x), null, commandTimeout).AsList();
+				return list;
+			}
+		}
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
 		/// <param name="objs">The objects to select.</param>
 		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
 		/// <returns>The rows that match the given keys.</returns>
@@ -207,6 +274,18 @@ namespace Dapper.Extra.Utilities
 		public async Task<IEnumerable<T>> BulkGetAsync(IDbTransaction transaction, IEnumerable<object> keys, int commandTimeout = 30)
 		{
 			return await Task.Run(() => BulkGet(transaction, keys, commandTimeout));
+		}
+
+		/// <summary>
+		/// Selects the rows with the given keys.
+		/// </summary>
+		/// <param name="transaction">The transaction to use for this query.</param>
+		/// <param name="keys">The keys of the rows to select.</param>
+		/// <param name="commandTimeout">Number of seconds before command execution timeout.</param>
+		/// <returns>The rows with the given keys.</returns>
+		public async Task<IEnumerable<T>> BulkGetAsync(IDbTransaction transaction, IEnumerable<int> keys, int commandTimeout = 30)
+		{
+			return await Task.Run(() => BulkGet(transaction, keys.Select(x => (object)x), commandTimeout));
 		}
 
 		/// <summary>
