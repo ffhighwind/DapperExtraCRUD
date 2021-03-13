@@ -29,7 +29,7 @@ Bulk operations are only supported for Microsoft SQL Server and do not work for 
 | BulkInsert | Inserts a list of rows using a bulk method. |
 | BulkInsertIfNotExists | Inserts rows that don't exist using a bulk method and a temporary table. |
 | BulkUpsert | Upserts rows using a bulk method and a temporary table. |
-| BulkDelete | Deletes rows if they don't exist using a bulk method and a temporary table. |
+| BulkDelete | Deletes rows using a bulk method and a temporary table. |
 | BulkGet | Returns rows using a bulk method and a temporary table. |
 
 ## Mapping Objects
