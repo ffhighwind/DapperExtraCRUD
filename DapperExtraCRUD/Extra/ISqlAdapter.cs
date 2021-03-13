@@ -150,19 +150,12 @@ namespace Dapper.Extra
 		/// </summary>
 		string CurrentDateUtc { get; }
 
-		/// <summary>
-		/// The SQL command
-		/// </summary>
 		//string Left { get; }
 		//string Right { get; }
 		//string Trim { get; }
 		//string TrimLeft { get; }
 		//string TrimRight { get; }
 		//string StartsWith { get; }
-		
-		/// <summary>
-		/// The SQL command that 
-		/// </summary>
 		//string EndsWith { get; }
 	}
 }

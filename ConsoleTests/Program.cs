@@ -220,14 +220,14 @@ namespace ConsoleTests
 
 		private static void DropTable<T>(SqlConnection conn, SqlTransaction trans = null) where T : class
 		{
-			string tableName = ExtraCrud.TypeInfo<T>().TableName;
+			SqlTypeInfo typeInfo = ExtraCrud.TypeInfo<T>();
 			string str = $@"
 IF EXISTS (
 	SELECT * from INFORMATION_SCHEMA.TABLES 
-WHERE TABLE_NAME = '{tableName}' 
-	AND TABLE_SCHEMA = 'dbo'
+WHERE TABLE_NAME = '{typeInfo.TableName}' 
+	AND TABLE_SCHEMA = '{typeInfo.Schema ?? "dbo"}'
 ) 
-DROP TABLE dbo.{tableName};";
+DROP TABLE {typeInfo.FullyQualifiedTableName};";
 			conn.Execute(str, null, trans);
 		}
 
@@ -571,6 +571,9 @@ DROP TABLE dbo.{tableName};";
 				var result8 = conn.Query<TestDTO2>("SELECT * FROM Test2 left join Test on Test.[ID] = Test2.[Col1] WHERE\n" + str, param);
 				str = WhereConditionGenerator.Create<TestDTO>((t) => t.IsActive.Equals(true) || t.CreatedDt == new DateTime(2019, 1, 5) && (t.ID > 2), out param);
 				var result9 = conn.Query<TestDTO>("SELECT * FROM Test WHERE\n" + str, param);
+
+				str = WhereConditionGenerator.Create<TestDTO4>((t) => t.FirstName == "FirstName", out param);
+				var result10 = conn.Query<TestDTO4>("SELECT * FROM guest.Test4 WHERE\n" + str, param);
 			}
 		}
 

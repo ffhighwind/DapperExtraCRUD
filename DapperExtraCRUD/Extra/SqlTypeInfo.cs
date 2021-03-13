@@ -59,7 +59,7 @@ namespace Dapper.Extra
 		public SqlTypeInfo(Type type, ISqlAdapter adapter)
 		{
 			Type = type;
-			Adapter = adapter ?? SqlAdapter.SQLServer;
+			Adapter = adapter ?? SqlAdapter.GetAdapter(ExtraCrud.Dialect);
 			TableAttribute tableAttr = type.GetCustomAttribute<TableAttribute>(false);
 			BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty | BindingFlags.NonPublic;
 
@@ -67,8 +67,13 @@ namespace Dapper.Extra
 			bool inherit = false;
 			if (tableAttr == null) {
 				var tableAttr2 = type.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.TableAttribute>(false);
-				Adapter = SqlAdapter.GetAdapter(SqlDialect.SQLServer);
-				TableName = tableAttr2 != null ? tableAttr2.Name : type.Name;
+				if (tableAttr2 != null && !string.IsNullOrWhiteSpace(tableAttr2.Schema)) {
+					TableName = tableAttr2.Name;
+					if (!string.IsNullOrWhiteSpace(tableAttr2.Schema))
+						Schema = tableAttr2.Schema.Trim();
+				}
+				else
+					TableName = type.Name;
 			}
 			else {
 				TableName = string.IsNullOrWhiteSpace(tableAttr.Name) ? type.Name : tableAttr.Name;
@@ -80,7 +85,13 @@ namespace Dapper.Extra
 					inherit = true;
 					Attributes |= SqlTableAttributes.InheritAttributes;
 				}
+				if (!string.IsNullOrWhiteSpace(tableAttr.Schema)) {
+					Schema = tableAttr.Schema.Trim();
+				}
 			}
+			FullyQualifiedTableName = TableName;
+			if (Schema != null)
+				FullyQualifiedTableName = Schema + "." + TableName;
 
 			// Filter properties and iterate them for primary keys
 			PropertyInfo[] properties = type.GetProperties(flags);
@@ -396,6 +407,11 @@ namespace Dapper.Extra
 		/// The name of the table.
 		/// </summary>
 		public string TableName { get; private set; }
+
+		/// <summary>
+		/// The fully qualified table name or the class name with the schema.
+		/// </summary>
+		public string FullyQualifiedTableName { get; private set; }
 
 		/// <summary>
 		/// The class type that represents the table.

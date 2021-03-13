@@ -39,7 +39,7 @@ namespace Dapper.Extra
 		/// <param name="typeInfo">The information about the table.</param>
 		public TableEqualityComparer(SqlTypeInfo typeInfo)
 		{
-			InitialHash = typeInfo.TableName.GetHashCode() * -1977;
+			InitialHash = typeInfo.FullyQualifiedTableName.GetHashCode() * -1977;
 			StringComparer = typeInfo.Adapter.StringComparer;
 			List<MemberGetter> stringGetters = new List<MemberGetter>();
 			List<MemberGetter> otherGetters = new List<MemberGetter>();

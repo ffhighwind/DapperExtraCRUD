@@ -30,7 +30,7 @@ using Dapper.Extra.Annotations;
 
 namespace ConsoleTests
 {
-	[Table("Test4")]
+	[Table("Test4", "guest")]
 	public class TestDTO4 : IDtoKey<TestDTO4, int>
 	{
 		private static readonly IEqualityComparer<TestDTO4> Comparer = Dapper.Extra.ExtraCrud.EqualityComparer<TestDTO4>();
@@ -54,7 +54,7 @@ namespace ConsoleTests
 		public string CreateTable()
 		{
 			return @"
-CREATE TABLE [dbo].[Test4](
+CREATE TABLE [guest].[Test4](
 	[ID] [int] IDENTITY(1,1) NOT NULL,
 	[FirstName] [varchar](max) NOT NULL,
 	[LastName] [varchar](max) NOT NULL,

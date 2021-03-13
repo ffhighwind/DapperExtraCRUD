@@ -48,37 +48,40 @@ namespace Dapper.Extra.Annotations
 		public TableAttribute(string name = null, string schema = null, bool declaredOnly = false, bool inheritAttrs = true, SqlDialect dialect = 0)
 		{
 			Name = name?.Trim();
-			Schema = string.IsNullOrWhiteSpace(schema) ? "" : schema.Trim();
+			Schema = string.IsNullOrWhiteSpace(schema) ? null : schema.Trim();
 			InheritAttributes = inheritAttrs;
 			DeclaredOnly = declaredOnly;
-			LazyDialect = dialect <= 0 ? new Lazy<SqlDialect>(() => ExtraCrud.Dialect, LazyThreadSafetyMode.None)
-				: new Lazy<SqlDialect>(() => dialect, LazyThreadSafetyMode.None);
+			Dialect = dialect;
 		}
 
 		/// <summary>
 		/// Determines if only top-level properties are used. Subclass properties are ignored if this is true.
 		/// </summary>
-		public bool DeclaredOnly { get; }
+		public bool DeclaredOnly { get; protected set; }
 
 		/// <summary>
 		/// Determines if property attributes are inherited.
 		/// </summary>
-		public bool InheritAttributes { get; }
+		public bool InheritAttributes { get; protected set; }
 
 		/// <summary>
 		/// The name of the table.
 		/// </summary>
-		public string Name { get; }
+		public string Name { get; protected set; }
 
 		/// <summary>
 		/// The schema of the table.
 		/// </summary>
-		public string Schema { get; }
+		public string Schema { get; protected set; }
 
-		private readonly Lazy<SqlDialect> LazyDialect;
+		protected Lazy<SqlDialect> LazyDialect;
 		/// <summary>
 		/// The dialect to use when generating SQL commands.
 		/// </summary>
-		public SqlDialect Dialect => LazyDialect.Value;
+		public SqlDialect Dialect {
+			get => LazyDialect.Value;
+			set => LazyDialect = value <= 0 ? new Lazy<SqlDialect>(() => ExtraCrud.Dialect, LazyThreadSafetyMode.None)
+					: new Lazy<SqlDialect>(() => value, LazyThreadSafetyMode.None);
+		}
 	}
 }

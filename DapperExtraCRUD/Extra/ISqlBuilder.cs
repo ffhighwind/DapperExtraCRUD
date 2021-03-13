@@ -52,7 +52,7 @@ namespace Dapper.Extra
 		/// <summary>
 		/// The quoted table name or the class name.
 		/// </summary>
-		string TableName { get; }
+		string FullyQualifiedTableName { get; }
 
 		/// <summary>
 		/// Gets the subset of columns that match the property names of <paramref name="type"/>.

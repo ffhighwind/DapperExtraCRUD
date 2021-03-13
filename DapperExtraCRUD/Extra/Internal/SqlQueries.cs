@@ -31,14 +31,14 @@ namespace Dapper.Extra
 {
 	internal class SqlQueries<T> : ISqlQueries<T> where T : class
 	{
-		public int index = 0;
+		public volatile int index = 0;
 		private const int CACHE_SIZE = 3;
 		public WhereConditionData<T>[] WhereConditionCache { get; set; } = new WhereConditionData<T>[CACHE_SIZE];
 		public WhereConditionData<T> Compile(Expression<Func<T, bool>> predicate)
 		{
 			WhereConditionData<T> data;
-			int prevIndex = index; // store value in case multi-threading
-			int i = index;
+			int prevIndex = index;
+			int i = prevIndex;
 			do {
 				data = WhereConditionCache[i];
 				if (data == null)
@@ -48,8 +48,9 @@ namespace Dapper.Extra
 				i = (i + 1) % CACHE_SIZE;
 			} while (i != prevIndex);
 			data = new WhereConditionData<T>(predicate);
-			WhereConditionCache[index] = data;
-			index = (prevIndex + CACHE_SIZE - 1) % CACHE_SIZE; // iterate forward, insert backwards
+			prevIndex = (index - 1 + CACHE_SIZE) % CACHE_SIZE;
+			index = prevIndex;
+			WhereConditionCache[prevIndex] = data;
 			return data;
 		}
 

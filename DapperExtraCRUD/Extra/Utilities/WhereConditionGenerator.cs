@@ -696,7 +696,7 @@ namespace Dapper.Extra.Utilities
 			if (!TypeInfos.TryGetValue(node.Name, out SqlTypeInfo typeInfo)) {
 				throw new InvalidOperationException("Variable '" + node.Name + "' is out of scope.");
 			}
-			Results.Append(typeInfo.TableName);
+			Results.Append(typeInfo.FullyQualifiedTableName);
 			return null;
 		}
 
