@@ -228,7 +228,7 @@ namespace Dapper.Extra
 		public string FullyQualifiedTableName => Info.FullyQualifiedTableName;
 
 		/// <summary>
-		/// The temporary table name for bulk operations.
+		/// The adapter .
 		/// </summary>
 		private ISqlAdapter Adapter => Info.Adapter;
 

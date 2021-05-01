@@ -63,7 +63,7 @@
       <PackagePath></PackagePath>
     </None>
     <None Include="Extra\Adapters\OracleAdapter.cs" />
-    <PackageReference Include="Dapper.StrongName" Version="2.0.35" />
+    <PackageReference Include="Dapper.StrongName" Version="2.0.30" />
     <PackageReference Include="Fasterflect.Reflect" Version="3.1.0" />
     <PackageReference Include="System.Linq.Expressions" Version="4.3.0" />
   </ItemGroup>

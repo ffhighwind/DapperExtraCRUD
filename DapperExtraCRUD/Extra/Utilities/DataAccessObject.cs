@@ -44,8 +44,7 @@ namespace Dapper.Extra.Utilities
 		/// <summary>
 		/// Initializes a new instance of the <see cref="DataAccessObject{T}"/> class.
 		/// </summary>
-		/// <param name="buffered">The buffered<see cref="bool"/></param>
-		public DataAccessObject(bool buffered = true) : this(null, buffered)
+		public DataAccessObject() : this(null)
 		{
 		}
 
@@ -53,18 +52,11 @@ namespace Dapper.Extra.Utilities
 		/// Initializes a new instance of the <see cref="DataAccessObject{T}"/> class.
 		/// </summary>
 		/// <param name="connectionString">The connectionString<see cref="string"/></param>
-		/// <param name="buffered">The buffered<see cref="bool"/></param>
-		public DataAccessObject(string connectionString, bool buffered = true)
+		public DataAccessObject(string connectionString)
 		{
 			Connection = new SqlConnection(connectionString);
-			Buffered = buffered;
 			Queries = ExtraCrud.Queries<T>();
 		}
-
-		/// <summary>
-		/// Determines if the queries are buffered.
-		/// </summary>
-		public bool Buffered { get; set; }
 
 		/// <summary>
 		/// The connection used for queries. This will be temporarily opened it if is closed. 

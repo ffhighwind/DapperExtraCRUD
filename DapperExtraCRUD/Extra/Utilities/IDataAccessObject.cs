@@ -34,11 +34,6 @@ namespace Dapper.Extra.Utilities
 	public interface IDataAccessObject
 	{
 		/// <summary>
-		/// Determines if the queries are buffered.
-		/// </summary>
-		bool Buffered { get; set; }
-
-		/// <summary>
 		/// The connection used for queries. This will be temporarily opened it if is closed. 
 		/// This connection is not thread-safe because it is reused for all queries.
 		/// </summary>
