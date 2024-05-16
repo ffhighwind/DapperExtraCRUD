@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp2.0;net461</TargetFrameworks>
+    <TargetFrameworks>net8.0;net48</TargetFrameworks>
     <AssemblyName>Dapper.ExtraCRUD.Cache</AssemblyName>
     <Version>1.5.2.0</Version>
     <Authors>Wesley Hamilton</Authors>
@@ -43,18 +43,8 @@
     <DocumentationFile>bin\lib\Dapper.ExtraCRUD.Cache.xml</DocumentationFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.0'">
-    <DefineConstants>NETCOREAPP;NETCOREAPP2_0</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
-    <DefineConstants>NETSTANDARD;NETSTANDARD2_0</DefineConstants>
-  </PropertyGroup>
-    <PropertyGroup Condition="'$(TargetFramework)'=='net461'">
-    <DefineConstants>NETFRAMEWORK;NET461</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="Dapper.StrongName" Version="2.0.30" />
+    <PackageReference Include="Dapper.StrongName" Version="2.1.35" />
     <PackageReference Include="Fasterflect.Reflect" Version="3.1.0" />
   </ItemGroup>
 

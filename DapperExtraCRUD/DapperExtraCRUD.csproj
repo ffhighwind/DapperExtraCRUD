@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp2.0;net461</TargetFrameworks>
+    <TargetFrameworks>net8.0;net48</TargetFrameworks>
     <AssemblyName>Dapper.ExtraCRUD</AssemblyName>
     <Version>1.5.2.0</Version>
     <Authors>Wesley Hamilton</Authors>
@@ -45,16 +45,6 @@
     <DocumentationFile>bin\lib\Dapper.ExtraCRUD.xml</DocumentationFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.0'">
-    <DefineConstants>NETCOREAPP;NETCOREAPP2_0</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
-    <DefineConstants>NETSTANDARD;NETSTANDARD2_0</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)'=='net461'">
-    <DefineConstants>NETFRAMEWORK;NET461</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup>
     <Compile Remove="Extra\Adapters\OracleAdapter.cs" />
     <Compile Remove="Extra\Internal\TimeInterval.cs" />
@@ -63,18 +53,18 @@
       <PackagePath></PackagePath>
     </None>
     <None Include="Extra\Adapters\OracleAdapter.cs" />
-    <PackageReference Include="Dapper.StrongName" Version="2.0.30" />
+    <PackageReference Include="Dapper.StrongName" Version="2.1.35" />
     <PackageReference Include="Fasterflect.Reflect" Version="3.1.0" />
     <PackageReference Include="System.Linq.Expressions" Version="4.3.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0' OR '$(TargetFramework)'=='netcoreapp2.0'">
-    <PackageReference Include="Microsoft.CSharp" Version="4.3.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.3.0" />
-    <PackageReference Include="System.ComponentModel.Annotations" Version="4.3.0" />
+  <ItemGroup Condition="'$(TargetFramework)'=='net8.0'">
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='net461'">
+  <ItemGroup Condition="'$(TargetFramework)'=='net48'">
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>
