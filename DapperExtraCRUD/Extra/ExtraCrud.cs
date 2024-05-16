@@ -141,7 +141,7 @@ namespace Dapper.Extra
 				Type genericArgType = type.GetGenericArguments()[0];
 				return genericArgType == typeof(byte);
 			}
-			bool success = type.GetInterfaces().Any(ty => ty == typeof(Dapper.SqlMapper.ITypeHandler));
+			bool success = SqlMapper.HasTypeHandler(type) || type.GetInterfaces().Any(ty => ty == typeof(Dapper.SqlMapper.ITypeHandler));
 			return success;
 		}
 
