@@ -26,7 +26,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
+using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using Dapper;
@@ -36,6 +36,7 @@ using Dapper.Extra.Cache;
 using DapperExtraCRUD.Example;
 using System.Threading.Tasks;
 using System.Reflection;
+using System.Data.SqlClient;
 
 namespace ConsoleTests
 {
